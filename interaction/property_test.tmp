@@ -1,0 +1,85 @@
+package property
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func methodTest(interface{}) {}
+
+func Test_addProperty(t *testing.T) {
+	type args struct {
+		id           string
+		defaultValue interface{}
+		meta         PropertyMeta
+	}
+	testThing := Thing{properties: make(map[string]*Property)}
+	testDataSchema := Data{}
+	tests := []struct {
+		title string
+		args  args
+		thing *Thing
+		want  *Property
+	}{
+		{
+			title: "Boolean value, without default value",
+			args:  args{id: "mybool", meta: testProperty},
+			thing: &testThing,
+			want:  &Property{Thing: &testThing, ID: "mybool", lastValue: nil, handler: nil, PropertyMeta: testProperty},
+		},
+		{
+			title: "Boolean value, with default value",
+			args:  args{id: "mybool", defaultValue: false, meta: testProperty},
+			thing: &testThing,
+			want:  &Property{Thing: &testThing, ID: "mybool", lastValue: false, handler: nil, PropertyMeta: testProperty},
+		},
+		/* Incorrectly fail for handler		{
+			title: "Boolean value, with default value, with handler",
+			args: args{id: "mybool", valueType: "boolean", defaultValue: false, handler: methodTest},
+			want: &Property{id: "mybool", valueType: "boolean", lastValue: false, handler: methodTest},
+		},*/
+	}
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			got := tt.thing.AddProperty(tt.args.id, tt.args.defaultValue, tt.args.meta)
+			assert.Equal(t, tt.want, got, "they should be equal")
+		})
+	}
+}
+
+func TestProperty_description(t *testing.T) {
+	type fields struct {
+		title     string
+		valueType string
+		lastValue interface{}
+		handler   func(interface{})
+	}
+	tests := []struct {
+		title    string
+		property *Property
+		want     map[string]interface{}
+	}{
+		{
+			title: "Default",
+			property: &Property{
+				ID:        "mybool",
+				lastValue: false,
+				handler:   methodTest,
+			},
+			want: map[string]interface{}{
+				"description": "",
+				"readOnly":    false,
+				"title":       "",
+				"type":        "",
+				"unit":        "",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			got := tt.property.description()
+			assert.Equal(t, tt.want, got, "they should be equal")
+		})
+	}
+}
