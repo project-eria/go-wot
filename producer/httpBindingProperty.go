@@ -60,6 +60,11 @@ func (h *propertyHandler) put(w http.ResponseWriter, r *http.Request, params htt
 		} else {
 			if handler, ok := h.propertiesWriteHandlers[name]; ok {
 				data := r.Context().Value(keyDecodedJSON)
+				if data == nil {
+					log.Warn().Str("uri", r.RequestURI).Str("property", name).Msg("[property:PUT] No Data")
+					errorHTTPRenderer(w, DataError, "No data provided")
+					return
+				}
 				err := handler(data)
 				if err != nil {
 					log.Error().Str("uri", r.RequestURI).Err(err).Msg("[property:PUT]")
