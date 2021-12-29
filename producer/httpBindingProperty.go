@@ -20,7 +20,7 @@ type propertyHandler struct {
 func (h *propertyHandler) get(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	name := params.ByName("propertyName")
 	log.Debug().Str("uri", r.RequestURI).Str("property", name).Msg("[property:GET] Received Thing property GET request")
-	if property, ok := h.td.Properties[name]; ok {
+	if property, ok := h.Td.Properties[name]; ok {
 		if property.WriteOnly {
 			log.Debug().Str("uri", r.RequestURI).Str("property", name).Msg("[property:GET] Access to WriteOnly property")
 			errorHTTPRenderer(w, NotAllowedError, "Write Only property")
@@ -53,7 +53,7 @@ func (h *propertyHandler) get(w http.ResponseWriter, r *http.Request, params htt
 func (h *propertyHandler) put(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	name := params.ByName("propertyName")
 	log.Debug().Str("uri", r.RequestURI).Str("property", name).Msg("[property:PUT] Received Thing property PUT request")
-	if property, ok := h.td.Properties[name]; ok {
+	if property, ok := h.Td.Properties[name]; ok {
 		if property.ReadOnly {
 			log.Debug().Str("uri", r.RequestURI).Str("property", name).Msg("[property:PUT] Access to ReadOnly property")
 			errorHTTPRenderer(w, NotAllowedError, "Read Only property")

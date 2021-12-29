@@ -31,6 +31,16 @@ func (d *Data) Check(value interface{}) error {
 		if err != nil {
 			return err
 		}
+	case Integer:
+		err := d.DataSchema.(Integer).Check(value)
+		if err != nil {
+			return err
+		}
+	case Number:
+		err := d.DataSchema.(Number).Check(value)
+		if err != nil {
+			return err
+		}
 	case String:
 		err := d.DataSchema.(String).Check(value)
 		if err != nil {

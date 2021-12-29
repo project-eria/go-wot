@@ -3,6 +3,7 @@ package interaction
 import (
 	"github.com/project-eria/go-wot/dataSchema"
 	"github.com/project-eria/go-wot/form"
+	"github.com/rs/zerolog/log"
 )
 
 type PropertyAffordance interface {
@@ -28,33 +29,16 @@ func NewProperty(key string, title string, description string, data dataSchema.D
 	}
 }
 
-func (p *Property) AddHrefForm(host string, secure bool) {
-	scheme := "http"
-	if secure {
-		scheme = "https"
-	}
-	op := []string{}
-	if !p.ReadOnly {
-		op = append(op, "writeproperty")
-	}
-	if !p.WriteOnly {
-		op = append(op, "readproperty")
-	}
-	url := scheme + "://" + host
-	p.Interaction.AddHrefForm(url,
-		form.Form{
-			ContentType: "application/json",
-			Op:          op,
-		},
-	)
-}
-
 func (p *Property) GetValue() interface{} {
+	log.Trace().Str("property", p.Interaction.Key).Interface("value", p.Value).Msg("[property:GetValue] Value get")
 	return p.Value
 }
 
 func (p *Property) SetValue(value interface{}) error {
+	log.Trace().Str("property", p.Interaction.Key).Interface("value", value).Msg("[property:SetValue] Value set")
+
 	if err := p.Data.Check(value); err != nil {
+		log.Error().Str("property", p.Interaction.Key).Interface("value", value).Err(err).Msg("[property:SetValue]")
 		return err
 	}
 	p.Value = value

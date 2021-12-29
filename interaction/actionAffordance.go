@@ -28,17 +28,3 @@ func NewAction(key string, title string, description string, input *dataSchema.D
 		Output:      output,
 	}
 }
-
-func (a *Action) AddHrefForm(host string, secure bool) {
-	scheme := "http"
-	if secure {
-		scheme = "https"
-	}
-	url := scheme + "://" + host
-	a.Interaction.AddHrefForm(url,
-		form.Form{
-			ContentType: "application/json",
-			Op:          []string{"invokeaction"},
-		},
-	)
-}

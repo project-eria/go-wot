@@ -20,7 +20,6 @@ func (c *ConsumedThing) GetThingDescription() *thing.Thing {
 /*
  * Properties
  */
-
 // https://w3c.github.io/wot-scripting-api/#the-readproperty-method
 func (c *ConsumedThing) ReadProperty(name string) (interface{}, error) {
 	if property, ok := c.td.Properties[name]; ok {

@@ -36,25 +36,23 @@ type Thing struct {
 	SecurityDefinitions map[string]securityScheme.SecurityScheme `json:"securityDefinitions"` // (mandatory) Set of named security configurations (definitions only). Not actually applied unless names are used in a security name-value pair.
 	// profile	Indicates the WoT Profile mechanisms followed by this Thing Description and the corresponding Thing implementation.
 
-	Ref string       `json:"-"`
-	MU  sync.RWMutex `json:"-"`
+	MU sync.RWMutex `json:"-"`
 	//	server      *Server
 	//	*thingWSHandler
 }
 
 // New thing construct
-func New(urn string, ref string, title string, description string, types []string) (*Thing, error) {
-	if urn == "" || ref == "" {
-		return nil, errors.New("Thing URN and Ref can't be empty")
+func New(urn string, title string, description string, types []string) (*Thing, error) {
+	if urn == "" {
+		return nil, errors.New("Thing URN can't be empty")
 	}
 
 	thing := Thing{
-		AtContext:   "http://www.w3.org/ns/td",
-		AtTypes:     types,
-		ID:          "urn:" + urn,
-		Title:       title,
-		Description: description,
-		//		Ref:                 ref,
+		AtContext:           "http://www.w3.org/ns/td",
+		AtTypes:             types,
+		ID:                  "urn:" + urn,
+		Title:               title,
+		Description:         description,
 		Security:            []string{},
 		SecurityDefinitions: make(map[string]securityScheme.SecurityScheme),
 		Properties:          make(map[string]*interaction.Property),
@@ -342,6 +340,19 @@ func (t *Thing) AddProperty(property *interaction.Property) {
 	t.MU.Lock()
 	defer t.MU.Unlock()
 	t.Properties[property.Key] = property
+}
+
+// WriteProperty set the property value
+func (t *Thing) WriteProperty(key string, value interface{}) {
+	if t == nil {
+		log.Error().Msg("[thing:WriteProperty] nil thing")
+		return
+	}
+
+	t.MU.Lock()
+	defer t.MU.Unlock()
+	property := t.Properties[key]
+	property.SetValue(value)
 }
 
 // // GetProperty get an existing thing propertie
