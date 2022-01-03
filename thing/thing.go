@@ -37,8 +37,6 @@ type Thing struct {
 	// profile	Indicates the WoT Profile mechanisms followed by this Thing Description and the corresponding Thing implementation.
 
 	MU sync.RWMutex `json:"-"`
-	//	server      *Server
-	//	*thingWSHandler
 }
 
 // New thing construct
@@ -62,7 +60,6 @@ func New(urn string, title string, description string, types []string) (*Thing, 
 	if thing.AtTypes == nil {
 		thing.AtTypes = make([]string, 0)
 	}
-	//	thing.thingWSHandler = &thingWSHandler{webSocketConnections: make(map[string]*wsConnection)}
 	return &thing, nil
 }
 
@@ -114,218 +111,6 @@ func (t *Thing) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// // AddType add a new type
-// func (t *Thing) AddType(label string) {
-// 	if t == nil {
-// 		log.Error().Msg("[thing:AddType] nil thing")
-// 	}
-
-// 	t.mu.RLock()
-// 	defer t.mu.RUnlock()
-
-// 	if !find(t.types, label) {
-// 		t.types = append(t.types, label)
-// 	}
-// }
-
-// //SetContext set the thing context for the capabilities types
-// func (t *Thing) SetContext(context string) {
-// 	if t == nil {
-// 		log.Error().Msg("[thing:SetContext] nil thing")
-// 	}
-
-// 	t.mu.Lock()
-// 	defer t.mu.Unlock()
-
-// 	t.context = context
-// }
-
-// func find(source []string, value string) bool {
-// 	for _, item := range source {
-// 		if item == value {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
-
-// func (t *Thing) ref() string {
-// 	if t == nil {
-// 		log.Error().Msg("[thing:ref] nil thing")
-// 		return ""
-// 	}
-
-// 	t.mu.RLock()
-// 	defer t.mu.RUnlock()
-
-// 	return t.Ref
-// }
-
-// func (t *Thing) href() string {
-// 	if t == nil {
-// 		log.Error().Msg("[thing:href] nil thing")
-// 		return ""
-// 	}
-// 	return t.ref() + "/"
-// }
-
-// // actionsList returns a full list of actions for external request
-// func (t *Thing) actionsList() map[string]interface{} {
-// 	result := make(map[string]interface{})
-// 	if t == nil {
-// 		log.Error().Msg("[thing:actionsList] nil thing")
-// 		return result
-// 	}
-
-// 	t.mu.RLock()
-// 	defer t.mu.RUnlock()
-
-// 	for name, actions := range t.actions {
-// 		result[name] = actions.description()
-// 	}
-// 	return result
-// }
-
-// // linksList returns a list of links
-// // A link object represents a link relation
-// func (t *Thing) linksList(secure bool, host string) []map[string]string {
-// 	result := []map[string]string{}
-// 	if t == nil {
-// 		log.Error().Msg("[thing:linksList] nil thing")
-// 		return result
-// 	}
-
-// 	schemeHTTP := "http"
-// 	schemeWS := "ws"
-// 	if secure {
-// 		schemeHTTP = "https"
-// 		schemeWS = "wss"
-// 	}
-
-// 	t.mu.RLock()
-// 	defer t.mu.RUnlock()
-
-// 	for _, name := range []string{"properties", "actions", "events"} {
-// 		result = append(result, map[string]string{
-// 			"rel":  name,
-// 			"href": t.Ref + "/" + name,
-// 		})
-// 	}
-// 	result = append(result, map[string]string{
-// 		"rel":       "alternate",
-// 		"mediaType": "text/html",
-// 		"href":      schemeHTTP + "://" + host + "/" + t.Ref,
-// 	})
-// 	result = append(result, map[string]string{
-// 		"rel":  "alternate",
-// 		"href": schemeWS + "://" + host + "/" + t.Ref,
-// 	})
-// 	return result
-// }
-
-// // processGetProperties returns a list of thing properties values
-// func (t *Thing) processGetProperties() (map[string]interface{}, error) {
-// 	if t == nil {
-// 		log.Error().Msg("[thing:processGetProperties] nil thing")
-// 		return nil, errors.New("thing can't be nil")
-// 	}
-// 	content := make(map[string]interface{})
-
-// 	t.mu.RLock()
-// 	defer t.mu.RUnlock()
-
-// 	for name, property := range t.properties {
-// 		content[name] = property.processGetValue()
-// 	}
-// 	return content, nil
-// }
-
-// // processSetProperties batch update values for a list of thing properties, from an external request
-// func (t *Thing) processSetProperties(data map[string]interface{}) (map[string]interface{}, error) {
-// 	if t == nil {
-// 		log.Error().Msg("[thing:processSetProperties] nil thing")
-// 		return nil, errors.New("thing can't be nil")
-// 	}
-
-// 	t.mu.RLock()
-// 	defer t.mu.RUnlock()
-// 	content := make(map[string]interface{})
-
-// 	eventMessage := wsMessage{MessageType: "propertyStatus", Data: make(map[string]interface{})}
-// 	// process the list of names, from the request
-// 	for name, value := range data {
-// 		log.Trace().Str("property", name).Msg("[thing:processSetProperties] Processing value")
-// 		// check is the property exists
-// 		if property, ok := t.properties[name]; ok {
-// 			newValue, err := property.processSetValue(value)
-// 			if err != nil {
-// 				log.Error().Err(err).Msg("[thing:processSetProperties]")
-// 				content[name] = map[string]string{"error": err.Error()}
-// 				continue
-// 			}
-// 			if newValue != nil {
-// 				log.Trace().Str("property", name).Msg("[thing:processSetProperties] Value Changed")
-// 				content[name] = map[string]string{"response": "ok"}
-// 				eventMessage.Data[name] = value
-// 			} else {
-// 				log.Trace().Str("property", name).Msg("[thing:processSetProperties] Value Unchanged")
-// 				content[name] = map[string]string{"response": "unchanged"}
-// 			}
-// 			continue
-// 		}
-// 		log.Error().Str("property", name).Msg("[thing:processSetProperties] Unknown property")
-// 		content[name] = map[string]string{"error": "Unknown property"}
-// 	}
-// 	// If at least one value has changed, we broadcast the event
-// 	if len(eventMessage.Data) > 0 {
-// 		t.processTxMsg(&eventMessage)
-// 	}
-// 	return content, nil
-// }
-
-// // LocalSetValues updates a property value, for local changes, without checking ReadOnly flag
-// // Brodcast the new value if changed
-// func (t *Thing) LocalSetValues(data map[string]interface{}) (map[string]interface{}, error) {
-// 	if t == nil {
-// 		log.Error().Msg("[thing:LocalSetValues] nil thing")
-// 		return nil, errors.New("thing can't be nil")
-// 	}
-
-// 	t.mu.RLock()
-// 	defer t.mu.RUnlock()
-
-// 	content := make(map[string]interface{})
-// 	eventMessage := wsMessage{MessageType: "propertyStatus", Data: make(map[string]interface{})}
-// 	for name, value := range data {
-// 		// check is the property exists
-// 		if property, ok := t.properties[name]; ok {
-// 			newValue, err := property.setValue(value)
-// 			if err != nil {
-// 				log.Error().Err(err).Msg("[thing:LocalSetValue]")
-// 				content[name] = map[string]string{"error": err.Error()}
-// 				continue
-// 			}
-// 			if newValue != nil {
-// 				log.Trace().Str("property", name).Msg("[thing:LocalSetValue] Value Changed")
-// 				content[name] = map[string]string{"response": "ok"}
-// 				eventMessage.Data[name] = value
-// 			} else {
-// 				log.Trace().Str("property", name).Msg("[thing:LocalSetValue] Value Unchanged")
-// 				content[name] = map[string]string{"response": "unchanged"}
-// 			}
-// 			continue
-// 		}
-// 		log.Error().Str("property", name).Msg("[thing:LocalSetValue] Unknown property")
-// 		content[name] = map[string]string{"error": "Unknown property"}
-// 	}
-// 	// If at least one value has changed, we broadcast the event
-// 	if len(eventMessage.Data) > 0 {
-// 		t.processTxMsg(&eventMessage)
-// 	}
-
-// 	return content, nil
-// }
-
 /*
  * Properties
  */
@@ -341,35 +126,6 @@ func (t *Thing) AddProperty(property *interaction.Property) {
 	defer t.MU.Unlock()
 	t.Properties[property.Key] = property
 }
-
-// WriteProperty set the property value
-func (t *Thing) WriteProperty(key string, value interface{}) {
-	if t == nil {
-		log.Error().Msg("[thing:WriteProperty] nil thing")
-		return
-	}
-
-	t.MU.Lock()
-	defer t.MU.Unlock()
-	property := t.Properties[key]
-	property.SetValue(value)
-}
-
-// // GetProperty get an existing thing propertie
-// func (t *Thing) GetProperty(name string) *property.Property {
-// 	if t == nil {
-// 		log.Error().Msg("[thing:GetProperty] nil thing")
-// 		return nil
-// 	}
-
-// 	t.mu.RLock()
-// 	defer t.mu.RUnlock()
-
-// 	if property, ok := t.properties[name]; ok {
-// 		return property
-// 	}
-// 	return nil
-// }
 
 func (t *Thing) AddAction(action *interaction.Action) {
 	if t == nil {

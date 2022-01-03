@@ -1,0 +1,119 @@
+package producer
+
+import (
+	"errors"
+	"fmt"
+	"sync"
+
+	"github.com/project-eria/go-wot/interaction"
+	"github.com/rs/zerolog/log"
+)
+
+// https://w3c.github.io/wot-scripting-api/#the-exposedthing-interface
+type ExposedProperty struct {
+	value                  interface{}
+	propertyReadHandler    PropertyReadHandler
+	propertyWriteHandler   PropertyWriteHandler
+	propertyObserveHandler PropertyObserveHandler
+	observersProperties    []*wsConnection
+	mu                     sync.RWMutex
+	*interaction.Property
+}
+
+func NewExposedProperty(interaction *interaction.Property) *ExposedProperty {
+	return &ExposedProperty{
+		value:                interaction.Default,
+		observersProperties:  []*wsConnection{},
+		propertyReadHandler:  defaultPropertyReadHandler,
+		propertyWriteHandler: defaultPropertyWriteHandler,
+		Property:             interaction,
+	}
+}
+
+// https://w3c.github.io/wot-scripting-api/#the-propertyreadhandler-callback
+type PropertyReadHandler func(*ExposedThing, string) (interface{}, error)
+type PropertyObserveHandler func(*ExposedThing, string) (interface{}, error)
+
+//https://w3c.github.io/wot-scripting-api/#the-propertywritehandler-callback
+type PropertyWriteHandler func(*ExposedThing, string, interface{}) error
+
+func (p *ExposedProperty) SetReadHandler(handler PropertyReadHandler) error {
+	if handler == nil {
+		return errors.New("read handler can't be nil")
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.propertyReadHandler = handler
+	return nil
+}
+
+func (p *ExposedProperty) GetReadHandler() PropertyReadHandler {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.propertyReadHandler
+}
+
+func (p *ExposedProperty) SetObserveHandler(handler PropertyObserveHandler) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.propertyObserveHandler = handler
+}
+
+func (p *ExposedProperty) GetObserveHandler() PropertyObserveHandler {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.propertyObserveHandler
+}
+
+func (p *ExposedProperty) SetWriteHandler(handler PropertyWriteHandler) error {
+	if handler == nil {
+		return errors.New("write handler can't be nil")
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.propertyWriteHandler = handler
+	return nil
+}
+
+func (p *ExposedProperty) GetWriteHandler() PropertyWriteHandler {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.propertyWriteHandler
+}
+
+func (p *ExposedProperty) AddWSObserver(key string, wsConn *wsConnection) {
+	log.Debug().Str("key", key).Msg("[producer:addWSObserver] Register WS Connection")
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.observersProperties = append(p.observersProperties, wsConn)
+	// h.waitWebSocket.Add(1)
+}
+
+func defaultPropertyReadHandler(t *ExposedThing, name string) (interface{}, error) {
+	if property, ok := t.exposedProperties[name]; ok {
+		log.Trace().Str("property", name).Interface("value", property.value).Msg("[exposedProperty:defaultPropertyReadHandler] Value get")
+		property.mu.Lock()
+		defer property.mu.Unlock()
+		return property.value, nil
+	}
+	return nil, fmt.Errorf("property %s not found", name)
+}
+
+func defaultPropertyWriteHandler(t *ExposedThing, name string, value interface{}) error {
+	if property, ok := t.exposedProperties[name]; ok {
+		if err := property.Data.Check(value); err != nil {
+			log.Error().Str("property", name).Interface("value", value).Err(err).Msg("[exposedProperty:defaultPropertyWriteHandler]")
+			return err
+		}
+		property.mu.Lock()
+		property.value = value
+		property.mu.Unlock()
+		log.Trace().Str("property", name).Interface("value", value).Msg("[exposedProperty:defaultPropertyWriteHandler] Value set")
+		if err := t.EmitPropertyChange(name); err != nil {
+			log.Error().Str("property", name).Interface("value", value).Err(err).Msg("[exposedProperty:defaultPropertyWriteHandler]")
+			return err
+		}
+		return nil
+	}
+	return fmt.Errorf("property %s not found", name)
+}

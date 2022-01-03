@@ -13,7 +13,7 @@ type Interaction struct {
 	//	uriVariables	Define URI query template variables as collection based on DataSchema declarations. The individual variables DataSchema cannot be an ObjectSchema or an ArraySchema.	optional	Map of DataSchema
 }
 
-func (i *Interaction) AddHrefForm(url string, interactionForm form.Form) {
+func (i *Interaction) AddForm(url string, interactionForm form.Form) {
 	interactionForm.Href = url + "/" + i.Key
 	i.Forms = append(i.Forms, interactionForm)
 }

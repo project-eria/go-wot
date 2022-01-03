@@ -22,7 +22,9 @@ func (h *actionHandler) post(w http.ResponseWriter, r *http.Request, params http
 	log.Debug().Str("uri", r.RequestURI).Str("action", name).Msg("[action:POST] Received Thing action POST request")
 
 	if action, ok := h.Td.Actions[name]; ok {
-		if handler, ok := h.actionHandlers[name]; ok {
+		property := h.exposedActions[name]
+		handler := property.GetHandler()
+		if handler != nil {
 			input := r.Context().Value(keyDecodedJSON)
 			// Check the input data
 			if action.Input != nil {

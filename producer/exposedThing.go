@@ -9,169 +9,169 @@ import (
 
 // https://w3c.github.io/wot-scripting-api/#the-exposedthing-interface
 type ExposedThing struct {
-	Td                        *thing.Thing
-	propertiesReadHandlers    map[string]PropertyReadHandler
-	propertiesWriteHandlers   map[string]PropertyWriteHandler
-	propertiesObserveHandlers map[string]PropertyObserveHandler
-	actionHandlers            map[string]ActionHandler
-	eventListenerHandlers     map[string]EventListenerHandler
-	eventSubscriptionHandlers map[string]EventSubscriptionHandler
+	Td                *thing.Thing
+	exposedProperties map[string]*ExposedProperty
+	exposedActions    map[string]*ExposedAction
+	exposedEvents     map[string]*ExposedEvent
 }
 
 func NewExposedThing(td *thing.Thing) *ExposedThing {
-	return &ExposedThing{
-		Td:                        td,
-		propertiesReadHandlers:    map[string]PropertyReadHandler{},
-		propertiesWriteHandlers:   map[string]PropertyWriteHandler{},
-		actionHandlers:            map[string]ActionHandler{},
-		eventListenerHandlers:     map[string]EventListenerHandler{},
-		eventSubscriptionHandlers: map[string]EventSubscriptionHandler{},
+	t := &ExposedThing{
+		Td:                td,
+		exposedProperties: map[string]*ExposedProperty{},
+		exposedActions:    map[string]*ExposedAction{},
+		exposedEvents:     map[string]*ExposedEvent{},
 	}
+
+	for key, property := range td.Properties {
+		t.exposedProperties[key] = NewExposedProperty(property)
+	}
+	for key, action := range td.Actions {
+		t.exposedActions[key] = NewExposedAction(action)
+	}
+	return t
 }
 
 // https://www.w3.org/TR/wot-scripting-api/#the-getthingdescription-method-0
-func (e *ExposedThing) GetThingDescription() *thing.Thing {
-	return e.Td
+func (t *ExposedThing) GetThingDescription() *thing.Thing {
+	return t.Td
 }
 
 // https://www.w3.org/TR/wot-scripting-api/#the-expose-method
-func (e *ExposedThing) Expose() {
+func (t *ExposedThing) Expose() {
 	// Todo
 }
 
 // https://www.w3.org/TR/wot-scripting-api/#the-destroy-method
-func (e *ExposedThing) Destroy() {
+func (t *ExposedThing) Destroy() {
 	// Todo
 }
 
 /*
  * Properties
  */
-// https://w3c.github.io/wot-scripting-api/#the-propertyreadhandler-callback
-type PropertyReadHandler func() (interface{}, error)
-type PropertyObserveHandler func() (interface{}, error)
-
-//https://w3c.github.io/wot-scripting-api/#the-propertywritehandler-callback
-type PropertyWriteHandler func(interface{}) error
-
 // https://www.w3.org/TR/wot-scripting-api/#the-setpropertyreadhandler-method
-func (e *ExposedThing) SetPropertyReadHandler(name string, handler PropertyReadHandler) error {
-	if _, ok := e.Td.Properties[name]; ok {
-		e.propertiesReadHandlers[name] = handler
+func (t *ExposedThing) SetPropertyReadHandler(name string, handler PropertyReadHandler) error {
+	if _, ok := t.Td.Properties[name]; ok {
+		t.exposedProperties[name].SetReadHandler(handler)
 		return nil
 	}
-	log.Debug().Str("property", name).Msg("[exposedThing:SetPropertyReadHandler] property not found")
+	log.Debug().Str("property", name).Msg("[ExposedThing:SetPropertyReadHandler] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
 // https://www.w3.org/TR/wot-scripting-api/#the-setpropertyobservehandler-method
-func (e *ExposedThing) SetPropertyObserveHandler(name string, handler PropertyObserveHandler) error {
-	if _, ok := e.Td.Properties[name]; ok {
-		if e.Td.Properties[name].Observable {
-			e.propertiesObserveHandlers[name] = handler
+func (t *ExposedThing) SetPropertyObserveHandler(name string, handler PropertyObserveHandler) error {
+	if _, ok := t.Td.Properties[name]; ok {
+		if t.Td.Properties[name].Observable {
+			t.exposedProperties[name].SetObserveHandler(handler)
 			return nil
 		}
-		log.Debug().Str("property", name).Msg("[exposedThing:SetPropertyObserveHandler] property not observable")
+		log.Debug().Str("property", name).Msg("[ExposedThing:SetPropertyObserveHandler] property not observable")
 		return fmt.Errorf("property %s not observable", name)
 	}
-	log.Debug().Str("property", name).Msg("[exposedThing:SetPropertyObserveHandler] property not found")
+	log.Debug().Str("property", name).Msg("[ExposedThing:SetPropertyObserveHandler] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
 // https://www.w3.org/TR/wot-scripting-api/#the-setpropertyunobservehandler-method
-func (e *ExposedThing) SetPropertyUnobserveHandler(name string) error {
-	if _, ok := e.Td.Properties[name]; ok {
-		if e.Td.Properties[name].Observable {
-			delete(e.propertiesObserveHandlers, name)
+func (t *ExposedThing) SetPropertyUnobserveHandler(name string) error {
+	if _, ok := t.Td.Properties[name]; ok {
+		if t.Td.Properties[name].Observable {
+			t.exposedProperties[name].SetObserveHandler(nil)
 			return nil
 		}
-		log.Debug().Str("property", name).Msg("[exposedThing:SetPropertyUnobserveHandler] property not observable")
+		log.Debug().Str("property", name).Msg("[ExposedThing:SetPropertyUnobserveHandler] property not observable")
 		return fmt.Errorf("property %s not observable", name)
 	}
-	log.Debug().Str("property", name).Msg("[exposedThing:SetPropertyUnobserveHandler] property not found")
+	log.Debug().Str("property", name).Msg("[ExposedThing:SetPropertyUnobserveHandler] property not found")
+	return fmt.Errorf("property %s not found", name)
+}
+
+func (t *ExposedThing) AddWSPropertyObserver(name string, key string, wsConn *wsConnection) error {
+	if _, ok := t.Td.Properties[name]; ok {
+		if t.Td.Properties[name].Observable {
+			t.exposedProperties[name].AddWSObserver(key, wsConn)
+			return nil
+		}
+		log.Debug().Str("property", name).Msg("[ExposedThing:AddWSPropertyObserver] property not observable")
+		return fmt.Errorf("property %s not observable", name)
+	}
+	log.Debug().Str("property", name).Msg("[ExposedThing:AddWSPropertyObserver] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-emitpropertychange-method
-func (e *ExposedThing) EmitPropertyChange(name string) (interface{}, error) {
-	if _, ok := e.Td.Properties[name]; ok {
-		if handler, ok2 := e.propertiesObserveHandlers[name]; ok2 {
-			value, err2 := handler()
-			if err2 != nil {
-				log.Debug().Str("property", name).Err(err2).Msg("[exposedThing:EmitPropertyChange] handler error for property")
-				return nil, err2
+func (t *ExposedThing) EmitPropertyChange(name string) error {
+	if _, ok := t.Td.Properties[name]; ok {
+		p := t.exposedProperties[name]
+		var value interface{}
+		var err error
+		if handler := p.GetObserveHandler(); handler != nil {
+			if value, err = handler(t, name); err != nil {
+				log.Debug().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] handler error for property")
+				return err
 			}
-			return value, nil
-		} else if handler, ok2 := e.propertiesReadHandlers[name]; ok2 {
-			value, err2 := handler()
-			if err2 != nil {
-				log.Debug().Str("property", name).Err(err2).Msg("[exposedThing:EmitPropertyChange] handler error for property")
-				return nil, err2
+		} else if handler := p.GetReadHandler(); handler != nil {
+			if value, err = handler(t, name); err != nil {
+				log.Debug().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] handler error for property")
+				return err
 			}
-			return value, nil
 		} else {
 			// No handler
-			log.Debug().Str("property", name).Msg("[exposedThing:EmitPropertyChange] no handler available for property")
-			return nil, nil
+			log.Debug().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] no handler available for property")
+			return fmt.Errorf("no handler available for property %s", name)
 		}
+		log.Debug().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] sending to websocket")
+		p.WSProcessTxMsg(value)
+		return nil
 	}
-	log.Debug().Str("property", name).Msg("[exposedThing:EmitPropertyChange] property not found")
-	return nil, fmt.Errorf("property %s not found", name)
+	log.Debug().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] property not found")
+	return fmt.Errorf("property %s not found", name)
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-setpropertywritehandler-method
-func (e *ExposedThing) SetPropertyWriteHandler(name string, handler PropertyWriteHandler) error {
-	if _, ok := e.Td.Properties[name]; ok {
-		e.propertiesWriteHandlers[name] = handler
+func (t *ExposedThing) SetPropertyWriteHandler(name string, handler PropertyWriteHandler) error {
+	if _, ok := t.Td.Properties[name]; ok {
+		t.exposedProperties[name].SetWriteHandler(handler)
 		return nil
 	}
-	log.Debug().Str("property", name).Msg("[exposedThing:SetPropertyWriteHandler] property not found")
+	log.Debug().Str("property", name).Msg("[ExposedThing:SetPropertyWriteHandler] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
 /*
  * Actions
  */
-
-// https://w3c.github.io/wot-scripting-api/#the-actionhandler-callback
-type ActionHandler func(interface{}) (interface{}, error)
-
 // https://w3c.github.io/wot-scripting-api/#the-setactionhandler-method
-func (e *ExposedThing) SetActionHandler(name string, handler ActionHandler) error {
-	if _, ok := e.Td.Actions[name]; ok {
-		e.actionHandlers[name] = handler
+func (t *ExposedThing) SetActionHandler(name string, handler ActionHandler) error {
+	if _, ok := t.Td.Actions[name]; ok {
+		t.exposedActions[name].SetHandler(handler)
 		return nil
 	}
-	log.Debug().Str("action", name).Msg("[exposedThing:SetActionHandler] action not found")
+	log.Debug().Str("action", name).Msg("[ExposedThing:SetActionHandler] action not found")
 	return fmt.Errorf("action %s not found", name)
 }
 
 /*
  * Events
  */
-
-// https://w3c.github.io/wot-scripting-api/#the-eventlistenerhandler-callback
-type EventListenerHandler func()
-
-// https://w3c.github.io/wot-scripting-api/#the-eventsubscriptionhandler-callback
-type EventSubscriptionHandler func()
-
 // https://w3c.github.io/wot-scripting-api/#the-seteventsubscribehandler-method
-func (e *ExposedThing) SetEventSubscribeHandler() {
+func (t *ExposedThing) SetEventSubscribeHandler() {
 	// TODO
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-seteventunsubscribehandler-method
-func (e *ExposedThing) SetEventUnsubscribeHandler() {
+func (t *ExposedThing) SetEventUnsubscribeHandler() {
 	// TODO
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-seteventhandler-method
-func (e *ExposedThing) SetEventHandler() {
+func (t *ExposedThing) SetEventHandler() {
 	// TODO
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-emitevent-method
-func (e *ExposedThing) EmitEvent() {
+func (t *ExposedThing) EmitEvent() {
 	// TODO
 }

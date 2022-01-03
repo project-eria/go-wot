@@ -5,11 +5,10 @@ import "errors"
 type Boolean struct {
 }
 
-func NewBoolean(defaultValue bool, readOnly bool) Data {
+func NewBoolean(defaultValue bool) Data {
 	return Data{
 		Default:    defaultValue,
 		Type:       "boolean",
-		ReadOnly:   readOnly,
 		DataSchema: Boolean{},
 	}
 }

@@ -54,7 +54,7 @@ func (p *Producer) exposeHttp() {
 		thing := p.things[0]
 		registerRoutes("", router, thing)
 		//		server.wsHandlers = append(server.wsHandlers, thing.thingWSHandler)
-	} else {
+		// } else {
 		// thingsHandler := &thingsHandler{things}
 		// router.GET("/", corsHeader(thingsHandler.get))
 		// for _, thing := range things {
@@ -87,11 +87,12 @@ func (p *Producer) exposeHttp() {
 }
 
 func addFormHttp(e *ExposedThing, host string, secure bool) {
-	scheme := "http"
+	http_url := "http://" + host
+	ws_url := "ws://" + host
 	if secure {
-		scheme = "https"
+		http_url = "https://" + host
+		ws_url = "wss://" + host
 	}
-	url := scheme + "://" + host
 
 	for _, property := range e.Td.Properties {
 		op := []string{}
@@ -101,15 +102,23 @@ func addFormHttp(e *ExposedThing, host string, secure bool) {
 		if !property.WriteOnly {
 			op = append(op, "readproperty")
 		}
-		property.Interaction.AddHrefForm(url,
+		property.Interaction.AddForm(http_url,
 			form.Form{
 				ContentType: "application/json",
 				Op:          op,
 			},
 		)
+		if property.Observable {
+			property.Interaction.AddForm(ws_url,
+				form.Form{
+					ContentType: "application/json",
+					Op:          []string{"observeproperty", "unobserveproperty"},
+				},
+			)
+		}
 	}
 	for _, action := range e.Td.Actions {
-		action.Interaction.AddHrefForm(url,
+		action.Interaction.AddForm(http_url,
 			form.Form{
 				ContentType: "application/json",
 				Op:          []string{"invokeaction"},

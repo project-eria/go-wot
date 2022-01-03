@@ -12,12 +12,11 @@ type Integer struct {
 	MultipleOf       uint16 `json:"multipleOf,omitempty"`       // (optional) Specifies the multipleOf value number. The value must strictly greater than 0. Only applicable for associated number or integer types.
 }
 
-func NewInteger(defaultValue int, readOnly bool, unit string, minimum uint16, maximum uint16) Data {
+func NewInteger(defaultValue int, unit string, minimum uint16, maximum uint16) Data {
 	return Data{
-		Default:  defaultValue,
-		Type:     "integer",
-		ReadOnly: readOnly,
-		Unit:     unit,
+		Default: defaultValue,
+		Type:    "integer",
+		Unit:    unit,
 		DataSchema: Integer{
 			Minimum: minimum,
 			Maximum: maximum,

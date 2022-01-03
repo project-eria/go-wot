@@ -17,10 +17,8 @@ type thingHandler struct {
 // @param {Object} w The response object
 // @param {Object} r The request object
 func (h *thingHandler) get(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	// if r.Header.Get("Upgrade") == "websocket" {
-	// 	h.webSocket(w, r)
-	// 	return
-	// }
+	log.Debug().Str("uri", r.RequestURI).Msg("[thingHandler:GET] Received Thing GET request")
+
 	td := h.GetThingDescription()
 	content, err := json.Marshal(td)
 	if err != nil {

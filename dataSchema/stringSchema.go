@@ -8,11 +8,10 @@ type String struct {
 	Pattern   string `json:"pattern,omitempty"`   // (optional) Provides a regular expressions to express constraints of the string value. The regular expression must follow the [ECMA-262] dialect.
 }
 
-func NewString(defaultValue string, readOnly bool) Data {
+func NewString(defaultValue string) Data {
 	return Data{
 		Default:    defaultValue,
 		Type:       "string",
-		ReadOnly:   readOnly,
 		DataSchema: String{},
 	}
 }
