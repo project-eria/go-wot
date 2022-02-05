@@ -51,17 +51,17 @@ func (h *actionHandler) post(w http.ResponseWriter, r *http.Request, params http
 					return
 				}
 				log.Trace().Str("uri", r.RequestURI).Interface("response", output).Str("action", name).Msg("[action:POST] JSON Response to Thing action POST request")
-				jsonHTTPRenderer(w, output)
+				jsonHTTPRenderer(w, output, http.StatusOK)
 				return
 			}
 
 			log.Trace().Str("uri", r.RequestURI).Str("action", name).Msg("[action:POST] OK Response to Thing action POST request")
-			okHTTPRenderer(w)
-			return
+			okHTTPRenderer(w, http.StatusOK)
 		} else {
 			log.Warn().Str("uri", r.RequestURI).Str("action", name).Msg("[action:POST] no handler function for the action")
 			errorHTTPRenderer(w, NotSupportedError, "Not Implemented")
 		}
+		return
 	}
 	log.Debug().Str("uri", r.RequestURI).Msgf("[thing:post] action /%s not found", name)
 	errorHTTPRenderer(w, NotFoundError, "Action not found")

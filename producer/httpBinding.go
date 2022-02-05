@@ -149,9 +149,10 @@ func (p *Producer) GracefullyShutdown() {
 }
 
 //jsonHTTPRenderer Add header and write response as json string
-func jsonHTTPRenderer(w http.ResponseWriter, content interface{}) {
+func jsonHTTPRenderer(w http.ResponseWriter, content interface{}, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	if body, ok := content.(string); ok {
+		w.WriteHeader(status)
 		io.WriteString(w, body)
 	} else {
 		body, err := json.Marshal(content)
@@ -160,14 +161,15 @@ func jsonHTTPRenderer(w http.ResponseWriter, content interface{}) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		w.WriteHeader(status)
 		io.WriteString(w, string(body))
 	}
 }
 
 //okHTTPRenderer Add header and write response as ok: true
-func okHTTPRenderer(w http.ResponseWriter) {
+func okHTTPRenderer(w http.ResponseWriter, status int) {
 	response := map[string]interface{}{"ok": true}
-	jsonHTTPRenderer(w, response)
+	jsonHTTPRenderer(w, response, status)
 }
 
 func errorHTTPRenderer(w http.ResponseWriter, errObj errorReturn, message string) {

@@ -26,5 +26,5 @@ func (h *thingHandler) get(w http.ResponseWriter, r *http.Request, _ httprouter.
 		errorHTTPRenderer(w, EncodingError, err.Error())
 		return
 	}
-	jsonHTTPRenderer(w, string(content))
+	jsonHTTPRenderer(w, string(content), http.StatusOK)
 }

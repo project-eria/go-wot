@@ -1,6 +1,7 @@
 package producer
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -16,8 +17,8 @@ var upgrader = websocket.Upgrader{
 }
 
 type wsConnection struct {
-	conn *websocket.Conn
-	mu   sync.RWMutex
+	mu sync.RWMutex
+	*websocket.Conn
 }
 
 func (h *propertyHandler) webSocket(name string, w http.ResponseWriter, r *http.Request) {
@@ -39,31 +40,30 @@ func (h *propertyHandler) webSocket(name string, w http.ResponseWriter, r *http.
 	}
 	r.Header.Get("Sec-Websocket-Key")
 	key := r.Header.Get("Sec-Websocket-Key")
-	wsConn := &wsConnection{conn: conn}
+	wsConn := &wsConnection{Conn: conn}
 	if err := h.AddWSPropertyObserver(name, key, wsConn); err != nil {
 		wsConn.errorWSRenderer(err.Error())
 		wsConn.Close()
 		return
 	}
 
-	// TODO
-	// wsConn := h.addWSConnection(key, conn)
-	// for {
-	// 	message := wsMessage{key: key, thing: h.Td}
-	// 	err := conn.ReadJSON(&message)
-	// 	if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-	// 		log.Debug().Str("key", key).Msg("[producer:webSocket] WebSocket Normal Closure")
-	// 		h.removeWSConnection(key)
-	// 		return
-	// 	}
-	// 	if err != nil {
-	// 		log.Error().Str("key", key).Err(err).Msg("[producer:webSocket] WebSocket error")
-	// 		h.removeWSConnection(key)
-	// 		return
-	// 	}
-	// 	log.Trace().Str("key", key).Msgf("[producer:webSocket] Received WebSocket message: %#v", message)
-	// 	h.processRxMsg(wsConn, &message)
-	// }
+	for {
+		var data interface{}
+		err := wsConn.ReadJSON(&data)
+		if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+			log.Debug().Str("key", key).Msg("[producer:webSocket] WebSocket Normal Closure")
+			h.RemoveWSPropertyObserver(name, key)
+			return
+		}
+		if err != nil {
+			log.Error().Str("key", key).Err(err).Msg("[producer:webSocket] WebSocket error")
+			h.RemoveWSPropertyObserver(name, key)
+			return
+		}
+		log.Trace().Str("key", key).Msgf("[producer:webSocket] Received WebSocket message: %#v", data)
+		// TODO
+		// h.processRxMsg(wsConn, &message)
+	}
 }
 
 // processRxMsg processes incoming messages
@@ -97,57 +97,82 @@ func (p *ExposedProperty) WSProcessTxMsg(message interface{}) {
 	}
 }
 
+func (t *ExposedThing) AddWSPropertyObserver(name string, key string, wsConn *wsConnection) error {
+	if _, ok := t.Td.Properties[name]; ok {
+		if t.Td.Properties[name].Observable {
+			p := t.exposedProperties[name]
+			log.Debug().Str("key", key).Msg("[ExposedThing:AddWSPropertyObserver] Register WS Connection")
+			p.mu.Lock()
+			defer p.mu.Unlock()
+			p.observersProperties[key] = wsConn
+			t._wait.Add(1)
+			return nil
+		}
+		log.Debug().Str("property", name).Msg("[ExposedThing:AddWSPropertyObserver] property not observable")
+		return fmt.Errorf("property %s not observable", name)
+	}
+	log.Debug().Str("property", name).Msg("[ExposedThing:AddWSPropertyObserver] property not found")
+	return fmt.Errorf("property %s not found", name)
+}
+
+func (t *ExposedThing) RemoveWSPropertyObserver(name string, key string) error {
+	if _, ok := t.Td.Properties[name]; ok {
+		if t.Td.Properties[name].Observable {
+			p := t.exposedProperties[name]
+			log.Debug().Str("key", key).Msg("[ExposedThing:RemoveWSPropertyObserver] Unregister WS Connection")
+			p.mu.Lock()
+			defer p.mu.Unlock()
+
+			if _, ok := p.observersProperties[key]; ok {
+				//		conn.Close() // don't close the websocket.Conn or ReadJSON returns a "use of closed network connection" error
+				delete(p.observersProperties, key)
+				t._wait.Done()
+			}
+			return nil
+		}
+		log.Debug().Str("property", name).Msg("[ExposedThing:RemoveWSPropertyObserver] property not observable")
+		return fmt.Errorf("property %s not observable", name)
+	}
+	log.Debug().Str("property", name).Msg("[ExposedThing:RemoveWSPropertyObserver] property not found")
+	return fmt.Errorf("property %s not found", name)
+}
+
 func (c *wsConnection) jsonWSRenderer(content interface{}) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.conn.WriteJSON(content)
+	return c.WriteJSON(content)
 }
 
 func (c *wsConnection) errorWSRenderer(message string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.conn.WriteJSON(map[string]string{"error": message})
+	c.WriteJSON(map[string]string{"error": message})
 }
 
 func (c *wsConnection) Close() error {
 	closeNormalClosure := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
-	if err := c.conn.WriteControl(websocket.CloseMessage, closeNormalClosure, time.Now().Add(time.Second)); err != nil {
+	if err := c.WriteControl(websocket.CloseMessage, closeNormalClosure, time.Now().Add(time.Second)); err != nil {
 		return err
 	}
-	c.conn.Close()
+	c.Close()
 	return nil
 }
 
-// func (h *propertyHandler) removeWSConnection(key string) {
-// 	if h == nil {
-// 		log.Error().Msg("[producer:removeWSConnection] nil server")
-// 	}
-// 	h.mu.Lock()
-// 	defer h.mu.Unlock()
-
-// 	if _, ok := h.webSocketConnections[key]; ok {
-// 		//		conn.Close() // don't close the websocket.Conn or ReadJSON returns a "use of closed network connection" error
-// 		delete(h.webSocketConnections, key)
-// 		h.waitWebSocket.Done()
-// 	}
-// }
-
-// func (h *thingWSHandler) gracefullWSShutdown() {
-// 	if h == nil {
-// 		log.Error().Msg("[webSocket:gracefullWSShutdown] nil server")
-// 	}
-// 	h.mu.RLock()
-// 	conns := h.webSocketConnections
-// 	h.mu.RUnlock()
-
-// 	for key, wsConn := range conns {
-// 		log.Trace().Str("key", key).Msg("[webSocket:gracefullWSShutdown] Send Close message")
-// 		err := wsConn.conn.WriteControl(websocket.CloseMessage,
-// 			websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
-// 			time.Time{})
-// 		if err != nil {
-// 			log.Error().Str("key", key).Err(err).Msg("[webSocket:gracefullWSShutdown] Sending error")
-// 		}
-// 		h.removeWSConnection(key)
-// 	}
-// }
+func (t *ExposedThing) gracefullWSShutdown() {
+	for _, p := range t.exposedProperties {
+		p.mu.RLock()
+		conns := p.observersProperties
+		p.mu.RUnlock()
+		for key, wsConn := range conns {
+			log.Trace().Str("key", key).Msg("[ExposedProperty:gracefullWSShutdown] Send Close message")
+			err := wsConn.WriteControl(websocket.CloseMessage,
+				websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
+				time.Time{})
+			if err != nil {
+				log.Error().Str("key", key).Err(err).Msg("[ExposedProperty:gracefullWSShutdown] Sending error")
+			}
+			delete(p.observersProperties, key)
+			t._wait.Done()
+		}
+	}
+}

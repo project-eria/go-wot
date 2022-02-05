@@ -1,47 +1,33 @@
 package consumer
 
 import (
-	"encoding/json"
-	"errors"
-	"net/http"
+	"context"
+	"sync"
 
 	"github.com/project-eria/go-wot/thing"
-	"github.com/rs/zerolog/log"
 )
 
 type Consumer struct {
 	things []*ConsumedThing
+	_ctx   context.Context
+	_wait  *sync.WaitGroup
 }
 
-func New() *Consumer {
+func New(ctx context.Context, wait *sync.WaitGroup) *Consumer {
 	consumer := &Consumer{
 		things: []*ConsumedThing{},
+		_ctx:   ctx,
+		_wait:  wait,
 	}
 
 	return consumer
 }
 
-func (c *Consumer) ConsumeURL(url string) (*ConsumedThing, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		log.Error().Str("status", resp.Status).Str("url", url).Msg("[consumer:ConsumeURL] incorrect response")
-		return nil, errors.New("incorrect HTTP response")
-	}
-
-	var td thing.Thing
-	if err := json.NewDecoder(resp.Body).Decode(&td); err != nil {
-		log.Error().Str("url", url).Err(err).Msg("[consumer:ConsumeURL]")
-	}
-	return c.Consume(&td), nil
-}
-
 func (c *Consumer) Consume(td *thing.Thing) *ConsumedThing {
 	consumedThing := &ConsumedThing{
-		td: td,
+		td:    td,
+		_ctx:  c._ctx,
+		_wait: c._wait,
 	}
 	c.things = append(c.things, consumedThing)
 	return consumedThing

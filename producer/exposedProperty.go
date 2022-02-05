@@ -15,7 +15,7 @@ type ExposedProperty struct {
 	propertyReadHandler    PropertyReadHandler
 	propertyWriteHandler   PropertyWriteHandler
 	propertyObserveHandler PropertyObserveHandler
-	observersProperties    []*wsConnection
+	observersProperties    map[string]*wsConnection
 	mu                     sync.RWMutex
 	*interaction.Property
 }
@@ -23,7 +23,7 @@ type ExposedProperty struct {
 func NewExposedProperty(interaction *interaction.Property) *ExposedProperty {
 	return &ExposedProperty{
 		value:                interaction.Default,
-		observersProperties:  []*wsConnection{},
+		observersProperties:  map[string]*wsConnection{},
 		propertyReadHandler:  defaultPropertyReadHandler,
 		propertyWriteHandler: defaultPropertyWriteHandler,
 		Property:             interaction,
@@ -79,14 +79,6 @@ func (p *ExposedProperty) GetWriteHandler() PropertyWriteHandler {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.propertyWriteHandler
-}
-
-func (p *ExposedProperty) AddWSObserver(key string, wsConn *wsConnection) {
-	log.Debug().Str("key", key).Msg("[producer:addWSObserver] Register WS Connection")
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.observersProperties = append(p.observersProperties, wsConn)
-	// h.waitWebSocket.Add(1)
 }
 
 func defaultPropertyReadHandler(t *ExposedThing, name string) (interface{}, error) {

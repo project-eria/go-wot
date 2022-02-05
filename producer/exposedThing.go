@@ -2,6 +2,7 @@ package producer
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/project-eria/go-wot/thing"
 	"github.com/rs/zerolog/log"
@@ -13,14 +14,16 @@ type ExposedThing struct {
 	exposedProperties map[string]*ExposedProperty
 	exposedActions    map[string]*ExposedAction
 	exposedEvents     map[string]*ExposedEvent
+	_wait             *sync.WaitGroup
 }
 
-func NewExposedThing(td *thing.Thing) *ExposedThing {
+func NewExposedThing(td *thing.Thing, wait *sync.WaitGroup) *ExposedThing {
 	t := &ExposedThing{
 		Td:                td,
 		exposedProperties: map[string]*ExposedProperty{},
 		exposedActions:    map[string]*ExposedAction{},
 		exposedEvents:     map[string]*ExposedEvent{},
+		_wait:             wait,
 	}
 
 	for key, property := range td.Properties {
@@ -85,19 +88,6 @@ func (t *ExposedThing) SetPropertyUnobserveHandler(name string) error {
 		return fmt.Errorf("property %s not observable", name)
 	}
 	log.Debug().Str("property", name).Msg("[ExposedThing:SetPropertyUnobserveHandler] property not found")
-	return fmt.Errorf("property %s not found", name)
-}
-
-func (t *ExposedThing) AddWSPropertyObserver(name string, key string, wsConn *wsConnection) error {
-	if _, ok := t.Td.Properties[name]; ok {
-		if t.Td.Properties[name].Observable {
-			t.exposedProperties[name].AddWSObserver(key, wsConn)
-			return nil
-		}
-		log.Debug().Str("property", name).Msg("[ExposedThing:AddWSPropertyObserver] property not observable")
-		return fmt.Errorf("property %s not observable", name)
-	}
-	log.Debug().Str("property", name).Msg("[ExposedThing:AddWSPropertyObserver] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 

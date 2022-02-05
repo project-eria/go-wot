@@ -1,15 +1,17 @@
 package consumer
 
 import (
-	"fmt"
+	"context"
+	"sync"
 
 	"github.com/project-eria/go-wot/thing"
-	"github.com/rs/zerolog/log"
 )
 
 // https://w3c.github.io/wot-scripting-api/#the-consumedthing-interface
 type ConsumedThing struct {
-	td *thing.Thing
+	td    *thing.Thing
+	_ctx  context.Context
+	_wait *sync.WaitGroup
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-getthingdescription-method
@@ -17,43 +19,12 @@ func (c *ConsumedThing) GetThingDescription() *thing.Thing {
 	return c.td
 }
 
-/*
- * Properties
- */
-// https://w3c.github.io/wot-scripting-api/#the-readproperty-method
-func (c *ConsumedThing) ReadProperty(name string) (interface{}, error) {
-	if property, ok := c.td.Properties[name]; ok {
-		for _, form := range property.Forms {
-			for _, op := range form.Op {
-				if op == "readproperty" {
-					value, err := getHTTPJSON(form.Href)
-					log.Trace().Str("property", name).Str("url", form.Href).Interface("value", value).Msg("[consumer:ReadProperty] Received value")
-					return value, err
-				}
-			}
-		}
-	}
-	log.Error().Str("property", name).Msg("[consumer:ReadProperty] read property not found")
-	return nil, fmt.Errorf("property %s not found", name)
-}
-
-// https://w3c.github.io/wot-scripting-api/#the-readmultipleproperties-method
-func (c *ConsumedThing) ReadMultipleProperties() {
-	// TODO
-}
-
-// https://w3c.github.io/wot-scripting-api/#the-readallproperties-method
-func (c *ConsumedThing) ReadAllProperties() {
-	// TODO
-}
-
-// https://w3c.github.io/wot-scripting-api/#the-writeproperty-method
-func (c *ConsumedThing) WriteProperty(name string, value interface{}) error {
-	// TODO
-	return nil
-}
-
-// https://w3c.github.io/wot-scripting-api/#the-writemultipleproperties-method
-func (c *ConsumedThing) WriteMultipleProperties() {
-	// TODO
+type subscription struct {
+	Type string
+	Name string
+	//	Interaction *interaction.Interaction
+	// Let subscription's [[thing]] be the value of thing.
+	// Let subscription's [[form]] be the Form associated with formIndex in [[interaction]]'s forms array if option's formIndex is defined, otherwise let [[form]] be a Form in [[interaction]]'s forms array whose op is "observeproperty", selected by the implementation.
+	// If subscription's [[form]] is failure, reject promise with a SyntaxError and abort these steps.
+	// If subscription's [[interaction]] is undefined, reject promise with a NotFoundError and abort this steps.
 }

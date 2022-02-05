@@ -40,7 +40,7 @@ func (h *propertyHandler) get(w http.ResponseWriter, r *http.Request, params htt
 					return
 				}
 				log.Trace().Interface("response", content).Str("property", name).Msg("[propertyHandler:GET] Response to Thing property GET request")
-				jsonHTTPRenderer(w, content)
+				jsonHTTPRenderer(w, content, http.StatusOK)
 			} else {
 				log.Warn().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:GET] Not Implemented")
 				errorHTTPRenderer(w, NotSupportedError, "Not Implemented")
@@ -81,7 +81,7 @@ func (h *propertyHandler) put(w http.ResponseWriter, r *http.Request, params htt
 					return
 				}
 				log.Trace().Interface("response", "ok").Str("property", name).Msg("[propertyHandler:PUT] Response to Thing property PUT request")
-				okHTTPRenderer(w)
+				okHTTPRenderer(w, http.StatusOK)
 			} else {
 				log.Warn().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:PUT] Not Implemented")
 				errorHTTPRenderer(w, NotSupportedError, "Not Implemented")
