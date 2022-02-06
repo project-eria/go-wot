@@ -29,7 +29,7 @@ type Thing struct {
 	// base does not affect the URIs used in @context and the IRIs used within Linked Data [LINKED-DATA] graphs that are relevant when semantic processing is applied to TD instances.	optional	anyURI
 	Properties map[string]*interaction.Property `json:"properties,omitempty"` // (optional) All Property-based Interaction Affordances of the Thing.
 	Actions    map[string]*interaction.Action   `json:"actions,omitempty"`    // (optional) All Action-based Interaction Affordances of the Thing.
-	// events	All Event-based Interaction Affordances of the Thing.	optional	Map of EventAffordance
+	Events     map[string]*interaction.Event    `json:"events,omitempty"`     // (optional) All Event-based Interaction Affordances of the Thing.
 	// links	Provides Web links to arbitrary resources that relate to the specified Thing Description.	optional	Array of Link
 	// forms	Set of form hypermedia controls that describe how an operation can be performed. Forms are serializations of Protocol Bindings. In this version of TD, all operations that can be described at the Thing level are concerning how to interact with the Thing's Properties collectively at once.	optional	Array of Form
 	Security            []string                                 `json:"security"`            // (mandatory) Set of security definition names, chosen from those defined in securityDefinitions. These must all be satisfied for access to resources.
@@ -55,6 +55,7 @@ func New(urn string, title string, description string, types []string) (*Thing, 
 		SecurityDefinitions: make(map[string]securityScheme.SecurityScheme),
 		Properties:          make(map[string]*interaction.Property),
 		Actions:             make(map[string]*interaction.Action),
+		Events:              make(map[string]*interaction.Event),
 	}
 
 	if thing.AtTypes == nil {
@@ -111,10 +112,6 @@ func (t *Thing) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-/*
- * Properties
- */
-
 // AddProperty add property to a thing
 func (t *Thing) AddProperty(property *interaction.Property) {
 	if t == nil {
@@ -127,6 +124,7 @@ func (t *Thing) AddProperty(property *interaction.Property) {
 	t.Properties[property.Key] = property
 }
 
+// AddAction add action to a thing
 func (t *Thing) AddAction(action *interaction.Action) {
 	if t == nil {
 		log.Error().Msg("[thing:AddAction] nil thing")
@@ -136,4 +134,16 @@ func (t *Thing) AddAction(action *interaction.Action) {
 	t.MU.Lock()
 	defer t.MU.Unlock()
 	t.Actions[action.Key] = action
+}
+
+// AddEvent add event to a thing
+func (t *Thing) AddEvent(event *interaction.Event) {
+	if t == nil {
+		log.Error().Msg("[thing:AddEvent] nil thing")
+		return
+	}
+
+	t.MU.Lock()
+	defer t.MU.Unlock()
+	t.Events[event.Key] = event
 }

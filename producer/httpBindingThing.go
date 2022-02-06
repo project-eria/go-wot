@@ -8,18 +8,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// thingHandler is a set of handler for things root
-type thingHandler struct {
-	*ExposedThing
-}
-
 // get handle the GET method for single thing root
 // @param {Object} w The response object
 // @param {Object} r The request object
-func (h *thingHandler) get(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (t *ExposedThing) HTTPGetThing(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	log.Debug().Str("uri", r.RequestURI).Msg("[thingHandler:GET] Received Thing GET request")
 
-	td := h.GetThingDescription()
+	td := t.GetThingDescription()
 	content, err := json.Marshal(td)
 	if err != nil {
 		log.Error().Err(err).Msg("[producer:GetThingDescription]")

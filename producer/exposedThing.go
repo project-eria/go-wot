@@ -94,26 +94,26 @@ func (t *ExposedThing) SetPropertyUnobserveHandler(name string) error {
 // https://w3c.github.io/wot-scripting-api/#the-emitpropertychange-method
 func (t *ExposedThing) EmitPropertyChange(name string) error {
 	if _, ok := t.Td.Properties[name]; ok {
-		p := t.exposedProperties[name]
-		var value interface{}
-		var err error
-		if handler := p.GetObserveHandler(); handler != nil {
-			if value, err = handler(t, name); err != nil {
-				log.Debug().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] handler error for property")
-				return err
-			}
-		} else if handler := p.GetReadHandler(); handler != nil {
-			if value, err = handler(t, name); err != nil {
-				log.Debug().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] handler error for property")
-				return err
-			}
-		} else {
-			// No handler
-			log.Debug().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] no handler available for property")
-			return fmt.Errorf("no handler available for property %s", name)
-		}
-		log.Debug().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] sending to websocket")
-		p.WSProcessTxMsg(value)
+		// p := t.exposedProperties[name]
+		// var value interface{}
+		// var err error
+		// if handler := p.GetObserveHandler(); handler != nil {
+		// 	if value, err = handler(t, name); err != nil {
+		// 		log.Debug().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] handler error for property")
+		// 		return err
+		// 	}
+		// } else if handler := p.GetReadHandler(); handler != nil {
+		// 	if value, err = handler(t, name); err != nil {
+		// 		log.Debug().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] handler error for property")
+		// 		return err
+		// 	}
+		// } else {
+		// 	// No handler
+		// 	log.Debug().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] no handler available for property")
+		// 	return fmt.Errorf("no handler available for property %s", name)
+		// }
+		// log.Debug().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] sending to websocket")
+		// p.WSProcessTxMsg(value)
 		return nil
 	}
 	log.Debug().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] property not found")

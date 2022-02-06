@@ -2,6 +2,12 @@ package interaction
 
 import "github.com/project-eria/go-wot/form"
 
+// InteractionAffordance:
+// Metadata of a Thing that shows the possible choices to Consumers,
+// thereby suggesting how Consumers may interact with the Thing.
+// There are many types of potential affordances, but W3C WoT defines
+// three types of Interaction Affordances: Properties, Actions, and Events.
+// https://w3c.github.io/wot-thing-description/#interactionaffordance
 type Interaction struct {
 	Key          string            `json:"-"`
 	AtType       []string          `json:"@type,omitempty"`        // (optional) JSON-LD keyword to label the object with semantic tags (or types)

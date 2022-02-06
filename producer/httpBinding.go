@@ -24,13 +24,10 @@ func registerRoutes(prefix string, router *httprouter.Router, thing *ExposedThin
 		rootPrefix = "/" + prefix
 	}
 
-	thingHandler := &thingHandler{thing}
-	propertyHandler := &propertyHandler{thing}
-	actionHandler := &actionHandler{thing}
-	router.GET("/"+prefix, corsHeader(thingHandler.get))
-	router.GET(rootPrefix+"/:propertyName", corsHeader(propertyHandler.get))
-	router.PUT(rootPrefix+"/:propertyName", corsHeader(decodeJSON(propertyHandler.put)))
-	router.POST(rootPrefix+"/:actionName", corsHeader(decodeJSON(actionHandler.post)))
+	router.GET("/"+prefix, buildChain(thing, thing.HTTPGetThing, thingChain...))
+	router.GET(rootPrefix+"/:name", buildChain(thing, thing.HTTPGet, getChain...))
+	router.PUT(rootPrefix+"/:name", buildChain(thing, thing.HTTPPut, putChain...))
+	router.POST(rootPrefix+"/:name", buildChain(thing, thing.HTTPPost, postChain...))
 }
 
 // Produce constructs and launch an http server
@@ -125,6 +122,14 @@ func addFormHttp(e *ExposedThing, host string, secure bool) {
 			},
 		)
 	}
+	for _, action := range e.Td.Events {
+		action.Interaction.AddForm(http_url,
+			form.Form{
+				ContentType: "application/json",
+				Op:          []string{"subscribeevent"},
+			},
+		)
+	}
 }
 
 // GracefullyShutdown Gracefully the server and all connections
@@ -186,45 +191,4 @@ func errorHTTPRenderer(w http.ResponseWriter, errObj errorReturn, message string
 		return
 	}
 	io.WriteString(w, string(body))
-}
-
-func decodeJSON(next httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		if next != nil {
-			if r.Header.Get("Content-type") != "application/json" {
-				log.Error().Msg("[thing:decodeJSON] Request without Content-type='application/json'")
-				// break here instead of continuing the chain
-				errorHTTPRenderer(w, EncodingError, "Content-type 'application/json' is required")
-				return
-			}
-			var value interface{}
-			err := json.NewDecoder(r.Body).Decode(&value)
-			if err == io.EOF { // no JSON
-				next(w, r, p)
-				return
-			}
-			if err != nil {
-				log.Error().Err(err).Msg("[thing:decodeJSON]")
-				errorHTTPRenderer(w, EncodingError, "Incorrect JSON value")
-				return
-			}
-
-			ctx := context.WithValue(r.Context(), keyDecodedJSON, value)
-			next(w, r.WithContext(ctx), p)
-		}
-	}
-}
-
-func corsHeader(next httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		if next != nil {
-			header := w.Header()
-			header.Set("Allow", "GET,POST,PUT,DELETE,OPTIONS")
-			header.Set("Access-Control-Allow-Methods", header.Get("Allow"))
-			header.Set("Access-Control-Allow-Origin", "*")
-			header.Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
-
-			next(w, r, p)
-		}
-	}
 }

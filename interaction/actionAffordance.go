@@ -5,6 +5,10 @@ import (
 	"github.com/project-eria/go-wot/form"
 )
 
+// ActionAffordance: An Interaction Affordance that allows to invoke a function of the Thing,
+// which manipulates state (e.g., toggling a lamp on or off) or triggers a
+// process on the Thing (e.g., dim a lamp over time).
+// https://w3c.github.io/wot-thing-description/#actionaffordance
 type Action struct {
 	Input  *dataSchema.Data `json:"input,omitempty"`  // (optional) Used to define the input data schema of the Action.
 	Output *dataSchema.Data `json:"output,omitempty"` // (optional) Used to define the output data schema of the Action.

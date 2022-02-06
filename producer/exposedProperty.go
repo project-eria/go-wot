@@ -22,11 +22,12 @@ type ExposedProperty struct {
 
 func NewExposedProperty(interaction *interaction.Property) *ExposedProperty {
 	return &ExposedProperty{
-		value:                interaction.Default,
-		observersProperties:  map[string]*wsConnection{},
-		propertyReadHandler:  defaultPropertyReadHandler,
-		propertyWriteHandler: defaultPropertyWriteHandler,
-		Property:             interaction,
+		value:                  interaction.Default,
+		propertyReadHandler:    defaultPropertyReadHandler,
+		propertyWriteHandler:   defaultPropertyWriteHandler,
+		propertyObserveHandler: nil,
+		observersProperties:    map[string]*wsConnection{},
+		Property:               interaction,
 	}
 }
 

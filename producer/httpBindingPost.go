@@ -7,22 +7,17 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// actionHandler Handle a action requests to /actions/<name>
-type actionHandler struct {
-	*ExposedThing
-}
-
 // post handle the POST request method for a thing action
 // https://w3c.github.io/wot-scripting-api/#handling-action-requests
 // @param {Object} w The response object
 // @param {Object} r The request object
 // @param {Object} params The url parmeters
-func (h *actionHandler) post(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	name := params.ByName("actionName")
+func (t *ExposedThing) HTTPPost(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	name := params.ByName("name")
 	log.Debug().Str("uri", r.RequestURI).Str("action", name).Msg("[action:POST] Received Thing action POST request")
 
-	if action, ok := h.Td.Actions[name]; ok {
-		property := h.exposedActions[name]
+	if action, ok := t.Td.Actions[name]; ok {
+		property := t.exposedActions[name]
 		handler := property.GetHandler()
 		if handler != nil {
 			input := r.Context().Value(keyDecodedJSON)
