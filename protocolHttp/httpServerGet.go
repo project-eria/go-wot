@@ -1,9 +1,10 @@
-package producer
+package protocolHttp
 
 import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/project-eria/go-wot/producer"
 	"github.com/rs/zerolog/log"
 )
 
@@ -12,7 +13,8 @@ import (
 // @param {Object} w The response object
 // @param {Object} r The request object
 // @param {Object} params The url parmeters
-func (t *ExposedThing) HTTPGet(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func HTTPGet(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	t := r.Context().Value("thing").(*producer.ExposedThing)
 	name := params.ByName("name")
 	log.Debug().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:GET] Received Thing property GET request")
 	if property, ok := t.Td.Properties[name]; ok {
@@ -20,7 +22,7 @@ func (t *ExposedThing) HTTPGet(w http.ResponseWriter, r *http.Request, params ht
 			log.Debug().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:GET] Access to WriteOnly property")
 			errorHTTPRenderer(w, NotAllowedError, "Write Only property")
 		} else {
-			property := t.exposedProperties[name]
+			property := t.ExposedProperties[name]
 			handler := property.GetReadHandler()
 			if handler != nil {
 				content, err := handler(t, name)

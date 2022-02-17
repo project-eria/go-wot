@@ -2,7 +2,6 @@ package interaction
 
 import (
 	"github.com/project-eria/go-wot/dataSchema"
-	"github.com/project-eria/go-wot/form"
 )
 
 // EventAffordance: An Interaction Affordance that describes
@@ -21,7 +20,7 @@ func NewEvent(key string, title string, description string, data *dataSchema.Dat
 		Key:         key,
 		Title:       title,
 		Description: description,
-		Forms:       []form.Form{},
+		Forms:       []Form{},
 	}
 
 	return &Event{

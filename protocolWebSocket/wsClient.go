@@ -1,14 +1,34 @@
-package consumer
+package protocolWebSocket
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/project-eria/go-wot/consumer"
+	"github.com/project-eria/go-wot/interaction"
 	"github.com/rs/zerolog/log"
 )
+
+type WsClient struct {
+	schemes []string
+	wait    sync.WaitGroup
+	ctx     context.Context
+	cancel  context.CancelFunc
+}
+
+func NewClient() *WsClient {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	return &WsClient{
+		schemes: []string{"ws"},
+		ctx:     ctx,
+		cancel:  cancel,
+	}
+}
 
 type wsConn struct {
 	mu          sync.RWMutex
@@ -16,13 +36,49 @@ type wsConn struct {
 	isConnected bool
 	dialErr     error
 	connWait    connWait
-	sub         *subscription
-	listener    Listener
+	sub         *consumer.Subscription
+	listener    consumer.Listener
 	*websocket.Conn
 }
 
+func (c *WsClient) GetSchemes() []string {
+	return c.schemes
+}
+
+// ReadResource get a JSON data from HTTP GET request
+func (c *WsClient) ReadResource(form interaction.Form) (interface{}, error) {
+	return nil, errors.New("not implemented")
+}
+
+// WriteResource send JSON data using HTTP PUT request
+func (c *WsClient) WriteResource(form interaction.Form, value interface{}) (interface{}, error) {
+	return nil, errors.New("not implemented")
+}
+
+// InvokeResource send JSON data using HTTP POST request
+func (c *WsClient) InvokeResource(form interaction.Form, value interface{}) (interface{}, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *WsClient) SubscribeResource(form interaction.Form, sub *consumer.Subscription, listener consumer.Listener) error {
+	c.wait.Add(1)
+	go func() {
+		c.connectWebSocket(form.Href, sub, listener) // TODO , c._ctx)
+		c.wait.Done()
+	}()
+	return nil
+}
+
+func (c *WsClient) Stop() {
+	c.cancel()
+	// Wait for the child goroutine to finish, which will only occur when
+	// the child process has stopped and the call to cmd.Wait has returned.
+	// This prevents main() exiting prematurely.
+	c.wait.Wait()
+}
+
 // connectWebSocket Connect the thing using the WebSocket access
-func connectWebSocket(wsURL string, sub *subscription, listener Listener, ctx context.Context) {
+func (c *WsClient) connectWebSocket(wsURL string, sub *consumer.Subscription, listener consumer.Listener) { // TODO, ctx context.Context) {
 	wsc := &wsConn{
 		wsURL:    wsURL,
 		connWait: newConnWait(),
@@ -31,13 +87,13 @@ func connectWebSocket(wsURL string, sub *subscription, listener Listener, ctx co
 	}
 	for {
 		select {
-		case <-ctx.Done():
+		case <-c.ctx.Done():
 			log.Warn().Str("url", wsURL).Msg("[consumer:ConnectWebSocket] Connecting interrupted by user")
 			return
 		case <-wsc.connect():
 			if wsc.IsConnected() { // Should come here connected
 				select {
-				case <-ctx.Done():
+				case <-c.ctx.Done():
 					wsc.gracefullyShutdown()
 					return
 				case err := <-wsc.read():

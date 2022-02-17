@@ -2,7 +2,6 @@ package interaction
 
 import (
 	"github.com/project-eria/go-wot/dataSchema"
-	"github.com/project-eria/go-wot/form"
 )
 
 // ActionAffordance: An Interaction Affordance that allows to invoke a function of the Thing,
@@ -24,7 +23,7 @@ func NewAction(key string, title string, description string, input *dataSchema.D
 		Key:         key,
 		Title:       title,
 		Description: description,
-		Forms:       []form.Form{},
+		Forms:       []Form{},
 	}
 	return &Action{
 		Interaction: interaction,

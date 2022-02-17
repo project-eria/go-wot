@@ -15,7 +15,6 @@ type ExposedProperty struct {
 	propertyReadHandler    PropertyReadHandler
 	propertyWriteHandler   PropertyWriteHandler
 	propertyObserveHandler PropertyObserveHandler
-	observersProperties    map[string]*wsConnection
 	mu                     sync.RWMutex
 	*interaction.Property
 }
@@ -26,7 +25,6 @@ func NewExposedProperty(interaction *interaction.Property) *ExposedProperty {
 		propertyReadHandler:    defaultPropertyReadHandler,
 		propertyWriteHandler:   defaultPropertyWriteHandler,
 		propertyObserveHandler: nil,
-		observersProperties:    map[string]*wsConnection{},
 		Property:               interaction,
 	}
 }
@@ -83,7 +81,7 @@ func (p *ExposedProperty) GetWriteHandler() PropertyWriteHandler {
 }
 
 func defaultPropertyReadHandler(t *ExposedThing, name string) (interface{}, error) {
-	if property, ok := t.exposedProperties[name]; ok {
+	if property, ok := t.ExposedProperties[name]; ok {
 		log.Trace().Str("property", name).Interface("value", property.value).Msg("[exposedProperty:defaultPropertyReadHandler] Value get")
 		property.mu.Lock()
 		defer property.mu.Unlock()
@@ -93,7 +91,7 @@ func defaultPropertyReadHandler(t *ExposedThing, name string) (interface{}, erro
 }
 
 func defaultPropertyWriteHandler(t *ExposedThing, name string, value interface{}) error {
-	if property, ok := t.exposedProperties[name]; ok {
+	if property, ok := t.ExposedProperties[name]; ok {
 		if err := property.Data.Check(value); err != nil {
 			log.Error().Str("property", name).Interface("value", value).Err(err).Msg("[exposedProperty:defaultPropertyWriteHandler]")
 			return err

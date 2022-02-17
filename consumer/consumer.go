@@ -1,36 +1,79 @@
 package consumer
 
 import (
-	"context"
+	"net/url"
 	"sync"
 
+	"github.com/project-eria/go-wot/interaction"
+
 	"github.com/project-eria/go-wot/thing"
+	"github.com/rs/zerolog/log"
 )
 
 type Consumer struct {
-	things []*ConsumedThing
-	_ctx   context.Context
-	_wait  *sync.WaitGroup
+	clients map[string]ProtocolClient
+	things  []*ConsumedThing
+	mu      sync.RWMutex
 }
 
-func New(ctx context.Context, wait *sync.WaitGroup) *Consumer {
+func New() *Consumer {
 	consumer := &Consumer{
-		things: []*ConsumedThing{},
-		_ctx:   ctx,
-		_wait:  wait,
+		clients: map[string]ProtocolClient{},
+		things:  []*ConsumedThing{},
 	}
 
 	return consumer
 }
 
+type ProtocolClient interface {
+	GetSchemes() []string
+	ReadResource(interaction.Form) (interface{}, error)
+	WriteResource(interaction.Form, interface{}) (interface{}, error)
+	InvokeResource(interaction.Form, interface{}) (interface{}, error)
+	SubscribeResource(interaction.Form, *Subscription, Listener) error
+	Stop()
+}
+
 func (c *Consumer) Consume(td *thing.Thing) *ConsumedThing {
 	consumedThing := &ConsumedThing{
-		td:    td,
-		_ctx:  c._ctx,
-		_wait: c._wait,
+		consumer: c,
+		td:       td,
 	}
 	c.things = append(c.things, consumedThing)
 	return consumedThing
+}
+
+func (c *Consumer) GetClientFor(form interaction.Form) ProtocolClient {
+	u, err := url.Parse(form.Href)
+	if err != nil {
+		log.Error().Str("href", form.Href).Err(err).Msg("[consumer:getClientFor] href not readable")
+		return nil
+	}
+	if client, found := c.clients[u.Scheme]; found {
+		log.Trace().Str("scheme", u.Scheme).Msg("[consumer:getClientFor] got client for scheme")
+		return client
+	}
+	log.Error().Str("scheme", u.Scheme).Msg("[consumer:getClientFor] missing client for scheme")
+	return nil
+}
+
+func (c *Consumer) AddClient(client ProtocolClient) {
+	if c == nil {
+		log.Error().Msg("[consumer:AddClient] nil Consumer")
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	schemes := client.GetSchemes()
+	for _, scheme := range schemes {
+		c.clients[scheme] = client
+	}
+}
+
+func (c *Consumer) Shutdown() {
+	for _, client := range c.clients {
+		client.Stop()
+	}
 }
 
 // // Consumer structure to handle the connection and description information

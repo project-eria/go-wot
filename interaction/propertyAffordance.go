@@ -2,7 +2,6 @@ package interaction
 
 import (
 	"github.com/project-eria/go-wot/dataSchema"
-	"github.com/project-eria/go-wot/form"
 )
 
 // PropertyAffordance: An Interaction Affordance that exposes
@@ -21,7 +20,7 @@ func NewProperty(key string, title string, description string, readOnly bool, wr
 		Key:         key,
 		Title:       title,
 		Description: description,
-		Forms:       []form.Form{},
+		Forms:       []Form{},
 	}
 	data.ReadOnly = readOnly
 	data.WriteOnly = writeOnly

@@ -1,9 +1,10 @@
-package producer
+package protocolHttp
 
 import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/project-eria/go-wot/producer"
 	"github.com/rs/zerolog/log"
 )
 
@@ -12,12 +13,13 @@ import (
 // @param {Object} w The response object
 // @param {Object} r The request object
 // @param {Object} params The url parmeters
-func (t *ExposedThing) HTTPPost(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func HTTPPost(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	t := r.Context().Value("thing").(*producer.ExposedThing)
 	name := params.ByName("name")
 	log.Debug().Str("uri", r.RequestURI).Str("action", name).Msg("[action:POST] Received Thing action POST request")
 
 	if action, ok := t.Td.Actions[name]; ok {
-		property := t.exposedActions[name]
+		property := t.ExposedActions[name]
 		handler := property.GetHandler()
 		if handler != nil {
 			input := r.Context().Value(keyDecodedJSON)

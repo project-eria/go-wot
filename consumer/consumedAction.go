@@ -1,6 +1,7 @@
 package consumer
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/rs/zerolog/log"
@@ -8,14 +9,17 @@ import (
 
 // Makes a request for invoking an Action and return the result
 // https://w3c.github.io/wot-scripting-api/#the-getthingdescription-method
-func (c *ConsumedThing) InvokeAction(name string, params interface{}) (interface{}, error) {
-	if action, ok := c.td.Actions[name]; ok {
+func (t *ConsumedThing) InvokeAction(name string, params interface{}) (interface{}, error) {
+	if action, ok := t.td.Actions[name]; ok {
 		for _, form := range action.Forms {
 			for _, op := range form.Op {
 				if op == "invokeaction" {
-					value, err := postHTTPJSON(form.Href, params)
-					log.Trace().Str("action", name).Str("url", form.Href).Interface("value", value).Msg("[consumer:InvokeAction] Received value")
-					return value, err
+					if client := t.consumer.GetClientFor(form); client != nil {
+						value, err := client.InvokeResource(form, params)
+						log.Trace().Str("action", name).Str("url", form.Href).Interface("value", value).Msg("[consumer:InvokeAction] Received value")
+						return value, err
+					}
+					return nil, errors.New("can't find client")
 				}
 			}
 		}

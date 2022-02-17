@@ -31,7 +31,7 @@ type Thing struct {
 	Actions    map[string]*interaction.Action   `json:"actions,omitempty"`    // (optional) All Action-based Interaction Affordances of the Thing.
 	Events     map[string]*interaction.Event    `json:"events,omitempty"`     // (optional) All Event-based Interaction Affordances of the Thing.
 	// links	Provides Web links to arbitrary resources that relate to the specified Thing Description.	optional	Array of Link
-	// forms	Set of form hypermedia controls that describe how an operation can be performed. Forms are serializations of Protocol Bindings. In this version of TD, all operations that can be described at the Thing level are concerning how to interact with the Thing's Properties collectively at once.	optional	Array of Form
+	Forms               []interaction.Form                       `json:"forms,omitempty"`     // (optional) Set of form hypermedia controls that describe how an operation can be performed. Forms are serializations of Protocol Bindings. In this version of TD, all operations that can be described at the Thing level are concerning how to interact with the Thing's Properties collectively at once.
 	Security            []string                                 `json:"security"`            // (mandatory) Set of security definition names, chosen from those defined in securityDefinitions. These must all be satisfied for access to resources.
 	SecurityDefinitions map[string]securityScheme.SecurityScheme `json:"securityDefinitions"` // (mandatory) Set of named security configurations (definitions only). Not actually applied unless names are used in a security name-value pair.
 	// profile	Indicates the WoT Profile mechanisms followed by this Thing Description and the corresponding Thing implementation.

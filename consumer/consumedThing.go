@@ -9,17 +9,18 @@ import (
 
 // https://w3c.github.io/wot-scripting-api/#the-consumedthing-interface
 type ConsumedThing struct {
-	td    *thing.Thing
-	_ctx  context.Context
-	_wait *sync.WaitGroup
+	consumer *Consumer
+	td       *thing.Thing
+	_ctx     context.Context
+	_wait    *sync.WaitGroup
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-getthingdescription-method
-func (c *ConsumedThing) GetThingDescription() *thing.Thing {
-	return c.td
+func (t *ConsumedThing) GetThingDescription() *thing.Thing {
+	return t.td
 }
 
-type subscription struct {
+type Subscription struct {
 	Type string
 	Name string
 	//	Interaction *interaction.Interaction

@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/project-eria/go-wot/dataSchema"
-	"github.com/project-eria/go-wot/form"
 	"github.com/project-eria/go-wot/interaction"
 	"github.com/project-eria/go-wot/securityScheme"
 	"github.com/project-eria/go-wot/thing"
@@ -36,7 +35,7 @@ func Test_GetThingDescription(t *testing.T) {
 					// Titles: (map[string]string) <nil>,
 					Description: "Readable only/Not Observable boolean",
 					// Descriptions: (map[string]string) <nil>,
-					Forms: []form.Form{
+					Forms: []interaction.Form{
 						{
 							Href:        "http://127.0.0.1:8888/boolR",
 							ContentType: "application/json",
@@ -67,7 +66,7 @@ func Test_GetThingDescription(t *testing.T) {
 					// Titles: (map[string]string) <nil>,
 					Description: "Writable only/Not Observable boolean",
 					// Descriptions: (map[string]string) <nil>,
-					Forms: []form.Form{
+					Forms: []interaction.Form{
 						{
 							Href:        "http://127.0.0.1:8888/boolW",
 							ContentType: "application/json",
@@ -98,7 +97,7 @@ func Test_GetThingDescription(t *testing.T) {
 					// Titles: (map[string]string) <nil>,
 					Description: "Readable/Writable/Not Observable boolean",
 					// Descriptions: (map[string]string) <nil>,
-					Forms: []form.Form{
+					Forms: []interaction.Form{
 						{
 							Href:        "http://127.0.0.1:8888/boolRW",
 							ContentType: "application/json",
@@ -132,7 +131,7 @@ func Test_GetThingDescription(t *testing.T) {
 					//    Titles: (map[string]string) <nil>,
 					Description: (""),
 					//    Descriptions: (map[string]string) <nil>,
-					Forms: []form.Form{
+					Forms: []interaction.Form{
 						{
 							Href:        "http://127.0.0.1:8888/a",
 							ContentType: "application/json",
@@ -165,7 +164,7 @@ func Test_GetThingDescription(t *testing.T) {
 					//    Titles: (map[string]string) <nil>,
 					Description: (""),
 					//    Descriptions: (map[string]string) <nil>,
-					Forms: []form.Form{
+					Forms: []interaction.Form{
 						{
 							Href:        "http://127.0.0.1:8888/b",
 							ContentType: "application/json",
@@ -210,7 +209,7 @@ func Test_GetThingDescription(t *testing.T) {
 					//    Titles: (map[string]string) <nil>,
 					Description: (""),
 					//    Descriptions: (map[string]string) <nil>,
-					Forms: []form.Form{
+					Forms: []interaction.Form{
 						{
 							Href:        "http://127.0.0.1:8888/c",
 							ContentType: "application/json",
