@@ -8,11 +8,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type PropertyChange struct {
-	Name  string
-	Value interface{}
-}
-
 // https://w3c.github.io/wot-scripting-api/#the-exposedthing-interface
 type ExposedThing struct {
 	Td                 *thing.Thing
@@ -20,6 +15,7 @@ type ExposedThing struct {
 	ExposedActions     map[string]*ExposedAction
 	ExposedEvents      map[string]*ExposedEvent
 	PropertyChangeChan chan PropertyChange
+	EventChan          chan Event
 	_wait              *sync.WaitGroup
 }
 
@@ -30,6 +26,7 @@ func NewExposedThing(td *thing.Thing, wait *sync.WaitGroup) *ExposedThing {
 		ExposedActions:     map[string]*ExposedAction{},
 		ExposedEvents:      map[string]*ExposedEvent{},
 		PropertyChangeChan: make(chan PropertyChange),
+		EventChan:          make(chan Event),
 		_wait:              wait,
 	}
 
@@ -38,6 +35,9 @@ func NewExposedThing(td *thing.Thing, wait *sync.WaitGroup) *ExposedThing {
 	}
 	for key, action := range td.Actions {
 		t.ExposedActions[key] = NewExposedAction(action)
+	}
+	for key, event := range td.Events {
+		t.ExposedEvents[key] = NewExposedEvent(event)
 	}
 	return t
 }
@@ -154,21 +154,53 @@ func (t *ExposedThing) SetActionHandler(name string, handler ActionHandler) erro
  * Events
  */
 // https://w3c.github.io/wot-scripting-api/#the-seteventsubscribehandler-method
-func (t *ExposedThing) SetEventSubscribeHandler() {
-	// TODO
+func (t *ExposedThing) SetEventSubscribeHandler(name string, handler EventSubscriptionHandler) error {
+	if _, ok := t.Td.Events[name]; ok {
+		t.ExposedEvents[name].SetSubscribeHandler(handler)
+		return nil
+	}
+	log.Debug().Str("event", name).Msg("[ExposedThing:SetEventSubscribeHandler] event not found")
+	return fmt.Errorf("event %s not found", name)
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-seteventunsubscribehandler-method
-func (t *ExposedThing) SetEventUnsubscribeHandler() {
-	// TODO
+func (t *ExposedThing) SetEventUnsubscribeHandler(name string) error {
+	if _, ok := t.Td.Events[name]; ok {
+		t.ExposedEvents[name].SetUnSubscribeHandler()
+		return nil
+	}
+	log.Debug().Str("event", name).Msg("[ExposedThing:SetEventUnsubscribeHandler] event not found")
+	return fmt.Errorf("event %s not found", name)
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-seteventhandler-method
-func (t *ExposedThing) SetEventHandler() {
-	// TODO
+func (t *ExposedThing) SetEventHandler(name string, handler EventListenerHandler) error {
+	if _, ok := t.Td.Events[name]; ok {
+		t.ExposedEvents[name].SetEventHandler(handler)
+		return nil
+	}
+	log.Debug().Str("event", name).Msg("[ExposedThing:SetEventHandler] event not found")
+	return fmt.Errorf("event %s not found", name)
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-emitevent-method
-func (t *ExposedThing) EmitEvent() {
-	// TODO
+func (t *ExposedThing) EmitEvent(name string) error {
+	if _, ok := t.Td.Events[name]; ok {
+		if handler := t.ExposedEvents[name].GetEventHandler(); handler != nil {
+			var value interface{}
+			var err error
+			if value, err = handler(); err != nil {
+				log.Debug().Str("event", name).Err(err).Msg("[ExposedThing:EmitEvent] handler error for event")
+				return err
+			}
+			t.EventChan <- Event{name, value}
+			return nil
+		} else {
+			// No handler
+			log.Debug().Str("event", name).Msg("[ExposedThing:EmitEvent] no handler available for event")
+			return fmt.Errorf("no handler available for event %s", name)
+		}
+	}
+	log.Debug().Str("event", name).Msg("[ExposedThing:EmitEvent] event not found")
+	return fmt.Errorf("event %s not found", name)
 }

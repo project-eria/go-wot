@@ -16,6 +16,7 @@ import (
 
 var (
 	propertiesObservers = map[string]map[string]*wsConnection{} // TODO handle multiple things
+	eventSubscriptions  = map[string]map[string]*wsConnection{} // TODO handle multiple things
 	mu                  sync.RWMutex
 )
 
@@ -37,6 +38,7 @@ func (s *WsServer) Expose(thing *producer.ExposedThing) {
 	// }
 	s.addEndPoints(url, thing)
 	go monitorPropertyObserver(thing.PropertyChangeChan)
+	go monitorEvent(thing.EventChan)
 }
 
 func (s *WsServer) addEndPoints(base string, t *producer.ExposedThing) {
@@ -69,6 +71,8 @@ func (s *WsServer) addEndPoints(base string, t *producer.ExposedThing) {
 			Op:          []string{"subscribeevent"},
 		}
 		event.Forms = append(event.Forms, form)
+		eventSubscriptions[event.Key] = map[string]*wsConnection{}
+
 	}
 }
 
@@ -161,11 +165,30 @@ func monitorPropertyObserver(c chan producer.PropertyChange) {
 			break
 		}
 		if observers, ok := propertiesObservers[propertyChange.Name]; ok {
-			log.Debug().Str("property", propertyChange.Name).Msg("[protocolWebSocket:processTxMsg] Sending property change")
+			log.Debug().Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver] Sending property change")
 			for _, wsConn := range observers {
 				err := wsConn.jsonWSRenderer(propertyChange.Value)
 				if err != nil {
-					log.Error().Err(err).Msg("[protocolWebSocket:processTxMsg]")
+					log.Error().Err(err).Msg("[protocolWebSocket:monitorPropertyObserver]")
+				}
+			}
+		}
+	}
+}
+
+func monitorEvent(c chan producer.Event) {
+	for {
+		event, ok := <-c
+		if !ok {
+			log.Debug().Msg("[protocolWebSocket:monitorEvent] channel closed")
+			break
+		}
+		if subscribers, ok := eventSubscriptions[event.Name]; ok {
+			log.Debug().Str("event", event.Name).Msg("[protocolWebSocket:monitorEvent] Sending event")
+			for _, wsConn := range subscribers {
+				err := wsConn.jsonWSRenderer(event.Value)
+				if err != nil {
+					log.Error().Err(err).Msg("[protocolWebSocket:monitorEvent]")
 				}
 			}
 		}

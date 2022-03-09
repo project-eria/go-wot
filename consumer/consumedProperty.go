@@ -94,6 +94,6 @@ func (t *ConsumedThing) ObserveProperty(name string, listener Listener) error {
 		log.Error().Str("property", name).Msg("[consumer:ObserveProperty] property not observable")
 		return fmt.Errorf("property %s not observable", name)
 	}
-	log.Error().Str("property", name).Msg("[consumer:ObserveProperty] write property not found")
+	log.Error().Str("property", name).Msg("[consumer:ObserveProperty] property not found")
 	return fmt.Errorf("property %s not found", name)
 }

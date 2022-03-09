@@ -19,6 +19,11 @@ type ExposedProperty struct {
 	*interaction.Property
 }
 
+type PropertyChange struct {
+	Name  string
+	Value interface{}
+}
+
 func NewExposedProperty(interaction *interaction.Property) *ExposedProperty {
 	return &ExposedProperty{
 		value:                  interaction.Default,

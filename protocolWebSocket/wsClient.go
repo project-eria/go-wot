@@ -63,7 +63,7 @@ func (c *WsClient) InvokeResource(form interaction.Form, value interface{}) (int
 func (c *WsClient) SubscribeResource(form interaction.Form, sub *consumer.Subscription, listener consumer.Listener) error {
 	c.wait.Add(1)
 	go func() {
-		c.connectWebSocket(form.Href, sub, listener) // TODO , c._ctx)
+		c.connectWebSocket(form.Href, sub, listener)
 		c.wait.Done()
 	}()
 	return nil
@@ -78,7 +78,7 @@ func (c *WsClient) Stop() {
 }
 
 // connectWebSocket Connect the thing using the WebSocket access
-func (c *WsClient) connectWebSocket(wsURL string, sub *consumer.Subscription, listener consumer.Listener) { // TODO, ctx context.Context) {
+func (c *WsClient) connectWebSocket(wsURL string, sub *consumer.Subscription, listener consumer.Listener) {
 	wsc := &wsConn{
 		wsURL:    wsURL,
 		connWait: newConnWait(),

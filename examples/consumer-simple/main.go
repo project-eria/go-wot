@@ -105,6 +105,10 @@ func main() {
 		fmt.Println(value)
 	})
 
+	consumedThing.SubscribeEvent("d", func(value interface{}, err error) {
+		fmt.Println("d")
+	})
+
 	c := make(chan os.Signal, 1)
 	signal.Notify(c,
 		syscall.SIGINT,

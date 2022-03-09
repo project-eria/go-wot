@@ -3,9 +3,7 @@ package main
 import (
 	"errors"
 	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/project-eria/go-wot/protocolWebSocket"
@@ -119,9 +117,9 @@ func main() {
 
 	// Events
 
-	// stringEvent := dataSchema.NewString("")
-	// dEvent := interaction.NewEvent("d", "d Event", "", &stringEvent)
-	// mything.AddEvent(dEvent)
+	stringEvent := dataSchema.NewString("")
+	dEvent := interaction.NewEvent("d", "d Event", "", &stringEvent)
+	mything.AddEvent(dEvent)
 
 	// Run Server
 	var wait sync.WaitGroup
@@ -130,7 +128,7 @@ func main() {
 	exposedThing.SetActionHandler("a", handlerA)
 	exposedThing.SetActionHandler("b", handlerB)
 	exposedThing.SetActionHandler("c", handlerC)
-
+	exposedThing.SetEventHandler("d", handlerD)
 	httpServer := protocolHttp.NewServer("127.0.0.1", 8888)
 	myProducer.AddServer(httpServer)
 	wsServer := protocolWebSocket.NewServer(httpServer)
@@ -139,16 +137,17 @@ func main() {
 
 	for {
 		time.Sleep(10 * time.Second)
-		exposedThing.EmitPropertyChange("boolRWO")
+		// exposedThing.EmitPropertyChange("boolRWO")
+		exposedThing.EmitEvent("d")
 	}
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT)
-	// Block until keyboard interrupt is received.
-	<-c
+	// c := make(chan os.Signal, 1)
+	// signal.Notify(c,
+	// 	syscall.SIGINT,
+	// 	syscall.SIGTERM,
+	// 	syscall.SIGQUIT)
+	// // Block until keyboard interrupt is received.
+	// <-c
 
 	// myProducer.Stop()
 	// wait.Wait()
@@ -171,4 +170,8 @@ func handlerC(value interface{}) (interface{}, error) {
 	}
 	println("c action: " + v)
 	return "ok", nil
+}
+
+func handlerD() (interface{}, error) {
+	return nil, nil
 }
