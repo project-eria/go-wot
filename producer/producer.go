@@ -10,7 +10,7 @@ import (
 // Producer is an protocols server (http, ws, ...) made for webthings model
 type Producer struct {
 	servers []ProtocolServer
-	things  []*ExposedThing
+	things  map[string]*ExposedThing
 	//	wsHandlers []*thingWSHandler
 	_wait *sync.WaitGroup
 	mu    sync.RWMutex
@@ -19,7 +19,7 @@ type Producer struct {
 // New constructs the server
 func New(wait *sync.WaitGroup) *Producer {
 	producer := &Producer{
-		things:  []*ExposedThing{},
+		things:  map[string]*ExposedThing{},
 		servers: []ProtocolServer{},
 		_wait:   wait,
 	}
@@ -28,7 +28,7 @@ func New(wait *sync.WaitGroup) *Producer {
 }
 
 type ProtocolServer interface {
-	Expose(*ExposedThing)
+	Expose(string, *ExposedThing)
 	Start()
 	Stop()
 }
@@ -44,7 +44,7 @@ func (p *Producer) AddServer(server ProtocolServer) {
 }
 
 // New constructs the http server, and register the router
-func (p *Producer) Produce(td *thing.Thing) *ExposedThing {
+func (p *Producer) Produce(ref string, td *thing.Thing) *ExposedThing {
 	if p == nil {
 		log.Error().Msg("[producer:Produce] nil Producer")
 		return nil
@@ -54,7 +54,11 @@ func (p *Producer) Produce(td *thing.Thing) *ExposedThing {
 	// addFormHttp(exposedThing, host, p.secure)
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.things = append(p.things, exposedThing)
+	if _, exists := p.things[ref]; exists {
+		log.Error().Msg("[producer:Produce] thing ref already exists")
+		return nil
+	}
+	p.things[ref] = exposedThing
 	return exposedThing
 }
 
@@ -71,8 +75,8 @@ func (p *Producer) Expose() {
 		return
 	}
 	for _, s := range p.servers {
-		for _, t := range p.things {
-			s.Expose(t)
+		for ref, t := range p.things {
+			s.Expose(ref, t)
 		}
 		s.Start()
 	}

@@ -31,8 +31,12 @@ func NewServer(httpServer *protocolHttp.HttpServer) *WsServer {
 	}
 }
 
-func (s *WsServer) Expose(thing *producer.ExposedThing) {
-	url := fmt.Sprintf("ws://%s:%d", s.httpServer.Host, s.httpServer.Port)
+func (s *WsServer) Expose(ref string, thing *producer.ExposedThing) {
+	prefix := ""
+	if ref != "" {
+		prefix = "/" + ref
+	}
+	url := fmt.Sprintf("ws://%s:%d%s", s.httpServer.Host, s.httpServer.Port, prefix)
 	// if secure {
 	// 	url = "wss://" + host
 	// }

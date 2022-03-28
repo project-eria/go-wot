@@ -62,12 +62,16 @@ func NewServer(host string, port uint) *HttpServer {
 	return h
 }
 
-func (s *HttpServer) Expose(thing *producer.ExposedThing) {
-	s.router.GET("/", buildChain(thing, HTTPGetThing, s.thingChain...))
-	s.router.GET("/:name", buildChain(thing, HTTPGet, s.getChain...))
-	s.router.PUT("/:name", buildChain(thing, HTTPPut, s.putChain...))
-	s.router.POST("/:name", buildChain(thing, HTTPPost, s.postChain...))
-	url := fmt.Sprintf("http://%s:%d", s.Host, s.Port)
+func (s *HttpServer) Expose(ref string, thing *producer.ExposedThing) {
+	prefix := ""
+	if ref != "" {
+		prefix = "/" + ref
+	}
+	s.router.GET("/"+ref, buildChain(thing, HTTPGetThing, s.thingChain...))
+	s.router.GET(prefix+"/:name", buildChain(thing, HTTPGet, s.getChain...))
+	s.router.PUT(prefix+"/:name", buildChain(thing, HTTPPut, s.putChain...))
+	s.router.POST(prefix+"/:name", buildChain(thing, HTTPPost, s.postChain...))
+	url := fmt.Sprintf("http://%s:%d%s", s.Host, s.Port, prefix)
 	// if secure {
 	// 	url = "https://" + host
 	// }
