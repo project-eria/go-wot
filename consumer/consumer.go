@@ -27,10 +27,10 @@ func New() *Consumer {
 
 type ProtocolClient interface {
 	GetSchemes() []string
-	ReadResource(interaction.Form) (interface{}, error)
-	WriteResource(interaction.Form, interface{}) (interface{}, error)
-	InvokeResource(interaction.Form, interface{}) (interface{}, error)
-	SubscribeResource(interaction.Form, *Subscription, Listener) error
+	ReadResource(*interaction.Form) (interface{}, error)
+	WriteResource(*interaction.Form, interface{}) (interface{}, error)
+	InvokeResource(*interaction.Form, interface{}) (interface{}, error)
+	SubscribeResource(*interaction.Form, *Subscription, Listener) error
 	Stop()
 }
 
@@ -43,7 +43,7 @@ func (c *Consumer) Consume(td *thing.Thing) *ConsumedThing {
 	return consumedThing
 }
 
-func (c *Consumer) GetClientFor(form interaction.Form) ProtocolClient {
+func (c *Consumer) GetClientFor(form *interaction.Form) ProtocolClient {
 	u, err := url.Parse(form.Href)
 	if err != nil {
 		log.Error().Str("href", form.Href).Err(err).Msg("[consumer:getClientFor] href not readable")

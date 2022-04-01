@@ -16,6 +16,16 @@ func HTTPGetThing(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	log.Debug().Str("uri", r.RequestURI).Msg("[thingHandler:GET] Received Thing GET request")
 	t := r.Context().Value("thing").(*producer.ExposedThing)
 	td := t.GetThingDescription()
+
+	// Dynamically build href
+	for _, property := range td.Properties {
+		for _, form := range property.Forms {
+			if form.UrlBuilder != nil {
+				form.Href = form.UrlBuilder(r.Host, (r.TLS != nil))
+			}
+		}
+	}
+
 	content, err := json.Marshal(td)
 	if err != nil {
 		log.Error().Err(err).Msg("[producer:GetThingDescription]")

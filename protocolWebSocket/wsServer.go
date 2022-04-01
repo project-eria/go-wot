@@ -32,35 +32,34 @@ func NewServer(httpServer *protocolHttp.HttpServer) *WsServer {
 }
 
 func (s *WsServer) Expose(ref string, thing *producer.ExposedThing) {
-	prefix := ""
-	if ref != "" {
-		prefix = "/" + ref
-	}
-	url := fmt.Sprintf("ws://%s:%d%s", s.httpServer.Host, s.httpServer.Port, prefix)
-	// if secure {
-	// 	url = "wss://" + host
-	// }
-	s.addEndPoints(url, thing)
+	addEndPoints(s.httpServer.Host, s.httpServer.Port, ref, thing)
 	go monitorPropertyObserver(thing.PropertyChangeChan)
 	go monitorEvent(thing.EventChan)
 }
 
-func (s *WsServer) addEndPoints(base string, t *producer.ExposedThing) {
+func addEndPoints(sHost string, sPort uint, prefix string, t *producer.ExposedThing) {
 	if t == nil {
 		log.Error().Msg("[protocolWebSocket:GracefullyShutdown] nil thing")
 		return
 	}
-	var (
-		href = base + "/"
-	)
 
 	for _, property := range t.Td.Properties {
 		if property.Observable {
-			form := interaction.Form{
-				Href:        href + property.Key,
+			form := &interaction.Form{
 				ContentType: "application/json",
 				Supplement:  map[string]interface{}{},
 				Op:          []string{"observeproperty", "unobserveproperty"},
+				UrlBuilder: func(host string, secure bool) string {
+					protocol := "ws"
+					if secure {
+						protocol = "wss"
+					}
+					if sHost != "" { // force host
+						return fmt.Sprintf("%s://%s:%d/%s/%s", protocol, sHost, sPort, prefix, property.Key)
+					} else {
+						return fmt.Sprintf("%s://%s/%s/%s", protocol, host, prefix, property.Key)
+					}
+				},
 			}
 			property.Forms = append(property.Forms, form)
 			propertiesObservers[property.Key] = map[string]*wsConnection{}
@@ -68,11 +67,21 @@ func (s *WsServer) addEndPoints(base string, t *producer.ExposedThing) {
 	}
 
 	for _, event := range t.Td.Events {
-		form := interaction.Form{
-			Href:        href + event.Key,
+		form := &interaction.Form{
 			ContentType: "application/json",
 			Supplement:  map[string]interface{}{},
 			Op:          []string{"subscribeevent"},
+			UrlBuilder: func(host string, secure bool) string {
+				protocol := "ws"
+				if secure {
+					protocol = "wss"
+				}
+				if sHost != "" { // force host
+					return fmt.Sprintf("%s://%s:%d/%s/%s", protocol, sHost, sPort, prefix, event.Key)
+				} else {
+					return fmt.Sprintf("%s://%s/%s/%s", protocol, host, prefix, event.Key)
+				}
+			},
 		}
 		event.Forms = append(event.Forms, form)
 		eventSubscriptions[event.Key] = map[string]*wsConnection{}

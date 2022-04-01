@@ -51,7 +51,6 @@ func (p *Producer) Produce(ref string, td *thing.Thing) *ExposedThing {
 	}
 	exposedThing := NewExposedThing(td, p._wait)
 
-	// addFormHttp(exposedThing, host, p.secure)
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if _, exists := p.things[ref]; exists {

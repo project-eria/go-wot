@@ -20,7 +20,7 @@ func NewEvent(key string, title string, description string, data *dataSchema.Dat
 		Key:         key,
 		Title:       title,
 		Description: description,
-		Forms:       []Form{},
+		Forms:       []*Form{},
 	}
 
 	return &Event{

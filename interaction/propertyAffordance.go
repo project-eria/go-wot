@@ -20,7 +20,7 @@ func NewProperty(key string, title string, description string, readOnly bool, wr
 		Key:         key,
 		Title:       title,
 		Description: description,
-		Forms:       []Form{},
+		Forms:       []*Form{},
 	}
 	data.ReadOnly = readOnly
 	data.WriteOnly = writeOnly

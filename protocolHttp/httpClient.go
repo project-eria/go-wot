@@ -34,7 +34,7 @@ func (c *HttpClient) GetSchemes() []string {
 }
 
 // ReadResource get a JSON data from HTTP GET request
-func (c *HttpClient) ReadResource(form interaction.Form) (interface{}, error) {
+func (c *HttpClient) ReadResource(form *interaction.Form) (interface{}, error) {
 	data, err := c.sendJSON(form.Href, http.MethodGet, nil)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (c *HttpClient) ReadResource(form interaction.Form) (interface{}, error) {
 }
 
 // WriteResource send JSON data using HTTP PUT request
-func (c *HttpClient) WriteResource(form interaction.Form, value interface{}) (interface{}, error) {
+func (c *HttpClient) WriteResource(form *interaction.Form, value interface{}) (interface{}, error) {
 	data, err := c.sendJSON(form.Href, http.MethodPut, value)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (c *HttpClient) WriteResource(form interaction.Form, value interface{}) (in
 }
 
 // InvokeResource send JSON data using HTTP POST request
-func (c *HttpClient) InvokeResource(form interaction.Form, value interface{}) (interface{}, error) {
+func (c *HttpClient) InvokeResource(form *interaction.Form, value interface{}) (interface{}, error) {
 	data, err := c.sendJSON(form.Href, http.MethodPost, value)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (c *HttpClient) InvokeResource(form interaction.Form, value interface{}) (i
 	return data, nil
 }
 
-func (c *HttpClient) SubscribeResource(form interaction.Form, sub *consumer.Subscription, listener consumer.Listener) error {
+func (c *HttpClient) SubscribeResource(form *interaction.Form, sub *consumer.Subscription, listener consumer.Listener) error {
 	return errors.New("not implemented")
 }
 

@@ -17,6 +17,8 @@ type Form struct {
 	Op          []string `json:"op,omitempty"`          // (optional) Indicates the semantic intention of performing the operation(s) described by the form. For example, the Property interaction allows get and set operations. The protocol binding may contain a form for the get operation and a different form for the set operation. The op attribute indicates which form is for which and allows the client to select the correct form for the operation required. op can be assigned one or more interaction verb(s) each representing a semantic intention of an operation. Array of string (one of readproperty, writeproperty, observeproperty, unobserveproperty, invokeaction, subscribeevent, unsubscribeevent, readallproperties, writeallproperties, readmultipleproperties, writemultipleproperties, observeallproperties, or unobserveallproperties)
 
 	Supplement map[string]interface{} `json:"-"`
+
+	UrlBuilder func(string, bool) string `json:"-"` // host, secure
 }
 
 // Ref: http://choly.ca/post/go-json-marshalling/

@@ -46,21 +46,21 @@ func (c *WsClient) GetSchemes() []string {
 }
 
 // ReadResource get a JSON data from HTTP GET request
-func (c *WsClient) ReadResource(form interaction.Form) (interface{}, error) {
+func (c *WsClient) ReadResource(form *interaction.Form) (interface{}, error) {
 	return nil, errors.New("not implemented")
 }
 
 // WriteResource send JSON data using HTTP PUT request
-func (c *WsClient) WriteResource(form interaction.Form, value interface{}) (interface{}, error) {
+func (c *WsClient) WriteResource(form *interaction.Form, value interface{}) (interface{}, error) {
 	return nil, errors.New("not implemented")
 }
 
 // InvokeResource send JSON data using HTTP POST request
-func (c *WsClient) InvokeResource(form interaction.Form, value interface{}) (interface{}, error) {
+func (c *WsClient) InvokeResource(form *interaction.Form, value interface{}) (interface{}, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (c *WsClient) SubscribeResource(form interaction.Form, sub *consumer.Subscription, listener consumer.Listener) error {
+func (c *WsClient) SubscribeResource(form *interaction.Form, sub *consumer.Subscription, listener consumer.Listener) error {
 	c.wait.Add(1)
 	go func() {
 		c.connectWebSocket(form.Href, sub, listener)

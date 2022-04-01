@@ -30,7 +30,7 @@ const (
 )
 
 func NewServer(host string, port uint) *HttpServer {
-	address := fmt.Sprintf(":%d", port)
+	address := fmt.Sprintf("%s:%d", host, port)
 
 	router := httprouter.New()
 	h := &HttpServer{
@@ -71,11 +71,7 @@ func (s *HttpServer) Expose(ref string, thing *producer.ExposedThing) {
 	s.router.GET(prefix+"/:name", buildChain(thing, HTTPGet, s.getChain...))
 	s.router.PUT(prefix+"/:name", buildChain(thing, HTTPPut, s.putChain...))
 	s.router.POST(prefix+"/:name", buildChain(thing, HTTPPost, s.postChain...))
-	url := fmt.Sprintf("http://%s:%d%s", s.Host, s.Port, prefix)
-	// if secure {
-	// 	url = "https://" + host
-	// }
-	addEndPoints(url, thing)
+	addEndPoints(s.Host, s.Port, ref, thing)
 }
 
 // Produce constructs and launch an http server
@@ -138,25 +134,34 @@ func (s *HttpServer) Stop() {
 	// }
 }
 
-func addEndPoints(base string, t *producer.ExposedThing) {
+func addEndPoints(sHost string, sPort uint, prefix string, t *producer.ExposedThing) {
 	if t == nil {
 		log.Error().Msg("[protocolHttp:GracefullyShutdown] nil thing")
 		return
 	}
-	var (
-		// allReadOnly   = true
-		// allWriteOnly  = true
-		// anyProperties = false
-		href = base + "/"
-	)
+	// var (
+	// allReadOnly   = true
+	// allWriteOnly  = true
+	// anyProperties = false
+	// )
 
 	for _, property := range t.Td.Properties {
 		// anyProperties = true
 
-		form := interaction.Form{
-			Href:        href + property.Key,
+		form := &interaction.Form{
 			ContentType: "application/json",
 			Supplement:  map[string]interface{}{},
+			UrlBuilder: func(host string, secure bool) string {
+				protocol := "http"
+				if secure {
+					protocol = "https"
+				}
+				if sHost != "" { // force host
+					return fmt.Sprintf("%s://%s:%d/%s/%s", protocol, sHost, sPort, prefix, property.Key)
+				} else {
+					return fmt.Sprintf("%s://%s/%s/%s", protocol, host, prefix, property.Key)
+				}
+			},
 		}
 
 		if !property.ReadOnly {
@@ -211,12 +216,22 @@ func addEndPoints(base string, t *producer.ExposedThing) {
 	// }
 
 	for _, action := range t.Td.Actions {
-		form := interaction.Form{
-			Href:        href + action.Key,
+		form := &interaction.Form{
 			ContentType: "application/json",
 			Op:          []string{"invokeaction"},
 			Supplement: map[string]interface{}{
 				"htv:methodName": "POST",
+			},
+			UrlBuilder: func(host string, secure bool) string {
+				protocol := "http"
+				if secure {
+					protocol = "https"
+				}
+				if sHost != "" { // force host
+					return fmt.Sprintf("%s://%s:%d/%s/%s", protocol, sHost, sPort, prefix, action.Key)
+				} else {
+					return fmt.Sprintf("%s://%s/%s/%s", protocol, host, prefix, action.Key)
+				}
 			},
 		}
 		action.Forms = append(action.Forms, form)

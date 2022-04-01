@@ -23,7 +23,7 @@ func NewAction(key string, title string, description string, input *dataSchema.D
 		Key:         key,
 		Title:       title,
 		Description: description,
-		Forms:       []Form{},
+		Forms:       []*Form{},
 	}
 	return &Action{
 		Interaction: interaction,
