@@ -37,12 +37,15 @@ func (s *WsServer) Expose(ref string, thing *producer.ExposedThing) {
 	go monitorEvent(thing.EventChan)
 }
 
-func addEndPoints(sHost string, sPort uint, prefix string, t *producer.ExposedThing) {
+func addEndPoints(sHost string, sPort uint, ref string, t *producer.ExposedThing) {
 	if t == nil {
 		log.Error().Msg("[protocolWebSocket:GracefullyShutdown] nil thing")
 		return
 	}
-
+	prefix := ""
+	if ref != "" {
+		prefix = "/" + ref
+	}
 	for _, property := range t.Td.Properties {
 		if property.Observable {
 			form := &interaction.Form{
@@ -55,9 +58,9 @@ func addEndPoints(sHost string, sPort uint, prefix string, t *producer.ExposedTh
 						protocol = "wss"
 					}
 					if sHost != "" { // force host
-						return fmt.Sprintf("%s://%s:%d/%s/%s", protocol, sHost, sPort, prefix, property.Key)
+						return fmt.Sprintf("%s://%s:%d%s/%s", protocol, sHost, sPort, prefix, property.Key)
 					} else {
-						return fmt.Sprintf("%s://%s/%s/%s", protocol, host, prefix, property.Key)
+						return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, property.Key)
 					}
 				},
 			}
@@ -77,9 +80,9 @@ func addEndPoints(sHost string, sPort uint, prefix string, t *producer.ExposedTh
 					protocol = "wss"
 				}
 				if sHost != "" { // force host
-					return fmt.Sprintf("%s://%s:%d/%s/%s", protocol, sHost, sPort, prefix, event.Key)
+					return fmt.Sprintf("%s://%s:%d%s/%s", protocol, sHost, sPort, prefix, event.Key)
 				} else {
-					return fmt.Sprintf("%s://%s/%s/%s", protocol, host, prefix, event.Key)
+					return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, event.Key)
 				}
 			},
 		}

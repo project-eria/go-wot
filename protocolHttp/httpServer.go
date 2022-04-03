@@ -134,10 +134,14 @@ func (s *HttpServer) Stop() {
 	// }
 }
 
-func addEndPoints(sHost string, sPort uint, prefix string, t *producer.ExposedThing) {
+func addEndPoints(sHost string, sPort uint, ref string, t *producer.ExposedThing) {
 	if t == nil {
 		log.Error().Msg("[protocolHttp:GracefullyShutdown] nil thing")
 		return
+	}
+	prefix := ""
+	if ref != "" {
+		prefix = "/" + ref
 	}
 	// var (
 	// allReadOnly   = true
@@ -157,9 +161,9 @@ func addEndPoints(sHost string, sPort uint, prefix string, t *producer.ExposedTh
 					protocol = "https"
 				}
 				if sHost != "" { // force host
-					return fmt.Sprintf("%s://%s:%d/%s/%s", protocol, sHost, sPort, prefix, property.Key)
+					return fmt.Sprintf("%s://%s:%d%s/%s", protocol, sHost, sPort, prefix, property.Key)
 				} else {
-					return fmt.Sprintf("%s://%s/%s/%s", protocol, host, prefix, property.Key)
+					return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, property.Key)
 				}
 			},
 		}
