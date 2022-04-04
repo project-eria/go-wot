@@ -13,13 +13,13 @@ import (
 )
 
 type HttpServer struct {
-	router     *httprouter.Router
-	Host       string
-	Port       uint
-	thingChain []Middleware
-	getChain   []Middleware
-	putChain   []Middleware
-	postChain  []Middleware
+	router      *httprouter.Router
+	addr        string
+	ExposedAddr string
+	thingChain  []Middleware
+	getChain    []Middleware
+	putChain    []Middleware
+	postChain   []Middleware
 	*http.Server
 }
 
@@ -29,14 +29,12 @@ const (
 	keyDecodedJSON key = iota
 )
 
-func NewServer(host string, port uint) *HttpServer {
-	address := fmt.Sprintf("%s:%d", host, port)
-
+func NewServer(addr string, exposedAddr string) *HttpServer {
 	router := httprouter.New()
 	h := &HttpServer{
-		router: router,
-		Host:   host,
-		Port:   port,
+		router:      router,
+		addr:        addr,
+		ExposedAddr: exposedAddr,
 		thingChain: []Middleware{
 			injectThing,
 			corsHeader,
@@ -56,7 +54,7 @@ func NewServer(host string, port uint) *HttpServer {
 			decodeJSONResponse,
 		},
 		Server: &http.Server{
-			Addr: address,
+			Addr: addr,
 		},
 	}
 	return h
@@ -71,7 +69,7 @@ func (s *HttpServer) Expose(ref string, thing *producer.ExposedThing) {
 	s.router.GET(prefix+"/:name", buildChain(thing, HTTPGet, s.getChain...))
 	s.router.PUT(prefix+"/:name", buildChain(thing, HTTPPut, s.putChain...))
 	s.router.POST(prefix+"/:name", buildChain(thing, HTTPPost, s.postChain...))
-	addEndPoints(s.Host, s.Port, ref, thing)
+	addEndPoints(s.ExposedAddr, ref, thing)
 }
 
 // Produce constructs and launch an http server
@@ -134,7 +132,7 @@ func (s *HttpServer) Stop() {
 	// }
 }
 
-func addEndPoints(sHost string, sPort uint, ref string, t *producer.ExposedThing) {
+func addEndPoints(exposedAddr string, ref string, t *producer.ExposedThing) {
 	if t == nil {
 		log.Error().Msg("[protocolHttp:GracefullyShutdown] nil thing")
 		return
@@ -160,11 +158,10 @@ func addEndPoints(sHost string, sPort uint, ref string, t *producer.ExposedThing
 				if secure {
 					protocol = "https"
 				}
-				if sHost != "" { // force host
-					return fmt.Sprintf("%s://%s:%d%s/%s", protocol, sHost, sPort, prefix, property.Key)
-				} else {
-					return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, property.Key)
+				if exposedAddr != "" { // force exposed host
+					host = exposedAddr
 				}
+				return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, property.Key)
 			},
 		}
 
@@ -231,11 +228,10 @@ func addEndPoints(sHost string, sPort uint, ref string, t *producer.ExposedThing
 				if secure {
 					protocol = "https"
 				}
-				if sHost != "" { // force host
-					return fmt.Sprintf("%s://%s:%d/%s/%s", protocol, sHost, sPort, prefix, action.Key)
-				} else {
-					return fmt.Sprintf("%s://%s/%s/%s", protocol, host, prefix, action.Key)
+				if exposedAddr != "" { // force exposed host
+					host = exposedAddr
 				}
+				return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, action.Key)
 			},
 		}
 		action.Forms = append(action.Forms, form)

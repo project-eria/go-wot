@@ -32,12 +32,12 @@ func NewServer(httpServer *protocolHttp.HttpServer) *WsServer {
 }
 
 func (s *WsServer) Expose(ref string, thing *producer.ExposedThing) {
-	addEndPoints(s.httpServer.Host, s.httpServer.Port, ref, thing)
+	addEndPoints(s.httpServer.ExposedAddr, ref, thing)
 	go monitorPropertyObserver(thing.PropertyChangeChan)
 	go monitorEvent(thing.EventChan)
 }
 
-func addEndPoints(sHost string, sPort uint, ref string, t *producer.ExposedThing) {
+func addEndPoints(exposedAddr string, ref string, t *producer.ExposedThing) {
 	if t == nil {
 		log.Error().Msg("[protocolWebSocket:GracefullyShutdown] nil thing")
 		return
@@ -57,11 +57,10 @@ func addEndPoints(sHost string, sPort uint, ref string, t *producer.ExposedThing
 					if secure {
 						protocol = "wss"
 					}
-					if sHost != "" { // force host
-						return fmt.Sprintf("%s://%s:%d%s/%s", protocol, sHost, sPort, prefix, property.Key)
-					} else {
-						return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, property.Key)
+					if exposedAddr != "" { // force exposed host
+						host = exposedAddr
 					}
+					return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, property.Key)
 				},
 			}
 			property.Forms = append(property.Forms, form)
@@ -79,11 +78,10 @@ func addEndPoints(sHost string, sPort uint, ref string, t *producer.ExposedThing
 				if secure {
 					protocol = "wss"
 				}
-				if sHost != "" { // force host
-					return fmt.Sprintf("%s://%s:%d%s/%s", protocol, sHost, sPort, prefix, event.Key)
-				} else {
-					return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, event.Key)
+				if exposedAddr != "" { // force exposed host
+					host = exposedAddr
 				}
+				return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, event.Key)
 			},
 		}
 		event.Forms = append(event.Forms, form)
