@@ -20,7 +20,7 @@ type Thing struct {
 	Titles       []string `json:"titles,omitempty"`       // (optional) Provides multi-language human-readable titles (e.g., display a text for UI representation in different languages).
 	Description  string   `json:"description,omitempty"`  // (optional) Provides additional (human-readable) information based on a default language.
 	Descriptions []string `json:"descriptions,omitempty"` // Can be used to support (human-readable) information in different languages. Also see MultiLanguage.
-	// version	Provides version information.	optional	VersionInfo
+	Version      Version  `json:"version,omitempty"`      // Provides version information.	optional	VersionInfo
 	// created	Provides information when the TD instance was created.	optional	dateTime
 	// modified	Provides information when the TD instance was last modified.	optional	dateTime
 	// support	Provides information about the TD maintainer as URI scheme (e.g., mailto [RFC6068], tel [RFC3966], https).	optional	anyURI
@@ -39,8 +39,12 @@ type Thing struct {
 	MU sync.RWMutex `json:"-"`
 }
 
+type Version struct {
+	Instance string `json:"instance,omitempty"`
+}
+
 // New thing construct
-func New(urn string, title string, description string, types []string) (*Thing, error) {
+func New(urn string, version string, title string, description string, types []string) (*Thing, error) {
 	if urn == "" {
 		return nil, errors.New("Thing URN can't be empty")
 	}
@@ -49,6 +53,7 @@ func New(urn string, title string, description string, types []string) (*Thing, 
 		AtContext:           "http://www.w3.org/ns/td",
 		AtTypes:             types,
 		ID:                  "urn:" + urn,
+		Version:             Version{Instance: version},
 		Title:               title,
 		Description:         description,
 		Security:            []string{},
