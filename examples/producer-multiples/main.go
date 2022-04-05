@@ -32,6 +32,7 @@ func main() {
 	// THING 1
 	mything1, err := thing.New(
 		"dev:ops:my-actuator-1234",
+		"v0.0.0",
 		"Actuator1 Example",
 		"An actuator 1st example",
 		[]string{},
@@ -59,6 +60,7 @@ func main() {
 	// THING 2
 	mything2, err := thing.New(
 		"dev:ops:my-actuator-5678",
+		"v0.0.0",
 		"Actuator2 Example",
 		"An actuator 2nd example",
 		[]string{},
@@ -88,7 +90,7 @@ func main() {
 	myProducer := producer.New(&wait)
 	myProducer.Produce("mything1", mything1)
 	myProducer.Produce("mything2", mything2)
-	httpServer := protocolHttp.NewServer("127.0.0.1", 8888)
+	httpServer := protocolHttp.NewServer(":8888", "")
 	myProducer.AddServer(httpServer)
 	wsServer := protocolWebSocket.NewServer(httpServer)
 	myProducer.AddServer(wsServer)

@@ -30,6 +30,7 @@ func main() {
 
 	mything, err := thing.New(
 		"dev:ops:my-actuator-1234",
+		"v0.0.0",
 		"Actuator1 Example",
 		"An actuator 1st example",
 		[]string{},
@@ -124,12 +125,12 @@ func main() {
 	// Run Server
 	var wait sync.WaitGroup
 	myProducer := producer.New(&wait)
-	exposedThing := myProducer.Produce(mything)
+	exposedThing := myProducer.Produce("", mything)
 	exposedThing.SetActionHandler("a", handlerA)
 	exposedThing.SetActionHandler("b", handlerB)
 	exposedThing.SetActionHandler("c", handlerC)
 	exposedThing.SetEventHandler("d", handlerD)
-	httpServer := protocolHttp.NewServer("127.0.0.1", 8888)
+	httpServer := protocolHttp.NewServer(":8888", "")
 	myProducer.AddServer(httpServer)
 	wsServer := protocolWebSocket.NewServer(httpServer)
 	myProducer.AddServer(wsServer)

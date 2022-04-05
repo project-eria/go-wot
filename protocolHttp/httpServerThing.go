@@ -19,13 +19,32 @@ func HTTPGetThing(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	// Dynamically build href
 	for _, property := range td.Properties {
+		property := property // Copy https://go.dev/doc/faq#closures_and_goroutines
 		for _, form := range property.Forms {
+			form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
 			if form.UrlBuilder != nil {
 				form.Href = form.UrlBuilder(r.Host, (r.TLS != nil))
 			}
 		}
 	}
-
+	for _, action := range td.Actions {
+		action := action // Copy https://go.dev/doc/faq#closures_and_goroutines
+		for _, form := range action.Forms {
+			form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
+			if form.UrlBuilder != nil {
+				form.Href = form.UrlBuilder(r.Host, (r.TLS != nil))
+			}
+		}
+	}
+	for _, event := range td.Events {
+		event := event // Copy https://go.dev/doc/faq#closures_and_goroutines
+		for _, form := range event.Forms {
+			form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
+			if form.UrlBuilder != nil {
+				form.Href = form.UrlBuilder(r.Host, (r.TLS != nil))
+			}
+		}
+	}
 	content, err := json.Marshal(td)
 	if err != nil {
 		log.Error().Err(err).Msg("[producer:GetThingDescription]")

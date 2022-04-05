@@ -31,12 +31,15 @@ func NewExposedThing(td *thing.Thing, wait *sync.WaitGroup) *ExposedThing {
 	}
 
 	for key, property := range td.Properties {
+		property := property // Copy https://go.dev/doc/faq#closures_and_goroutines
 		t.ExposedProperties[key] = NewExposedProperty(property)
 	}
 	for key, action := range td.Actions {
+		action := action // Copy https://go.dev/doc/faq#closures_and_goroutines
 		t.ExposedActions[key] = NewExposedAction(action)
 	}
 	for key, event := range td.Events {
+		event := event // Copy https://go.dev/doc/faq#closures_and_goroutines
 		t.ExposedEvents[key] = NewExposedEvent(event)
 	}
 	return t

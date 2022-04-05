@@ -47,6 +47,7 @@ func addEndPoints(exposedAddr string, ref string, t *producer.ExposedThing) {
 		prefix = "/" + ref
 	}
 	for _, property := range t.Td.Properties {
+		property := property // Copy https://go.dev/doc/faq#closures_and_goroutines
 		if property.Observable {
 			form := &interaction.Form{
 				ContentType: "application/json",
@@ -69,6 +70,7 @@ func addEndPoints(exposedAddr string, ref string, t *producer.ExposedThing) {
 	}
 
 	for _, event := range t.Td.Events {
+		event := event // Copy https://go.dev/doc/faq#closures_and_goroutines
 		form := &interaction.Form{
 			ContentType: "application/json",
 			Supplement:  map[string]interface{}{},

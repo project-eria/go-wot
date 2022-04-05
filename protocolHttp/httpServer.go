@@ -148,6 +148,7 @@ func addEndPoints(exposedAddr string, ref string, t *producer.ExposedThing) {
 	// )
 
 	for _, property := range t.Td.Properties {
+		property := property // Copy https://go.dev/doc/faq#closures_and_goroutines
 		// anyProperties = true
 
 		form := &interaction.Form{
@@ -217,6 +218,7 @@ func addEndPoints(exposedAddr string, ref string, t *producer.ExposedThing) {
 	// }
 
 	for _, action := range t.Td.Actions {
+		action := action // Copy https://go.dev/doc/faq#closures_and_goroutines
 		form := &interaction.Form{
 			ContentType: "application/json",
 			Op:          []string{"invokeaction"},

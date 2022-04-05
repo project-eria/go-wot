@@ -12,7 +12,9 @@ import (
 func (t *ConsumedThing) InvokeAction(name string, params interface{}) (interface{}, error) {
 	if action, ok := t.td.Actions[name]; ok {
 		for _, form := range action.Forms {
+			form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
 			for _, op := range form.Op {
+				op := op // Copy https://go.dev/doc/faq#closures_and_goroutines
 				if op == "invokeaction" {
 					if client := t.consumer.GetClientFor(form); client != nil {
 						value, err := client.InvokeResource(form, params)

@@ -15,6 +15,7 @@ func (t *ConsumedThing) SubscribeEvent(name string, listener Listener) error {
 	}
 	if event, ok := t.td.Events[name]; ok {
 		for _, form := range event.Forms {
+			form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
 			if client := t.consumer.GetClientFor(form); client != nil {
 				sub := &Subscription{
 					Type: "event",

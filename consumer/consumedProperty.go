@@ -11,7 +11,9 @@ import (
 func (t *ConsumedThing) ReadProperty(name string) (interface{}, error) {
 	if property, ok := t.td.Properties[name]; ok {
 		for _, form := range property.Forms {
+			form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
 			for _, op := range form.Op {
+				op := op // Copy https://go.dev/doc/faq#closures_and_goroutines
 				if op == "readproperty" {
 					if client := t.consumer.GetClientFor(form); client != nil {
 						value, err := client.ReadResource(form)
@@ -43,7 +45,9 @@ func (t *ConsumedThing) ReadAllProperties() {
 func (t *ConsumedThing) WriteProperty(name string, value interface{}) (interface{}, error) {
 	if property, ok := t.td.Properties[name]; ok {
 		for _, form := range property.Forms {
+			form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
 			for _, op := range form.Op {
+				op := op // Copy https://go.dev/doc/faq#closures_and_goroutines
 				if op == "writeproperty" {
 					if client := t.consumer.GetClientFor(form); client != nil {
 						value, err := client.WriteResource(form, value)
@@ -76,7 +80,9 @@ func (t *ConsumedThing) ObserveProperty(name string, listener Listener) error {
 	}
 	if property, ok := t.td.Properties[name]; ok {
 		for _, form := range property.Forms {
+			form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
 			for _, op := range form.Op {
+				op := op // Copy https://go.dev/doc/faq#closures_and_goroutines
 				if op == "observeproperty" {
 					if client := t.consumer.GetClientFor(form); client != nil {
 						sub := &Subscription{
