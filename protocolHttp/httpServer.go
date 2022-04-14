@@ -253,19 +253,14 @@ func addEndPoints(exposedAddr string, ref string, t *producer.ExposedThing) {
 //jsonHTTPRenderer Add header and write response as json string
 func jsonHTTPRenderer(w http.ResponseWriter, content interface{}, status int) {
 	w.Header().Set("Content-Type", "application/json")
-	if body, ok := content.(string); ok {
-		w.WriteHeader(status)
-		io.WriteString(w, body)
-	} else {
-		body, err := json.Marshal(content)
-		if err != nil {
-			log.Error().Err(err).Msg("[thing:jsonHTTPRenderer]")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(status)
-		io.WriteString(w, string(body))
+	body, err := json.Marshal(content)
+	if err != nil {
+		log.Error().Err(err).Msg("[thing:jsonHTTPRenderer]")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
+	w.WriteHeader(status)
+	io.WriteString(w, string(body))
 }
 
 //okHTTPRenderer Add header and write response as ok: true

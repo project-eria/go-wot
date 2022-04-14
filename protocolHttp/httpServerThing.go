@@ -1,7 +1,6 @@
 package protocolHttp
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -45,11 +44,5 @@ func HTTPGetThing(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			}
 		}
 	}
-	content, err := json.Marshal(td)
-	if err != nil {
-		log.Error().Err(err).Msg("[producer:GetThingDescription]")
-		errorHTTPRenderer(w, EncodingError, err.Error())
-		return
-	}
-	jsonHTTPRenderer(w, string(content), http.StatusOK)
+	jsonHTTPRenderer(w, td, http.StatusOK)
 }
