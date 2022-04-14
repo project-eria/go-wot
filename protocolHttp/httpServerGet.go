@@ -16,10 +16,10 @@ import (
 func HTTPGet(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	t := r.Context().Value("thing").(*producer.ExposedThing)
 	name := params.ByName("name")
-	log.Debug().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:GET] Received Thing property GET request")
+	log.Trace().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:GET] Received Thing property GET request")
 	if property, ok := t.Td.Properties[name]; ok {
 		if property.WriteOnly {
-			log.Debug().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:GET] Access to WriteOnly property")
+			log.Trace().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:GET] Access to WriteOnly property")
 			errorHTTPRenderer(w, NotAllowedError, "Write Only property")
 		} else {
 			property := t.ExposedProperties[name]
@@ -40,6 +40,6 @@ func HTTPGet(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		}
 		return
 	}
-	log.Debug().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:GET] property not found")
+	log.Trace().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:GET] property not found")
 	errorHTTPRenderer(w, NotFoundError, "Property not found")
 }

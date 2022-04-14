@@ -16,7 +16,7 @@ import (
 func HTTPPost(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	t := r.Context().Value("thing").(*producer.ExposedThing)
 	name := params.ByName("name")
-	log.Debug().Str("uri", r.RequestURI).Str("action", name).Msg("[action:POST] Received Thing action POST request")
+	log.Trace().Str("uri", r.RequestURI).Str("action", name).Msg("[action:POST] Received Thing action POST request")
 
 	if action, ok := t.Td.Actions[name]; ok {
 		property := t.ExposedActions[name]
@@ -60,6 +60,6 @@ func HTTPPost(w http.ResponseWriter, r *http.Request, params httprouter.Params) 
 		}
 		return
 	}
-	log.Debug().Str("uri", r.RequestURI).Msgf("[thing:post] action /%s not found", name)
+	log.Trace().Str("uri", r.RequestURI).Msgf("[thing:post] action /%s not found", name)
 	errorHTTPRenderer(w, NotFoundError, "Action not found")
 }

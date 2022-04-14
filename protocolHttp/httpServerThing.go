@@ -13,7 +13,7 @@ import (
 // @param {Object} w The response object
 // @param {Object} r The request object
 func HTTPGetThing(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	log.Debug().Str("uri", r.RequestURI).Msg("[thingHandler:GET] Received Thing GET request")
+	log.Trace().Str("uri", r.RequestURI).Msg("[thingHandler:GET] Received Thing GET request")
 	t := r.Context().Value("thing").(*producer.ExposedThing)
 	td := t.GetThingDescription()
 

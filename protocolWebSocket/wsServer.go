@@ -177,11 +177,11 @@ func monitorPropertyObserver(c chan producer.PropertyChange) {
 	for {
 		propertyChange, ok := <-c
 		if !ok {
-			log.Debug().Msg("[protocolWebSocket:monitorPropertyObserver] channel closed")
+			log.Trace().Msg("[protocolWebSocket:monitorPropertyObserver] channel closed")
 			break
 		}
 		if observers, ok := propertiesObservers[propertyChange.Name]; ok {
-			log.Debug().Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver] Sending property change")
+			log.Trace().Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver] Sending property change")
 			for _, wsConn := range observers {
 				err := wsConn.jsonWSRenderer(propertyChange.Value)
 				if err != nil {
@@ -196,11 +196,11 @@ func monitorEvent(c chan producer.Event) {
 	for {
 		event, ok := <-c
 		if !ok {
-			log.Debug().Msg("[protocolWebSocket:monitorEvent] channel closed")
+			log.Trace().Msg("[protocolWebSocket:monitorEvent] channel closed")
 			break
 		}
 		if subscribers, ok := eventSubscriptions[event.Name]; ok {
-			log.Debug().Str("event", event.Name).Msg("[protocolWebSocket:monitorEvent] Sending event")
+			log.Trace().Str("event", event.Name).Msg("[protocolWebSocket:monitorEvent] Sending event")
 			for _, wsConn := range subscribers {
 				err := wsConn.jsonWSRenderer(event.Value)
 				if err != nil {
@@ -213,7 +213,7 @@ func monitorEvent(c chan producer.Event) {
 
 // TODO processRxMsg processes incoming messages
 // func (h *affordanceHandler) processRxMsg(wsConn *wsConnection, message *wsMessage) {
-// 	log.Debug().Str("key", message.key).Str("type", message.MessageType).Msg("[producer:processRxMsg] Processing WS request")
+// 	log.Trace().Str("key", message.key).Str("type", message.MessageType).Msg("[producer:processRxMsg] Processing WS request")
 // 	switch message.MessageType {
 // 	case "setProperty":
 // 		content, err := message.thing.processSetProperties(message.Data)

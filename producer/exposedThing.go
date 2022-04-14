@@ -70,7 +70,7 @@ func (t *ExposedThing) SetPropertyReadHandler(name string, handler PropertyReadH
 		t.ExposedProperties[name].SetReadHandler(handler)
 		return nil
 	}
-	log.Debug().Str("property", name).Msg("[ExposedThing:SetPropertyReadHandler] property not found")
+	log.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyReadHandler] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
@@ -81,10 +81,10 @@ func (t *ExposedThing) SetPropertyObserveHandler(name string, handler PropertyOb
 			t.ExposedProperties[name].SetObserveHandler(handler)
 			return nil
 		}
-		log.Debug().Str("property", name).Msg("[ExposedThing:SetPropertyObserveHandler] property not observable")
+		log.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyObserveHandler] property not observable")
 		return fmt.Errorf("property %s not observable", name)
 	}
-	log.Debug().Str("property", name).Msg("[ExposedThing:SetPropertyObserveHandler] property not found")
+	log.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyObserveHandler] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
@@ -95,10 +95,10 @@ func (t *ExposedThing) SetPropertyUnobserveHandler(name string) error {
 			t.ExposedProperties[name].SetObserveHandler(nil)
 			return nil
 		}
-		log.Debug().Str("property", name).Msg("[ExposedThing:SetPropertyUnobserveHandler] property not observable")
+		log.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyUnobserveHandler] property not observable")
 		return fmt.Errorf("property %s not observable", name)
 	}
-	log.Debug().Str("property", name).Msg("[ExposedThing:SetPropertyUnobserveHandler] property not found")
+	log.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyUnobserveHandler] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
@@ -110,23 +110,23 @@ func (t *ExposedThing) EmitPropertyChange(name string) error {
 		var err error
 		if handler := p.GetObserveHandler(); handler != nil {
 			if value, err = handler(t, name); err != nil {
-				log.Debug().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] handler error for property")
+				log.Trace().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] handler error for property")
 				return err
 			}
 		} else if handler := p.GetReadHandler(); handler != nil {
 			if value, err = handler(t, name); err != nil {
-				log.Debug().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] handler error for property")
+				log.Trace().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] handler error for property")
 				return err
 			}
 		} else {
 			// No handler
-			log.Debug().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] no handler available for property")
+			log.Trace().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] no handler available for property")
 			return fmt.Errorf("no handler available for property %s", name)
 		}
 		t.PropertyChangeChan <- PropertyChange{name, value}
 		return nil
 	}
-	log.Debug().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] property not found")
+	log.Trace().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
@@ -136,7 +136,7 @@ func (t *ExposedThing) SetPropertyWriteHandler(name string, handler PropertyWrit
 		t.ExposedProperties[name].SetWriteHandler(handler)
 		return nil
 	}
-	log.Debug().Str("property", name).Msg("[ExposedThing:SetPropertyWriteHandler] property not found")
+	log.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyWriteHandler] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
@@ -149,7 +149,7 @@ func (t *ExposedThing) SetActionHandler(name string, handler ActionHandler) erro
 		t.ExposedActions[name].SetHandler(handler)
 		return nil
 	}
-	log.Debug().Str("action", name).Msg("[ExposedThing:SetActionHandler] action not found")
+	log.Trace().Str("action", name).Msg("[ExposedThing:SetActionHandler] action not found")
 	return fmt.Errorf("action %s not found", name)
 }
 
@@ -162,7 +162,7 @@ func (t *ExposedThing) SetEventSubscribeHandler(name string, handler EventSubscr
 		t.ExposedEvents[name].SetSubscribeHandler(handler)
 		return nil
 	}
-	log.Debug().Str("event", name).Msg("[ExposedThing:SetEventSubscribeHandler] event not found")
+	log.Trace().Str("event", name).Msg("[ExposedThing:SetEventSubscribeHandler] event not found")
 	return fmt.Errorf("event %s not found", name)
 }
 
@@ -172,7 +172,7 @@ func (t *ExposedThing) SetEventUnsubscribeHandler(name string) error {
 		t.ExposedEvents[name].SetUnSubscribeHandler()
 		return nil
 	}
-	log.Debug().Str("event", name).Msg("[ExposedThing:SetEventUnsubscribeHandler] event not found")
+	log.Trace().Str("event", name).Msg("[ExposedThing:SetEventUnsubscribeHandler] event not found")
 	return fmt.Errorf("event %s not found", name)
 }
 
@@ -182,7 +182,7 @@ func (t *ExposedThing) SetEventHandler(name string, handler EventListenerHandler
 		t.ExposedEvents[name].SetEventHandler(handler)
 		return nil
 	}
-	log.Debug().Str("event", name).Msg("[ExposedThing:SetEventHandler] event not found")
+	log.Trace().Str("event", name).Msg("[ExposedThing:SetEventHandler] event not found")
 	return fmt.Errorf("event %s not found", name)
 }
 
@@ -193,17 +193,17 @@ func (t *ExposedThing) EmitEvent(name string) error {
 			var value interface{}
 			var err error
 			if value, err = handler(); err != nil {
-				log.Debug().Str("event", name).Err(err).Msg("[ExposedThing:EmitEvent] handler error for event")
+				log.Trace().Str("event", name).Err(err).Msg("[ExposedThing:EmitEvent] handler error for event")
 				return err
 			}
 			t.EventChan <- Event{name, value}
 			return nil
 		} else {
 			// No handler
-			log.Debug().Str("event", name).Msg("[ExposedThing:EmitEvent] no handler available for event")
+			log.Trace().Str("event", name).Msg("[ExposedThing:EmitEvent] no handler available for event")
 			return fmt.Errorf("no handler available for event %s", name)
 		}
 	}
-	log.Debug().Str("event", name).Msg("[ExposedThing:EmitEvent] event not found")
+	log.Trace().Str("event", name).Msg("[ExposedThing:EmitEvent] event not found")
 	return fmt.Errorf("event %s not found", name)
 }

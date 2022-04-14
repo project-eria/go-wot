@@ -13,7 +13,7 @@ import (
 func WSGet(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	t := r.Context().Value("thing").(*producer.ExposedThing)
 	name := params.ByName("name")
-	log.Debug().Str("uri", r.RequestURI).Str("property", name).Msg("[protocolWebSocket:WSGet] Received WS request")
+	log.Trace().Str("uri", r.RequestURI).Str("property", name).Msg("[protocolWebSocket:WSGet] Received WS request")
 
 	// TODO Handle Origin for debug plugins
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
@@ -47,7 +47,7 @@ func handlePropertyObserver(t *producer.ExposedThing, name string, key string, w
 		var data interface{}
 		err := wsConn.ReadJSON(&data)
 		if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-			log.Debug().Str("key", key).Msg("[protocolWebSocket:handlePropertyObserver] WebSocket Normal Closure")
+			log.Trace().Str("key", key).Msg("[protocolWebSocket:handlePropertyObserver] WebSocket Normal Closure")
 			removePropertyObserver(t, name, key)
 			return
 		}
@@ -73,7 +73,7 @@ func handleEventSubscription(t *producer.ExposedThing, name string, key string, 
 		var data interface{}
 		err := wsConn.ReadJSON(&data)
 		if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-			log.Debug().Str("key", key).Msg("[protocolWebSocket:handleEventSubscription] WebSocket Normal Closure")
+			log.Trace().Str("key", key).Msg("[protocolWebSocket:handleEventSubscription] WebSocket Normal Closure")
 			removeEventSubscription(t, name, key)
 			return
 		}
@@ -89,7 +89,7 @@ func handleEventSubscription(t *producer.ExposedThing, name string, key string, 
 func addPropertyObserver(t *producer.ExposedThing, name string, key string, wsConn *wsConnection) error {
 	mu.Lock()
 	defer mu.Unlock()
-	log.Debug().Str("key", key).Msg("[protocolWebSocket:addPropertyObserver] Register WS property observer connection")
+	log.Trace().Str("key", key).Msg("[protocolWebSocket:addPropertyObserver] Register WS property observer connection")
 	propertiesObservers[name][key] = wsConn
 	// TODO t._wait.Add(1)
 	return nil
@@ -98,7 +98,7 @@ func addPropertyObserver(t *producer.ExposedThing, name string, key string, wsCo
 func addEventSubscription(t *producer.ExposedThing, name string, key string, wsConn *wsConnection) error {
 	mu.Lock()
 	defer mu.Unlock()
-	log.Debug().Str("key", key).Msg("[protocolWebSocket:addEventSubscription] Register WS event subscription connection")
+	log.Trace().Str("key", key).Msg("[protocolWebSocket:addEventSubscription] Register WS event subscription connection")
 	eventSubscriptions[name][key] = wsConn
 	// TODO t._wait.Add(1)
 	return nil
@@ -109,7 +109,7 @@ func removePropertyObserver(t *producer.ExposedThing, name string, key string) e
 	defer mu.Unlock()
 	if _, ok := t.ExposedProperties[name]; ok {
 		if t.ExposedProperties[name].Observable {
-			log.Debug().Str("key", key).Msg("[protocolWebSocket:removePropertyObserver] Unregister WS Connection")
+			log.Trace().Str("key", key).Msg("[protocolWebSocket:removePropertyObserver] Unregister WS Connection")
 			if _, ok := propertiesObservers[name]; ok {
 				//		conn.Close() // don't close the websocket.Conn or ReadJSON returns a "use of closed network connection" error
 				delete(propertiesObservers[name], key)
@@ -117,10 +117,10 @@ func removePropertyObserver(t *producer.ExposedThing, name string, key string) e
 			}
 			return nil
 		}
-		log.Debug().Str("property", name).Msg("[protocolWebSocket:removePropertyObserver] property not observable")
+		log.Trace().Str("property", name).Msg("[protocolWebSocket:removePropertyObserver] property not observable")
 		return fmt.Errorf("property %s not observable", name)
 	}
-	log.Debug().Str("property", name).Msg("[protocolWebSocket:removePropertyObserver] property not found")
+	log.Trace().Str("property", name).Msg("[protocolWebSocket:removePropertyObserver] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
@@ -128,7 +128,7 @@ func removeEventSubscription(t *producer.ExposedThing, name string, key string) 
 	mu.Lock()
 	defer mu.Unlock()
 	if _, ok := t.ExposedEvents[name]; ok {
-		log.Debug().Str("key", key).Msg("[protocolWebSocket:removePropertyObserver] Unregister WS Connection")
+		log.Trace().Str("key", key).Msg("[protocolWebSocket:removePropertyObserver] Unregister WS Connection")
 		if _, ok := eventSubscriptions[name]; ok {
 			//		conn.Close() // don't close the websocket.Conn or ReadJSON returns a "use of closed network connection" error
 			delete(eventSubscriptions[name], key)
@@ -136,6 +136,6 @@ func removeEventSubscription(t *producer.ExposedThing, name string, key string) 
 		}
 		return nil
 	}
-	log.Debug().Str("event", name).Msg("[protocolWebSocket:removePropertyObserver] event not found")
+	log.Trace().Str("event", name).Msg("[protocolWebSocket:removePropertyObserver] event not found")
 	return fmt.Errorf("event %s not found", name)
 }

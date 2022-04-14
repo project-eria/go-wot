@@ -83,7 +83,6 @@ func (s *HttpServer) Start() {
 			header.Set("Access-Control-Allow-Origin", "*")
 			header.Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
 		}
-
 		// Adjust status code to 204
 		w.WriteHeader(http.StatusNoContent)
 	})
@@ -91,7 +90,7 @@ func (s *HttpServer) Start() {
 	s.Server.Handler = s.router
 
 	s.RegisterOnShutdown(func() {
-		log.Debug().Msg("[protocolHttp:Start] Gracefully shutdown all websocket connections")
+		log.Trace().Msg("[protocolHttp:Start] Gracefully shutdown all websocket connections")
 		// Wait for Gracefully shutdown all active websocket connections, for all things
 		// for _, wsHandler := range s.wsHandlers {
 		// 	wsHandler.gracefullWSShutdown()
@@ -123,7 +122,7 @@ func (s *HttpServer) Stop() {
 	// if err := p.Shutdown(ctx); err != nil {
 	// 	log.Info().Msg("[thing:Shutdown] Shutdown error")
 	// } else {
-	// 	log.Debug().Msg("[thing:Shutdown] Wait on websocket connections shutdown")
+	// 	log.Trace().Msg("[thing:Shutdown] Wait on websocket connections shutdown")
 	// 	// Wait for Gracefully shutdown all active websocket connections, for all things
 	// 	// for _, wsHandler := range s.wsHandlers {
 	// 	// 	wsHandler.waitWebSocket.Wait()

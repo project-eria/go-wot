@@ -16,10 +16,10 @@ import (
 func HTTPPut(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	t := r.Context().Value("thing").(*producer.ExposedThing)
 	name := params.ByName("name")
-	log.Debug().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:PUT] Received Thing property PUT request")
+	log.Trace().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:PUT] Received Thing property PUT request")
 	if property, ok := t.Td.Properties[name]; ok {
 		if property.ReadOnly {
-			log.Debug().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:PUT] Access to ReadOnly property")
+			log.Trace().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:PUT] Access to ReadOnly property")
 			errorHTTPRenderer(w, NotAllowedError, "Read Only property")
 		} else {
 			property := t.ExposedProperties[name]
@@ -46,6 +46,6 @@ func HTTPPut(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		}
 		return
 	}
-	log.Debug().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:PUT] property not found")
+	log.Trace().Str("uri", r.RequestURI).Str("property", name).Msg("[propertyHandler:PUT] property not found")
 	errorHTTPRenderer(w, NotFoundError, "Property not found")
 }
