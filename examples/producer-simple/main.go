@@ -3,13 +3,14 @@ package main
 import (
 	"errors"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
-
-	"github.com/project-eria/go-wot/protocolWebSocket"
 
 	"github.com/project-eria/go-wot/interaction"
 	"github.com/project-eria/go-wot/protocolHttp"
+	"github.com/project-eria/go-wot/protocolWebSocket"
 
 	"github.com/project-eria/go-wot/dataSchema"
 	"github.com/project-eria/go-wot/producer"
@@ -97,7 +98,7 @@ func main() {
 	)
 	mything.AddAction(aAction)
 
-	stringInput := dataSchema.NewString("")
+	stringInput := dataSchema.NewString("", 0, 0, "")
 	bAction := interaction.NewAction(
 		"b",
 		"String Input, No Output",
@@ -106,7 +107,7 @@ func main() {
 		nil,
 	)
 	mything.AddAction(bAction)
-	stringOutput := dataSchema.NewString("")
+	stringOutput := dataSchema.NewString("", 0, 0, "")
 	cAction := interaction.NewAction(
 		"c",
 		"String Input, String Output",
@@ -116,12 +117,6 @@ func main() {
 	)
 	mything.AddAction(cAction)
 
-	// Events
-
-	stringEvent := dataSchema.NewString("")
-	dEvent := interaction.NewEvent("d", "d Event", "", &stringEvent)
-	mything.AddEvent(dEvent)
-
 	// Run Server
 	var wait sync.WaitGroup
 	myProducer := producer.New(&wait)
@@ -129,26 +124,20 @@ func main() {
 	exposedThing.SetActionHandler("a", handlerA)
 	exposedThing.SetActionHandler("b", handlerB)
 	exposedThing.SetActionHandler("c", handlerC)
-	exposedThing.SetEventHandler("d", handlerD)
-	httpServer := protocolHttp.NewServer(":8888", "")
+	httpServer := protocolHttp.NewServer(":8888", "", "My App", "My App v0.0.0")
 	myProducer.AddServer(httpServer)
 	wsServer := protocolWebSocket.NewServer(httpServer)
 	myProducer.AddServer(wsServer)
+
 	myProducer.Expose()
 
-	for {
-		time.Sleep(10 * time.Second)
-		// exposedThing.EmitPropertyChange("boolRWO")
-		exposedThing.EmitEvent("d")
-	}
-
-	// c := make(chan os.Signal, 1)
-	// signal.Notify(c,
-	// 	syscall.SIGINT,
-	// 	syscall.SIGTERM,
-	// 	syscall.SIGQUIT)
-	// // Block until keyboard interrupt is received.
-	// <-c
+	c := make(chan os.Signal, 1)
+	signal.Notify(c,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+	// Block until keyboard interrupt is received.
+	<-c
 
 	// myProducer.Stop()
 	// wait.Wait()
@@ -171,8 +160,4 @@ func handlerC(value interface{}) (interface{}, error) {
 	}
 	println("c action: " + v)
 	return "ok", nil
-}
-
-func handlerD() (interface{}, error) {
-	return nil, nil
 }

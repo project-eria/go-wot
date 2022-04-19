@@ -1,48 +1,45 @@
 package protocolHttp
 
 import (
-	"net/http"
-
-	"github.com/julienschmidt/httprouter"
+	"github.com/gofiber/fiber/v2"
 	"github.com/project-eria/go-wot/producer"
 	"github.com/rs/zerolog/log"
 )
 
 // get handle the GET method for single thing root
-// @param {Object} w The response object
-// @param {Object} r The request object
-func HTTPGetThing(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	log.Trace().Str("uri", r.RequestURI).Msg("[thingHandler:GET] Received Thing GET request")
-	t := r.Context().Value("thing").(*producer.ExposedThing)
-	td := t.GetThingDescription()
+func thingHandler(t *producer.ExposedThing) func(*fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		log.Trace().Str("uri", c.Path()).Msg("[protocolHttp:thingHandler] Received Thing GET request")
+		td := t.GetThingDescription()
 
-	// Dynamically build href
-	for _, property := range td.Properties {
-		property := property // Copy https://go.dev/doc/faq#closures_and_goroutines
-		for _, form := range property.Forms {
-			form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
-			if form.UrlBuilder != nil {
-				form.Href = form.UrlBuilder(r.Host, (r.TLS != nil))
+		// Dynamically build href
+		for _, property := range td.Properties {
+			property := property // Copy https://go.dev/doc/faq#closures_and_goroutines
+			for _, form := range property.Forms {
+				form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
+				if form.UrlBuilder != nil {
+					form.Href = form.UrlBuilder(c.Hostname(), c.Secure())
+				}
 			}
 		}
-	}
-	for _, action := range td.Actions {
-		action := action // Copy https://go.dev/doc/faq#closures_and_goroutines
-		for _, form := range action.Forms {
-			form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
-			if form.UrlBuilder != nil {
-				form.Href = form.UrlBuilder(r.Host, (r.TLS != nil))
+		for _, action := range td.Actions {
+			action := action // Copy https://go.dev/doc/faq#closures_and_goroutines
+			for _, form := range action.Forms {
+				form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
+				if form.UrlBuilder != nil {
+					form.Href = form.UrlBuilder(c.Hostname(), c.Secure())
+				}
 			}
 		}
-	}
-	for _, event := range td.Events {
-		event := event // Copy https://go.dev/doc/faq#closures_and_goroutines
-		for _, form := range event.Forms {
-			form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
-			if form.UrlBuilder != nil {
-				form.Href = form.UrlBuilder(r.Host, (r.TLS != nil))
+		for _, event := range td.Events {
+			event := event // Copy https://go.dev/doc/faq#closures_and_goroutines
+			for _, form := range event.Forms {
+				form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
+				if form.UrlBuilder != nil {
+					form.Href = form.UrlBuilder(c.Hostname(), c.Secure())
+				}
 			}
 		}
+		return c.JSON(td)
 	}
-	jsonHTTPRenderer(w, td, http.StatusOK)
 }

@@ -88,7 +88,7 @@ func (c *WsClient) connectWebSocket(wsURL string, sub *consumer.Subscription, li
 	for {
 		select {
 		case <-c.ctx.Done():
-			log.Warn().Str("url", wsURL).Msg("[consumer:ConnectWebSocket] Connecting interrupted by user")
+			log.Warn().Str("url", wsURL).Msg("[protocolWebSocket:ConnectWebSocket] Connecting interrupted by user")
 			return
 		case <-wsc.connect():
 			if wsc.IsConnected() { // Should come here connected
@@ -99,9 +99,9 @@ func (c *WsClient) connectWebSocket(wsURL string, sub *consumer.Subscription, li
 				case err := <-wsc.read():
 					if err != nil {
 						if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-							log.Info().Str("url", wsURL).Msg("[consumer:ConnectWebSocket] Normal Closure")
+							log.Info().Str("url", wsURL).Msg("[protocolWebSocket:ConnectWebSocket] Normal Closure")
 						} else {
-							log.Error().Err(err).Str("url", wsURL).Msg("[consumer:ConnectWebSocket]")
+							log.Error().Err(err).Str("url", wsURL).Msg("[protocolWebSocket:ConnectWebSocket]")
 						}
 						wsc.close()
 					}
@@ -109,14 +109,14 @@ func (c *WsClient) connectWebSocket(wsURL string, sub *consumer.Subscription, li
 				}
 			}
 			// If we go out from the listen() loop we try to reconnect
-			log.Info().Str("url", wsURL).Msg("[consumer:ConnectWebSocket] Trying to reconnect...")
+			log.Info().Str("url", wsURL).Msg("[protocolWebSocket:ConnectWebSocket] Trying to reconnect...")
 		}
 	}
 }
 
 func (c *wsConn) connect() <-chan bool {
 	if c == nil {
-		log.Error().Msg("[consumer:connect] nil connection")
+		log.Error().Msg("[protocolWebSocket:connect] nil connection")
 		return nil
 	}
 	success := make(chan bool, 1)
@@ -132,14 +132,14 @@ func (c *wsConn) connect() <-chan bool {
 			c.mu.Unlock()
 
 			if err == nil {
-				log.Info().Str("url", c.wsURL).Msg("[consumer:connect] WebSocket connection successfully established")
+				log.Info().Str("url", c.wsURL).Msg("[protocolWebSocket:connect] WebSocket connection successfully established")
 				c.connWait.reset()
 				success <- true
 				return
 			}
 			// If err != nil
 			nextDuration := c.connWait.nextDuration()
-			log.Error().Err(err).Str("url", c.wsURL).Msgf("[consumer:connect] WebSocket connect will try again in %s.", nextDuration.String())
+			log.Error().Err(err).Str("url", c.wsURL).Msgf("[protocolWebSocket:connect] WebSocket connect will try again in %s.", nextDuration.String())
 
 			time.Sleep(nextDuration)
 		}
@@ -150,7 +150,7 @@ func (c *wsConn) connect() <-chan bool {
 // read monitor the WebSocket Messages
 func (c *wsConn) read() <-chan error {
 	if c == nil {
-		log.Error().Msg("[consumer:read] nil connection")
+		log.Error().Msg("[protocolWebSocket:read] nil connection")
 		return nil
 	}
 	result := make(chan error, 1)
@@ -164,7 +164,7 @@ func (c *wsConn) read() <-chan error {
 				return
 			}
 
-			log.Trace().Interface("message", data).Msgf("[consumer:read] Received from WebSocket")
+			log.Trace().Interface("message", data).Msgf("[protocolWebSocket:read] Received from WebSocket")
 			if c.listener != nil {
 				go c.listener(data, nil)
 			}
@@ -175,7 +175,7 @@ func (c *wsConn) read() <-chan error {
 
 func (c *wsConn) get() *websocket.Conn {
 	if c == nil {
-		log.Error().Msg("[consumer:get] nil connection")
+		log.Error().Msg("[protocolWebSocket:get] nil connection")
 		return nil
 	}
 	c.mu.RLock()
@@ -187,7 +187,7 @@ func (c *wsConn) get() *websocket.Conn {
 // setIsConnected sets state for isConnected
 func (c *wsConn) setIsConnected(state bool) {
 	if c == nil {
-		log.Error().Msg("[consumer:setIsConnected] nil connection")
+		log.Error().Msg("[protocolWebSocket:setIsConnected] nil connection")
 		return
 	}
 	c.mu.Lock()
@@ -199,7 +199,7 @@ func (c *wsConn) setIsConnected(state bool) {
 // IsConnected returns the WebSocket connection state
 func (c *wsConn) IsConnected() bool {
 	if c == nil {
-		log.Error().Msg("[consumer:IsConnected] nil connection")
+		log.Error().Msg("[protocolWebSocket:IsConnected] nil connection")
 		return false
 	}
 	c.mu.RLock()
@@ -212,15 +212,15 @@ func (c *wsConn) IsConnected() bool {
 // [TODO] and then waiting (with timeout) for the server to close the connection.
 func (c *wsConn) gracefullyShutdown() {
 	if c == nil {
-		log.Error().Msg("[consumer:gracefullyShutdown] nil connection")
+		log.Error().Msg("[protocolWebSocket:gracefullyShutdown] nil connection")
 		return
 	}
-	log.Info().Msg("[consumer:gracefullyShutdown] Sending WebSocket Closing message to server")
+	log.Info().Msg("[protocolWebSocket:gracefullyShutdown] Sending WebSocket Closing message to server")
 	err := c.WriteControl(websocket.CloseMessage,
 		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
 		time.Time{})
 	if err != nil {
-		log.Error().Err(err).Msg("[consumer:gracefullyShutdown] WebSocket Close")
+		log.Error().Err(err).Msg("[protocolWebSocket:gracefullyShutdown] WebSocket Close")
 		return
 	}
 	c.Close()
@@ -230,7 +230,7 @@ func (c *wsConn) gracefullyShutdown() {
 // sending or waiting for a close frame.
 func (c *wsConn) close() {
 	if c == nil {
-		log.Error().Msg("[consumer:close] nil connection")
+		log.Error().Msg("[protocolWebSocket:close] nil connection")
 		return
 	}
 	if c.get() != nil {

@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/project-eria/go-wot/consumer"
 	"github.com/project-eria/go-wot/protocolHttp"
+	"github.com/project-eria/go-wot/protocolWebSocket"
 	"github.com/project-eria/go-wot/thing"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -44,9 +47,10 @@ func main() {
 	myConsumer := consumer.New()
 	httpClient := protocolHttp.NewClient()
 	myConsumer.AddClient(httpClient)
+	wsClient := protocolWebSocket.NewClient()
+	myConsumer.AddClient(wsClient)
 	consumedThing := myConsumer.Consume(&td)
 
-	fmt.Println(consumedThing.GetThingDescription().Title)
 	value, err := consumedThing.ReadProperty("boolRWO")
 	if err != nil {
 		fmt.Println(err)
@@ -54,47 +58,21 @@ func main() {
 		fmt.Println(value)
 	}
 
-	value, err = consumedThing.ReadProperty("boolRW")
-	if err != nil {
-		fmt.Println(err)
-	} else {
+	consumedThing.ObserveProperty("boolRWO", func(value interface{}, err error) {
 		fmt.Println(value)
-	}
+	})
 
-	value, err = consumedThing.WriteProperty("boolRW", true)
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(value)
-	}
+	// consumedThing.SubscribeEvent("d", func(value interface{}, err error) {
+	// 	fmt.Println("d")
+	// })
 
-	value, err = consumedThing.ReadProperty("boolRW")
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(value)
-	}
-
-	value, err = consumedThing.ReadProperty("boolR")
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(value)
-	}
-
-	value, err = consumedThing.ReadProperty("boolW")
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(value)
-	}
-
-	value, err = consumedThing.InvokeAction("a", nil)
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(value)
-	}
+	c := make(chan os.Signal, 1)
+	signal.Notify(c,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+	// Block until keyboard interrupt is received.
+	<-c
 
 	myConsumer.Shutdown()
 }

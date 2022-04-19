@@ -2,12 +2,11 @@ package protocolWebSocket
 
 import (
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
-	"github.com/julienschmidt/httprouter"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 	"github.com/project-eria/go-wot/interaction"
 	"github.com/project-eria/go-wot/producer"
 	"github.com/project-eria/go-wot/protocolHttp"
@@ -21,75 +20,84 @@ var (
 )
 
 type WsServer struct {
-	httpServer *protocolHttp.HttpServer
+	*protocolHttp.HttpServer
 }
 
 func NewServer(httpServer *protocolHttp.HttpServer) *WsServer {
-	httpServer.AddGetMiddleware(upgrade)
+	httpServer.Use(checkUpgrade())
+
 	return &WsServer{
-		httpServer: httpServer,
+		HttpServer: httpServer,
 	}
 }
 
 func (s *WsServer) Expose(ref string, thing *producer.ExposedThing) {
-	addEndPoints(s.httpServer.ExposedAddr, ref, thing)
-	go monitorPropertyObserver(thing.PropertyChangeChan)
-	go monitorEvent(thing.EventChan)
-}
-
-func addEndPoints(exposedAddr string, ref string, t *producer.ExposedThing) {
-	if t == nil {
-		log.Error().Msg("[protocolWebSocket:GracefullyShutdown] nil thing")
-		return
-	}
 	prefix := ""
 	if ref != "" {
 		prefix = "/" + ref
 	}
+	g := s.Group(prefix)
+
+	addEndPoints(g, s.ExposedAddr, prefix, thing)
+	go monitorPropertyObserver(thing.PropertyChangeChan)
+	go monitorEvent(thing.EventChan)
+}
+
+func addEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing) {
 	for _, property := range t.Td.Properties {
-		property := property // Copy https://go.dev/doc/faq#closures_and_goroutines
 		if property.Observable {
-			form := &interaction.Form{
-				ContentType: "application/json",
-				Supplement:  map[string]interface{}{},
-				Op:          []string{"observeproperty", "unobserveproperty"},
-				UrlBuilder: func(host string, secure bool) string {
-					protocol := "ws"
-					if secure {
-						protocol = "wss"
-					}
-					if exposedAddr != "" { // force exposed host
-						host = exposedAddr
-					}
-					return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, property.Key)
-				},
-			}
-			property.Forms = append(property.Forms, form)
-			propertiesObservers[property.Key] = map[string]*wsConnection{}
+			addPropertyEndPoints(g, exposedAddr, prefix, t, property)
 		}
 	}
 
 	for _, event := range t.Td.Events {
-		event := event // Copy https://go.dev/doc/faq#closures_and_goroutines
-		form := &interaction.Form{
-			ContentType: "application/json",
-			Supplement:  map[string]interface{}{},
-			Op:          []string{"subscribeevent"},
-			UrlBuilder: func(host string, secure bool) string {
-				protocol := "ws"
-				if secure {
-					protocol = "wss"
-				}
-				if exposedAddr != "" { // force exposed host
-					host = exposedAddr
-				}
-				return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, event.Key)
-			},
-		}
-		event.Forms = append(event.Forms, form)
-		eventSubscriptions[event.Key] = map[string]*wsConnection{}
-
+		addEventEndPoints(g, exposedAddr, prefix, t, event)
 	}
+}
+
+func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, property *interaction.Property) {
+	form := &interaction.Form{
+		ContentType: "application/json",
+		Supplement:  map[string]interface{}{},
+		Op:          []string{"observeproperty", "unobserveproperty"},
+		UrlBuilder: func(host string, secure bool) string {
+			protocol := "ws"
+			if secure {
+				protocol = "wss"
+			}
+			if exposedAddr != "" { // force exposed host
+				host = exposedAddr
+			}
+			return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, property.Key)
+		},
+	}
+	g.Get("/"+property.Key, websocket.New(propertyObserverHandler(t, property)))
+
+	property.Forms = append(property.Forms, form)
+	propertiesObservers[property.Key] = map[string]*wsConnection{}
+}
+
+func addEventEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, event *interaction.Event) {
+	form := &interaction.Form{
+		ContentType: "application/json",
+		Supplement:  map[string]interface{}{},
+		Op:          []string{"subscribeevent"},
+		UrlBuilder: func(host string, secure bool) string {
+			protocol := "ws"
+			if secure {
+				protocol = "wss"
+			}
+			if exposedAddr != "" { // force exposed host
+				host = exposedAddr
+			}
+			return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, event.Key)
+		},
+	}
+	g.Get("/"+event.Key, websocket.New(eventHandler(t, event)))
+
+	event.Forms = append(event.Forms, form)
+	eventSubscriptions[event.Key] = map[string]*wsConnection{}
+
 }
 
 func (s *WsServer) Start() {
@@ -119,33 +127,6 @@ func (s *WsServer) Stop() {
 // 		}
 // 	}
 // }
-
-func upgrade(thing *producer.ExposedThing, next httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		if next != nil {
-			if r.Header.Get("Upgrade") == "websocket" {
-				// // webthing SubProtocol do not exists
-				// if r.Header.Get("Sec-Websocket-Protocol") != "webthing" {
-				// 	log.Error().Msg("[producer:webSocket] Connection not using webthing protocol")
-				// 	w.WriteHeader(http.StatusBadRequest)
-				// 	io.WriteString(w, "Connection not using webthing protocol")
-				// 	return
-				// }
-
-				WSGet(w, r, p)
-				return
-			} else {
-				next(w, r, p)
-			}
-		}
-	}
-}
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	Subprotocols:    []string{"webthing"},
-}
 
 type wsConnection struct {
 	mu sync.RWMutex

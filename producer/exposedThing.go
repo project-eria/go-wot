@@ -110,12 +110,12 @@ func (t *ExposedThing) EmitPropertyChange(name string) error {
 		var err error
 		if handler := p.GetObserveHandler(); handler != nil {
 			if value, err = handler(t, name); err != nil {
-				log.Trace().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] handler error for property")
+				log.Error().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] observer handler error for property")
 				return err
 			}
 		} else if handler := p.GetReadHandler(); handler != nil {
 			if value, err = handler(t, name); err != nil {
-				log.Trace().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] handler error for property")
+				log.Error().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] read handler error for property")
 				return err
 			}
 		} else {
@@ -123,7 +123,15 @@ func (t *ExposedThing) EmitPropertyChange(name string) error {
 			log.Trace().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] no handler available for property")
 			return fmt.Errorf("no handler available for property %s", name)
 		}
-		t.PropertyChangeChan <- PropertyChange{name, value}
+		go func() {
+			select {
+			case t.PropertyChangeChan <- PropertyChange{name, value}:
+				return
+			default:
+				log.Error().Msg("[ExposedThing:EmitPropertyChange] channel blocked (no reader?), can not write")
+				return
+			}
+		}()
 		return nil
 	}
 	log.Trace().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] property not found")
@@ -196,7 +204,15 @@ func (t *ExposedThing) EmitEvent(name string) error {
 				log.Trace().Str("event", name).Err(err).Msg("[ExposedThing:EmitEvent] handler error for event")
 				return err
 			}
-			t.EventChan <- Event{name, value}
+			go func() {
+				select {
+				case t.EventChan <- Event{name, value}:
+					return
+				default:
+					log.Error().Msg("[ExposedThing:EmitEvente] channel blocked (no reader?), can not write")
+					return
+				}
+			}()
 			return nil
 		} else {
 			// No handler

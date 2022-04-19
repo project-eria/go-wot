@@ -1,65 +1,69 @@
 package protocolHttp
 
 import (
-	"net/http"
-
-	"github.com/julienschmidt/httprouter"
+	"github.com/gofiber/fiber/v2"
+	"github.com/project-eria/go-wot/interaction"
 	"github.com/project-eria/go-wot/producer"
 	"github.com/rs/zerolog/log"
 )
 
 // post handle the POST request method for a thing action
 // https://w3c.github.io/wot-scripting-api/#handling-action-requests
-// @param {Object} w The response object
-// @param {Object} r The request object
-// @param {Object} params The url parmeters
-func HTTPPost(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	t := r.Context().Value("thing").(*producer.ExposedThing)
-	name := params.ByName("name")
-	log.Trace().Str("uri", r.RequestURI).Str("action", name).Msg("[action:POST] Received Thing action POST request")
-
-	if action, ok := t.Td.Actions[name]; ok {
-		property := t.ExposedActions[name]
-		handler := property.GetHandler()
+func actionHandler(t *producer.ExposedThing, tdAction *interaction.Action) func(*fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		log.Trace().Str("uri", c.Path()).Msg("[protocolHttp:actionHandler] Received Thing action POST request")
+		action := t.ExposedActions[tdAction.Key]
+		handler := action.GetHandler()
 		if handler != nil {
-			input := r.Context().Value(keyDecodedJSON)
+			var data interface{}
+			if err := c.BodyParser(&data); err != nil {
+				return c.Status(EncodingError.httpStatus).JSON(fiber.Map{
+					"error": "Incorrect JSON value",
+					"type":  EncodingError.errorType,
+				})
+			}
 			// Check the input data
 			if action.Input != nil {
-				if err := action.Input.Check(input); err != nil {
+				if err := action.Input.Check(data); err != nil {
 					message := "incorrect input value: " + err.Error()
-					log.Trace().Str("uri", r.RequestURI).Str("action", name).Msg("[action:POST] " + message)
-					errorHTTPRenderer(w, DataError, message)
-					return
+					log.Trace().Str("action", tdAction.Key).Msg("[protocolHttp:actionHandler] " + message)
+					return c.Status(DataError.httpStatus).JSON(fiber.Map{
+						"error": message,
+						"type":  DataError.errorType,
+					})
 				}
 			}
 			// Execute the action requests
-			output, err := handler(input)
+			output, err := handler(data)
 			if err != nil {
-				log.Error().Str("uri", r.RequestURI).Str("action", name).Err(err).Msg("[action:POST]")
-				errorHTTPRenderer(w, UnknownError, err.Error())
-				return
+				log.Error().Str("action", tdAction.Key).Err(err).Msg("[protocolHttp:actionHandler]")
+				return c.Status(UnknownError.httpStatus).JSON(fiber.Map{
+					"error": err.Error(),
+					"type":  UnknownError.errorType,
+				})
 			}
 
 			// Check the output data
 			if action.Output != nil {
 				if err := action.Output.Check(output); err != nil {
-					log.Error().Str("uri", r.RequestURI).Str("action", name).Err(err).Msg("[action:POST] incorrect handler returned value")
-					errorHTTPRenderer(w, UnknownError, "Incorrect handler returned value")
-					return
+					log.Error().Str("action", tdAction.Key).Err(err).Msg("[protocolHttp:actionHandler] incorrect handler returned value")
+					return c.Status(UnknownError.httpStatus).JSON(fiber.Map{
+						"error": "Incorrect handler returned value",
+						"type":  UnknownError.errorType,
+					})
 				}
-				log.Trace().Str("uri", r.RequestURI).Interface("response", output).Str("action", name).Msg("[action:POST] JSON Response to Thing action POST request")
-				jsonHTTPRenderer(w, output, http.StatusOK)
-				return
+				log.Trace().Interface("response", output).Str("action", tdAction.Key).Msg("[protocolHttp:actionHandler] JSON Response to Thing action POST request")
+				return c.JSON(fiber.Map{"ok": true})
 			}
 
-			log.Trace().Str("uri", r.RequestURI).Str("action", name).Msg("[action:POST] OK Response to Thing action POST request")
-			okHTTPRenderer(w, http.StatusOK)
+			log.Trace().Str("action", tdAction.Key).Msg("[protocolHttp:actionHandler] OK Response to Thing action POST request")
+			return c.JSON(fiber.Map{"ok": true})
 		} else {
-			log.Warn().Str("uri", r.RequestURI).Str("action", name).Msg("[action:POST] no handler function for the action")
-			errorHTTPRenderer(w, NotSupportedError, "Not Implemented")
+			log.Warn().Str("action", tdAction.Key).Msg("[protocolHttp:actionHandler] no handler function for the action")
+			return c.Status(NotSupportedError.httpStatus).JSON(fiber.Map{
+				"error": "Not Implemented",
+				"type":  NotSupportedError.errorType,
+			})
 		}
-		return
 	}
-	log.Trace().Str("uri", r.RequestURI).Msgf("[thing:post] action /%s not found", name)
-	errorHTTPRenderer(w, NotFoundError, "Action not found")
 }

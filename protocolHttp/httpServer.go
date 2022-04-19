@@ -1,61 +1,34 @@
 package protocolHttp
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/gofiber/fiber/v2"
 	"github.com/project-eria/go-wot/interaction"
 	"github.com/project-eria/go-wot/producer"
 	"github.com/rs/zerolog/log"
 )
 
 type HttpServer struct {
-	router      *httprouter.Router
 	addr        string
 	ExposedAddr string
-	thingChain  []Middleware
-	getChain    []Middleware
-	putChain    []Middleware
-	postChain   []Middleware
-	*http.Server
+	*fiber.App
 }
 
-type key int
+func NewServer(addr string, exposedAddr string, header string, appName string) *HttpServer {
+	router := fiber.New(fiber.Config{
+		ServerHeader: header,
+		AppName:      appName,
+	})
 
-const (
-	keyDecodedJSON key = iota
-)
+	router.Use(checkContentType())
+	router.Use(corsHeader())
 
-func NewServer(addr string, exposedAddr string) *HttpServer {
-	router := httprouter.New()
 	h := &HttpServer{
-		router:      router,
 		addr:        addr,
 		ExposedAddr: exposedAddr,
-		thingChain: []Middleware{
-			injectThing,
-			corsHeader,
-		},
-		getChain: []Middleware{
-			injectThing,
-			corsHeader,
-		},
-		putChain: []Middleware{
-			injectThing,
-			corsHeader,
-			decodeJSONResponse,
-		},
-		postChain: []Middleware{
-			injectThing,
-			corsHeader,
-			decodeJSONResponse,
-		},
-		Server: &http.Server{
-			Addr: addr,
-		},
+		App:         router,
 	}
 	return h
 }
@@ -65,41 +38,25 @@ func (s *HttpServer) Expose(ref string, thing *producer.ExposedThing) {
 	if ref != "" {
 		prefix = "/" + ref
 	}
-	s.router.GET("/"+ref, buildChain(thing, HTTPGetThing, s.thingChain...))
-	s.router.GET(prefix+"/:name", buildChain(thing, HTTPGet, s.getChain...))
-	s.router.PUT(prefix+"/:name", buildChain(thing, HTTPPut, s.putChain...))
-	s.router.POST(prefix+"/:name", buildChain(thing, HTTPPost, s.postChain...))
-	addEndPoints(s.ExposedAddr, ref, thing)
+	s.Get("/"+ref, thingHandler(thing))
+	g := s.Group(prefix)
+	addEndPoints(g, s.ExposedAddr, prefix, thing)
 }
 
 // Produce constructs and launch an http server
 func (s *HttpServer) Start() {
-	s.router.GlobalOPTIONS = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		header := w.Header()
-		if r.Header.Get("Access-Control-Request-Method") != "" {
-			// Set CORS headers
-			header.Set("Allow", "GET,POST,PUT,DELETE,OPTIONS")
-			header.Set("Access-Control-Allow-Methods", header.Get("Allow"))
-			header.Set("Access-Control-Allow-Origin", "*")
-			header.Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
-		}
-		// Adjust status code to 204
-		w.WriteHeader(http.StatusNoContent)
-	})
-
-	s.Server.Handler = s.router
-
-	s.RegisterOnShutdown(func() {
-		log.Trace().Msg("[protocolHttp:Start] Gracefully shutdown all websocket connections")
-		// Wait for Gracefully shutdown all active websocket connections, for all things
-		// for _, wsHandler := range s.wsHandlers {
-		// 	wsHandler.gracefullWSShutdown()
-		// }
-	})
+	// TODO
+	// s.RegisterOnShutdown(func() {
+	// 	log.Trace().Msg("[protocolHttp:Start] Gracefully shutdown all websocket connections")
+	// 	// Wait for Gracefully shutdown all active websocket connections, for all things
+	// 	// for _, wsHandler := range s.wsHandlers {
+	// 	// 	wsHandler.gracefullWSShutdown()
+	// 	// }
+	// })
 
 	go func() {
 		log.Info().Msg("[protocolHttp:Start] Server listening")
-		err := s.ListenAndServe()
+		err := s.Listen(s.addr)
 		// always returns error. ErrServerClosed on graceful close
 		if err == http.ErrServerClosed {
 			log.Info().Msg("[protocolHttp:Start] Server closed")
@@ -131,15 +88,7 @@ func (s *HttpServer) Stop() {
 	// }
 }
 
-func addEndPoints(exposedAddr string, ref string, t *producer.ExposedThing) {
-	if t == nil {
-		log.Error().Msg("[protocolHttp:GracefullyShutdown] nil thing")
-		return
-	}
-	prefix := ""
-	if ref != "" {
-		prefix = "/" + ref
-	}
+func addEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing) {
 	// var (
 	// allReadOnly   = true
 	// allWriteOnly  = true
@@ -147,52 +96,7 @@ func addEndPoints(exposedAddr string, ref string, t *producer.ExposedThing) {
 	// )
 
 	for _, property := range t.Td.Properties {
-		property := property // Copy https://go.dev/doc/faq#closures_and_goroutines
-		// anyProperties = true
-
-		form := &interaction.Form{
-			ContentType: "application/json",
-			Supplement:  map[string]interface{}{},
-			UrlBuilder: func(host string, secure bool) string {
-				protocol := "http"
-				if secure {
-					protocol = "https"
-				}
-				if exposedAddr != "" { // force exposed host
-					host = exposedAddr
-				}
-				return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, property.Key)
-			},
-		}
-
-		if !property.ReadOnly {
-			// allReadOnly = false
-		} else if !property.WriteOnly {
-			// allWriteOnly = false
-		}
-
-		if property.ReadOnly {
-			form.Op = []string{"readproperty"}
-			form.Supplement["htv:methodName"] = "GET"
-		} else if property.WriteOnly {
-			form.Op = []string{"writeproperty"}
-			form.Supplement["htv:methodName"] = "PUT"
-		} else {
-			form.Op = []string{"readproperty", "writeproperty"}
-		}
-
-		property.Forms = append(property.Forms, form)
-
-		// if property is observable add an additional form with a observable href
-		// if property.Observable {
-		// 	form := interaction.Form{
-		// 		Href:        href + property.Key,
-		// 		ContentType: "application/json",
-		// 	}
-		// 	form.Op = []string{"observeproperty", "unobserveproperty"}
-		// 	form.Subprotocol = "longpoll"
-		// 	property.Forms = append(property.Forms, form)
-		// }
+		addPropertyEndPoints(g, exposedAddr, prefix, t, property)
 	}
 
 	// TODO
@@ -217,28 +121,12 @@ func addEndPoints(exposedAddr string, ref string, t *producer.ExposedThing) {
 	// }
 
 	for _, action := range t.Td.Actions {
-		action := action // Copy https://go.dev/doc/faq#closures_and_goroutines
-		form := &interaction.Form{
-			ContentType: "application/json",
-			Op:          []string{"invokeaction"},
-			Supplement: map[string]interface{}{
-				"htv:methodName": "POST",
-			},
-			UrlBuilder: func(host string, secure bool) string {
-				protocol := "http"
-				if secure {
-					protocol = "https"
-				}
-				if exposedAddr != "" { // force exposed host
-					host = exposedAddr
-				}
-				return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, action.Key)
-			},
-		}
-		action.Forms = append(action.Forms, form)
+		addActionEndPoints(g, exposedAddr, prefix, t, action)
 	}
 
 	// TODO
+	// https://github.com/gofiber/fiber/issues/646
+	// https://github.com/LdDl/fiber-long-poll
 	// for _, event := range t.Td.Events {
 	// 	form := interaction.Form{
 	// 		Href:        href + event.Key,
@@ -250,37 +138,74 @@ func addEndPoints(exposedAddr string, ref string, t *producer.ExposedThing) {
 	// }
 }
 
-//jsonHTTPRenderer Add header and write response as json string
-func jsonHTTPRenderer(w http.ResponseWriter, content interface{}, status int) {
-	w.Header().Set("Content-Type", "application/json")
-	body, err := json.Marshal(content)
-	if err != nil {
-		log.Error().Err(err).Msg("[thing:jsonHTTPRenderer]")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, property *interaction.Property) {
+	form := &interaction.Form{
+		ContentType: "application/json",
+		Supplement:  map[string]interface{}{},
+		UrlBuilder: func(host string, secure bool) string {
+			protocol := "http"
+			if secure {
+				protocol = "https"
+			}
+			if exposedAddr != "" { // force exposed host
+				host = exposedAddr
+			}
+			return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, property.Key)
+		},
 	}
-	w.WriteHeader(status)
-	io.WriteString(w, string(body))
+
+	// if !property.ReadOnly {
+	// 	// allReadOnly = false
+	// } else if !property.WriteOnly {
+	// 	// allWriteOnly = false
+	// }
+
+	if property.ReadOnly {
+		form.Op = []string{"readproperty"}
+		form.Supplement["htv:methodName"] = "GET"
+	} else if property.WriteOnly {
+		form.Op = []string{"writeproperty"}
+		form.Supplement["htv:methodName"] = "PUT"
+	} else {
+		form.Op = []string{"readproperty", "writeproperty"}
+	}
+	g.Get("/"+property.Key, propertyReadHandler(t, property))
+	g.Put("/"+property.Key, propertyWriteHandler(t, property))
+
+	property.Forms = append(property.Forms, form)
+
+	// if property is observable add an additional form with a observable href
+	// if property.Observable {
+	// 	form := interaction.Form{
+	// 		Href:        href + property.Key,
+	// 		ContentType: "application/json",
+	// 	}
+	// 	form.Op = []string{"observeproperty", "unobserveproperty"}
+	// 	form.Subprotocol = "longpoll"
+	// 	property.Forms = append(property.Forms, form)
+	// }
 }
 
-//okHTTPRenderer Add header and write response as ok: true
-func okHTTPRenderer(w http.ResponseWriter, status int) {
-	response := map[string]interface{}{"ok": true}
-	jsonHTTPRenderer(w, response, status)
-}
-
-func errorHTTPRenderer(w http.ResponseWriter, errObj errorReturn, message string) {
-	w.Header().Set("Content-Type", "application/json")
-
-	w.WriteHeader(errObj.httpStatus)
-	body, err := json.Marshal(map[string]interface{}{
-		"error": message,
-		"type":  errObj.errorType,
-	})
-	if err != nil {
-		log.Error().Err(err).Msg("[thing:errorHTTPRenderer]")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+func addActionEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, action *interaction.Action) {
+	form := &interaction.Form{
+		ContentType: "application/json",
+		Op:          []string{"invokeaction"},
+		Supplement: map[string]interface{}{
+			"htv:methodName": "POST",
+		},
+		UrlBuilder: func(host string, secure bool) string {
+			protocol := "http"
+			if secure {
+				protocol = "https"
+			}
+			if exposedAddr != "" { // force exposed host
+				host = exposedAddr
+			}
+			return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, action.Key)
+		},
 	}
-	io.WriteString(w, string(body))
+
+	g.Post("/"+action.Key, actionHandler(t, action))
+
+	action.Forms = append(action.Forms, form)
 }
