@@ -1,8 +1,6 @@
 package protocolHttp
 
 import (
-	"fmt"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/rs/zerolog/log"
@@ -10,7 +8,6 @@ import (
 
 func checkContentType() func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		fmt.Println("A")
 		if (c.Method() == fiber.MethodPut || c.Method() == fiber.MethodPost) && c.Get("Content-Type") != fiber.MIMEApplicationJSON {
 			log.Error().Msg("[protocolHttp:checkContentType] Request without Content-type='application/json'")
 			// break here instead of continuing the chain
