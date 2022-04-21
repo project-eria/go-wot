@@ -9,6 +9,9 @@ import (
 // get handle the GET method for single thing root
 func thingHandler(t *producer.ExposedThing) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
+		if c.Locals("websocket") == true {
+			c.Next()
+		}
 		log.Trace().Str("uri", c.Path()).Msg("[protocolHttp:thingHandler] Received Thing GET request")
 		td := t.GetThingDescription()
 

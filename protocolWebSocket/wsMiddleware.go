@@ -13,8 +13,7 @@ func checkUpgrade() func(*fiber.Ctx) error {
 			key := c.Get("Sec-Websocket-Key")
 			c.Locals("key", key)
 			c.Locals("websocket", true)
-			return c.Next()
 		}
-		return fiber.ErrUpgradeRequired
+		return c.Next()
 	}
 }
