@@ -41,6 +41,8 @@ func (s *HttpServer) Expose(ref string, thing *producer.ExposedThing) {
 	s.Get("/"+ref, thingHandler(thing))
 	g := s.Group(prefix)
 	addEndPoints(g, s.ExposedAddr, prefix, thing)
+	// propertyChangeChan := thing.GetPropertyChangeChannel()
+	// eventChan := thing.GetEventChannel()
 }
 
 // Produce constructs and launch an http server

@@ -10,24 +10,24 @@ import (
 
 // https://w3c.github.io/wot-scripting-api/#the-exposedthing-interface
 type ExposedThing struct {
-	Td                 *thing.Thing
-	ExposedProperties  map[string]*ExposedProperty
-	ExposedActions     map[string]*ExposedAction
-	ExposedEvents      map[string]*ExposedEvent
-	PropertyChangeChan chan PropertyChange
-	EventChan          chan Event
-	_wait              *sync.WaitGroup
+	Td                     *thing.Thing
+	ExposedProperties      map[string]*ExposedProperty
+	ExposedActions         map[string]*ExposedAction
+	ExposedEvents          map[string]*ExposedEvent
+	propertyChangeChannels []chan PropertyChange
+	eventChannels          []chan Event
+	_wait                  *sync.WaitGroup
 }
 
 func NewExposedThing(td *thing.Thing, wait *sync.WaitGroup) *ExposedThing {
 	t := &ExposedThing{
-		Td:                 td,
-		ExposedProperties:  map[string]*ExposedProperty{},
-		ExposedActions:     map[string]*ExposedAction{},
-		ExposedEvents:      map[string]*ExposedEvent{},
-		PropertyChangeChan: make(chan PropertyChange),
-		EventChan:          make(chan Event),
-		_wait:              wait,
+		Td:                     td,
+		ExposedProperties:      map[string]*ExposedProperty{},
+		ExposedActions:         map[string]*ExposedAction{},
+		ExposedEvents:          map[string]*ExposedEvent{},
+		propertyChangeChannels: []chan PropertyChange{},
+		eventChannels:          []chan Event{},
+		_wait:                  wait,
 	}
 
 	for key, property := range td.Properties {
@@ -123,15 +123,18 @@ func (t *ExposedThing) EmitPropertyChange(name string) error {
 			log.Trace().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] no handler available for property")
 			return fmt.Errorf("no handler available for property %s", name)
 		}
-		go func() {
-			select {
-			case t.PropertyChangeChan <- PropertyChange{name, value}:
-				return
-			default:
-				log.Error().Msg("[ExposedThing:EmitPropertyChange] channel blocked (no reader?), can not write")
-				return
-			}
-		}()
+		// Send the notification to all protocols, that requested a channel
+		for _, c := range t.propertyChangeChannels {
+			go func(c chan PropertyChange) {
+				select {
+				case c <- PropertyChange{name, value}:
+					return
+				default:
+					log.Error().Msg("[ExposedThing:EmitPropertyChange] channel blocked (no reader?), can not write")
+					return
+				}
+			}(c)
+		}
 		return nil
 	}
 	log.Trace().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] property not found")
@@ -204,15 +207,18 @@ func (t *ExposedThing) EmitEvent(name string) error {
 				log.Trace().Str("event", name).Err(err).Msg("[ExposedThing:EmitEvent] handler error for event")
 				return err
 			}
-			go func() {
-				select {
-				case t.EventChan <- Event{name, value}:
-					return
-				default:
-					log.Error().Msg("[ExposedThing:EmitEvente] channel blocked (no reader?), can not write")
-					return
-				}
-			}()
+			// Send the notification to all protocols, that requested a channel
+			for _, c := range t.eventChannels {
+				go func(c chan Event) {
+					select {
+					case c <- Event{name, value}:
+						return
+					default:
+						log.Error().Msg("[ExposedThing:EmitEvente] channel blocked (no reader?), can not write")
+						return
+					}
+				}(c)
+			}
 			return nil
 		} else {
 			// No handler
@@ -222,4 +228,20 @@ func (t *ExposedThing) EmitEvent(name string) error {
 	}
 	log.Trace().Str("event", name).Msg("[ExposedThing:EmitEvent] event not found")
 	return fmt.Errorf("event %s not found", name)
+}
+
+func (t *ExposedThing) GetPropertyChangeChannel() <-chan PropertyChange {
+	// Limit channel size to the number of property
+	size := len(t.ExposedProperties)
+	c := make(chan PropertyChange, size)
+	t.propertyChangeChannels = append(t.propertyChangeChannels, c)
+	return c
+}
+
+func (t *ExposedThing) GetEventChannel() <-chan Event {
+	// Limit channel size to the number of property
+	size := len(t.ExposedEvents)
+	c := make(chan Event, size)
+	t.eventChannels = append(t.eventChannels, c)
+	return c
 }

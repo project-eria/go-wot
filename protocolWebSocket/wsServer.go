@@ -39,8 +39,10 @@ func (s *WsServer) Expose(ref string, thing *producer.ExposedThing) {
 	g := s.Group(prefix)
 
 	addEndPoints(g, s.ExposedAddr, prefix, thing)
-	go monitorPropertyObserver(thing.PropertyChangeChan)
-	go monitorEvent(thing.EventChan)
+	propertyChangeChan := thing.GetPropertyChangeChannel()
+	eventChan := thing.GetEventChannel()
+	go monitorPropertyObserver(propertyChangeChan)
+	go monitorEvent(eventChan)
 }
 
 func addEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing) {
@@ -154,7 +156,7 @@ func (c *wsConnection) Close() error {
 	return nil
 }
 
-func monitorPropertyObserver(c chan producer.PropertyChange) {
+func monitorPropertyObserver(c <-chan producer.PropertyChange) {
 	for {
 		propertyChange, ok := <-c
 		if !ok {
@@ -173,7 +175,7 @@ func monitorPropertyObserver(c chan producer.PropertyChange) {
 	}
 }
 
-func monitorEvent(c chan producer.Event) {
+func monitorEvent(c <-chan producer.Event) {
 	for {
 		event, ok := <-c
 		if !ok {
