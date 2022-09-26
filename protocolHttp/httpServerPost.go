@@ -16,12 +16,18 @@ func actionHandler(t *producer.ExposedThing, tdAction *interaction.Action) func(
 		handler := action.GetHandler()
 		if handler != nil {
 			var data interface{}
-			if err := c.BodyParser(&data); err != nil {
-				return c.Status(EncodingError.httpStatus).JSON(fiber.Map{
-					"error": "Incorrect JSON value",
-					"type":  EncodingError.errorType,
-				})
+			if len(c.Body()) > 0 {
+				if err := c.BodyParser(&data); err != nil {
+					log.Trace().Str("action", tdAction.Key).Msg("[protocolHttp:actionHandler] Incorrect JSON value")
+					return c.Status(EncodingError.httpStatus).JSON(fiber.Map{
+						"error": "Incorrect JSON value",
+						"type":  EncodingError.errorType,
+					})
+				}
+			} else {
+				log.Trace().Str("action", tdAction.Key).Msg("[protocolHttp:actionHandler] No body data")
 			}
+
 			// Check the input data
 			if action.Input != nil {
 				if err := action.Input.Check(data); err != nil {

@@ -28,3 +28,14 @@ require (
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
+
+retract (
+	v0.2.1
+	v0.2.0
+	v0.1.4
+	v0.1.3
+	v0.1.2
+	v0.1.1
+	v0.1.0
+	v0.0.0
+)

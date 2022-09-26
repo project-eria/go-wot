@@ -23,13 +23,16 @@ func propertyWriteHandler(t *producer.ExposedThing, tdProperty *interaction.Prop
 		} else {
 			property := t.ExposedProperties[tdProperty.Key]
 			var data interface{}
-			if err := c.BodyParser(&data); err != nil {
-				fmt.Println(err)
-				return c.Status(EncodingError.httpStatus).JSON(fiber.Map{
-					"error": "Incorrect JSON value",
-					"type":  EncodingError.errorType,
-				})
+			if len(c.Body()) > 0 {
+				if err := c.BodyParser(&data); err != nil {
+					fmt.Println(err)
+					return c.Status(EncodingError.httpStatus).JSON(fiber.Map{
+						"error": "Incorrect JSON value",
+						"type":  EncodingError.errorType,
+					})
+				}
 			}
+
 			if data == nil {
 				log.Warn().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyWriteHandler] No Data")
 				return c.Status(DataError.httpStatus).JSON(fiber.Map{
