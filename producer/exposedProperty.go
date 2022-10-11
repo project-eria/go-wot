@@ -20,8 +20,9 @@ type ExposedProperty struct {
 }
 
 type PropertyChange struct {
-	Name  string
-	Value interface{}
+	ThingRef string
+	Name     string
+	Value    interface{}
 }
 
 func NewExposedProperty(interaction *interaction.Property) *ExposedProperty {
@@ -38,7 +39,7 @@ func NewExposedProperty(interaction *interaction.Property) *ExposedProperty {
 type PropertyReadHandler func(*ExposedThing, string) (interface{}, error)
 type PropertyObserveHandler func(*ExposedThing, string) (interface{}, error)
 
-//https://w3c.github.io/wot-scripting-api/#the-propertywritehandler-callback
+// https://w3c.github.io/wot-scripting-api/#the-propertywritehandler-callback
 type PropertyWriteHandler func(*ExposedThing, string, interface{}) error
 
 func (p *ExposedProperty) SetReadHandler(handler PropertyReadHandler) error {

@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	propertiesObservers = map[string]map[string]*wsConnection{} // TODO handle multiple things
-	eventSubscriptions  = map[string]map[string]*wsConnection{} // TODO handle multiple things
+	propertiesObservers = map[string]map[string]map[string]*wsConnection{} // [thing][property][wsKey]
+	eventSubscriptions  = map[string]map[string]map[string]*wsConnection{} // [thing][property][wsKey]
 	mu                  sync.RWMutex
 )
 
@@ -76,7 +76,10 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *
 	g.Get("/"+property.Key, websocket.New(propertyObserverHandler(t, property)))
 
 	property.Forms = append(property.Forms, form)
-	propertiesObservers[property.Key] = map[string]*wsConnection{}
+	if _, in := propertiesObservers[t.Ref]; !in {
+		propertiesObservers[t.Ref] = map[string]map[string]*wsConnection{}
+	}
+	propertiesObservers[t.Ref][property.Key] = map[string]*wsConnection{}
 }
 
 func addEventEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, event *interaction.Event) {
@@ -98,8 +101,10 @@ func addEventEndPoints(g fiber.Router, exposedAddr string, prefix string, t *pro
 	g.Get("/"+event.Key, websocket.New(eventHandler(t, event)))
 
 	event.Forms = append(event.Forms, form)
-	eventSubscriptions[event.Key] = map[string]*wsConnection{}
-
+	if _, in := eventSubscriptions[t.Ref]; !in {
+		eventSubscriptions[t.Ref] = map[string]map[string]*wsConnection{}
+	}
+	eventSubscriptions[t.Ref][event.Key] = map[string]*wsConnection{}
 }
 
 func (s *WsServer) Start() {
@@ -160,15 +165,15 @@ func monitorPropertyObserver(c <-chan producer.PropertyChange) {
 	for {
 		propertyChange, ok := <-c
 		if !ok {
-			log.Trace().Msg("[protocolWebSocket:monitorPropertyObserver] channel closed")
+			log.Trace().Str("ThingRef", propertyChange.ThingRef).Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver] channel closed")
 			break
 		}
-		if observers, ok := propertiesObservers[propertyChange.Name]; ok {
-			log.Trace().Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver] Sending property change")
+		if observers, ok := propertiesObservers[propertyChange.ThingRef][propertyChange.Name]; ok {
+			log.Trace().Str("ThingRef", propertyChange.ThingRef).Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver] Sending property change")
 			for _, wsConn := range observers {
 				err := wsConn.jsonWSRenderer(propertyChange.Value)
 				if err != nil {
-					log.Error().Err(err).Msg("[protocolWebSocket:monitorPropertyObserver]")
+					log.Error().Err(err).Str("ThingRef", propertyChange.ThingRef).Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver]")
 				}
 			}
 		}
@@ -179,15 +184,15 @@ func monitorEvent(c <-chan producer.Event) {
 	for {
 		event, ok := <-c
 		if !ok {
-			log.Trace().Msg("[protocolWebSocket:monitorEvent] channel closed")
+			log.Trace().Str("ThingRef", event.ThingRef).Str("property", event.Name).Msg("[protocolWebSocket:monitorEvent] channel closed")
 			break
 		}
-		if subscribers, ok := eventSubscriptions[event.Name]; ok {
-			log.Trace().Str("event", event.Name).Msg("[protocolWebSocket:monitorEvent] Sending event")
+		if subscribers, ok := eventSubscriptions[event.ThingRef][event.Name]; ok {
+			log.Trace().Str("ThingRef", event.ThingRef).Str("event", event.Name).Msg("[protocolWebSocket:monitorEvent] Sending event")
 			for _, wsConn := range subscribers {
 				err := wsConn.jsonWSRenderer(event.Value)
 				if err != nil {
-					log.Error().Err(err).Msg("[protocolWebSocket:monitorEvent]")
+					log.Error().Err(err).Str("ThingRef", event.ThingRef).Str("property", event.Name).Msg("[protocolWebSocket:monitorEvent]")
 				}
 			}
 		}

@@ -11,6 +11,7 @@ import (
 // https://w3c.github.io/wot-scripting-api/#the-exposedthing-interface
 type ExposedThing struct {
 	Td                     *thing.Thing
+	Ref                    string
 	ExposedProperties      map[string]*ExposedProperty
 	ExposedActions         map[string]*ExposedAction
 	ExposedEvents          map[string]*ExposedEvent
@@ -19,9 +20,10 @@ type ExposedThing struct {
 	_wait                  *sync.WaitGroup
 }
 
-func NewExposedThing(td *thing.Thing, wait *sync.WaitGroup) *ExposedThing {
+func NewExposedThing(td *thing.Thing, ref string, wait *sync.WaitGroup) *ExposedThing {
 	t := &ExposedThing{
 		Td:                     td,
+		Ref:                    ref,
 		ExposedProperties:      map[string]*ExposedProperty{},
 		ExposedActions:         map[string]*ExposedAction{},
 		ExposedEvents:          map[string]*ExposedEvent{},
@@ -110,24 +112,24 @@ func (t *ExposedThing) EmitPropertyChange(name string) error {
 		var err error
 		if handler := p.GetObserveHandler(); handler != nil {
 			if value, err = handler(t, name); err != nil {
-				log.Error().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] observer handler error for property")
+				log.Error().Str("ThingRef", t.Ref).Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] observer handler error for property")
 				return err
 			}
 		} else if handler := p.GetReadHandler(); handler != nil {
 			if value, err = handler(t, name); err != nil {
-				log.Error().Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] read handler error for property")
+				log.Error().Str("ThingRef", t.Ref).Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] read handler error for property")
 				return err
 			}
 		} else {
 			// No handler
-			log.Trace().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] no handler available for property")
+			log.Trace().Str("ThingRef", t.Ref).Str("property", name).Msg("[ExposedThing:EmitPropertyChange] no handler available for property")
 			return fmt.Errorf("no handler available for property %s", name)
 		}
 		// Send the notification to all protocols, that requested a channel
 		for _, c := range t.propertyChangeChannels {
 			go func(c chan PropertyChange) {
 				select {
-				case c <- PropertyChange{name, value}:
+				case c <- PropertyChange{ThingRef: t.Ref, Name: name, Value: value}:
 					return
 				default:
 					log.Error().Msg("[ExposedThing:EmitPropertyChange] channel blocked (no reader?), can not write")
@@ -204,14 +206,14 @@ func (t *ExposedThing) EmitEvent(name string) error {
 			var value interface{}
 			var err error
 			if value, err = handler(); err != nil {
-				log.Trace().Str("event", name).Err(err).Msg("[ExposedThing:EmitEvent] handler error for event")
+				log.Trace().Str("ThingRef", t.Ref).Str("event", name).Err(err).Msg("[ExposedThing:EmitEvent] handler error for event")
 				return err
 			}
 			// Send the notification to all protocols, that requested a channel
 			for _, c := range t.eventChannels {
 				go func(c chan Event) {
 					select {
-					case c <- Event{name, value}:
+					case c <- Event{ThingRef: t.Ref, Name: name, Value: value}:
 						return
 					default:
 						log.Error().Msg("[ExposedThing:EmitEvente] channel blocked (no reader?), can not write")
@@ -222,11 +224,11 @@ func (t *ExposedThing) EmitEvent(name string) error {
 			return nil
 		} else {
 			// No handler
-			log.Trace().Str("event", name).Msg("[ExposedThing:EmitEvent] no handler available for event")
+			log.Trace().Str("ThingRef", t.Ref).Str("event", name).Msg("[ExposedThing:EmitEvent] no handler available for event")
 			return fmt.Errorf("no handler available for event %s", name)
 		}
 	}
-	log.Trace().Str("event", name).Msg("[ExposedThing:EmitEvent] event not found")
+	log.Trace().Str("ThingRef", t.Ref).Str("event", name).Msg("[ExposedThing:EmitEvent] event not found")
 	return fmt.Errorf("event %s not found", name)
 }
 

@@ -11,7 +11,7 @@ import (
 
 func propertyObserverHandler(t *producer.ExposedThing, tdProperty *interaction.Property) func(*websocket.Conn) {
 	return func(c *websocket.Conn) {
-		log.Trace().Str("property", tdProperty.Key).Msg("[protocolWebSocket:propertyObserverHandler] Received Thing property WS request")
+		log.Trace().Str("ThingRef", t.Ref).Str("property", tdProperty.Key).Msg("[protocolWebSocket:propertyObserverHandler] Received Thing property WS request")
 
 		// TODO Handle Origin for debug plugins
 		// upgrader.CheckOrigin = func(r *http.Request) bool { return true }
@@ -48,15 +48,14 @@ func propertyObserverHandler(t *producer.ExposedThing, tdProperty *interaction.P
 			// TODO
 			// h.processRxMsg(wsConn, &message)
 		}
-
 	}
 }
 
 func addPropertyObserver(t *producer.ExposedThing, name string, key string, wsConn *wsConnection) error {
 	mu.Lock()
 	defer mu.Unlock()
-	log.Trace().Str("key", key).Msg("[protocolWebSocket:addPropertyObserver] Register WS property observer connection")
-	propertiesObservers[name][key] = wsConn
+	log.Trace().Str("ThingRef", t.Ref).Str("property", name).Str("key", key).Msg("[protocolWebSocket:addPropertyObserver] Register WS property observer connection")
+	propertiesObservers[t.Ref][name][key] = wsConn
 	// TODO t._wait.Add(1)
 	return nil
 }
@@ -66,17 +65,17 @@ func removePropertyObserver(t *producer.ExposedThing, name string, key string) e
 	defer mu.Unlock()
 	if _, ok := t.ExposedProperties[name]; ok {
 		if t.ExposedProperties[name].Observable {
-			log.Trace().Str("key", key).Msg("[protocolWebSocket:removePropertyObserver] Unregister WS Connection")
-			if _, ok := propertiesObservers[name]; ok {
+			log.Trace().Str("ThingRef", t.Ref).Str("property", name).Str("key", key).Msg("[protocolWebSocket:removePropertyObserver] Unregister WS Connection")
+			if _, ok := propertiesObservers[t.Ref][name]; ok {
 				//		conn.Close() // don't close the websocket.Conn or ReadJSON returns a "use of closed network connection" error
-				delete(propertiesObservers[name], key)
+				delete(propertiesObservers[t.Ref][name], key)
 				// TODO t._wait.Done()
 			}
 			return nil
 		}
-		log.Trace().Str("property", name).Msg("[protocolWebSocket:removePropertyObserver] property not observable")
-		return fmt.Errorf("property %s not observable", name)
+		log.Trace().Str("ThingRef", t.Ref).Str("property", name).Msg("[protocolWebSocket:removePropertyObserver] property not observable")
+		return fmt.Errorf("property %s/%s not observable", t.Ref, name)
 	}
-	log.Trace().Str("property", name).Msg("[protocolWebSocket:removePropertyObserver] property not found")
-	return fmt.Errorf("property %s not found", name)
+	log.Trace().Str("ThingRef", t.Ref).Str("property", name).Msg("[protocolWebSocket:removePropertyObserver] property not found")
+	return fmt.Errorf("property %s/%s not found", t.Ref, name)
 }

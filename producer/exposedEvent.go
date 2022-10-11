@@ -15,8 +15,9 @@ type ExposedEvent struct {
 }
 
 type Event struct {
-	Name  string
-	Value interface{}
+	ThingRef string
+	Name     string
+	Value    interface{}
 }
 
 func NewExposedEvent(interaction *interaction.Event) *ExposedEvent {

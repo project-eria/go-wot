@@ -164,7 +164,7 @@ func (c *wsConn) read() <-chan error {
 				return
 			}
 
-			log.Trace().Interface("message", data).Msgf("[protocolWebSocket:read] Received from WebSocket")
+			log.Trace().Interface("message", data).Msg("[protocolWebSocket:read] Received from WebSocket")
 			if c.listener != nil {
 				go c.listener(data, nil)
 			}

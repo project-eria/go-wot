@@ -49,7 +49,7 @@ func (p *Producer) Produce(ref string, td *thing.Thing) *ExposedThing {
 		log.Error().Msg("[producer:Produce] nil Producer")
 		return nil
 	}
-	exposedThing := NewExposedThing(td, p._wait)
+	exposedThing := NewExposedThing(td, ref, p._wait)
 
 	p.mu.Lock()
 	defer p.mu.Unlock()
