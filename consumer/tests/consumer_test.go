@@ -13,7 +13,7 @@ import (
 func Test_GetThingDescription(t *testing.T) {
 	td := thing.Thing{
 		ID:          "urn:dev:ops:my-actuator-1234",
-		AtContext:   "http://www.w3.org/ns/td",
+		AtContext:   "https://www.w3.org/2022/wot/td/v1.1",
 		Title:       "Actuator1 Example",
 		Description: "An actuator 1st example",
 		SecurityDefinitions: map[string]securityScheme.SecurityScheme{

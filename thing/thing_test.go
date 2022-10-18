@@ -32,7 +32,7 @@ func TestNew(t *testing.T) {
 				types:       nil,
 			},
 			want: &Thing{
-				AtContext:           "http://www.w3.org/ns/td",
+				AtContext:           "https://www.w3.org/2022/wot/td/v1.1",
 				ID:                  "urn:dev:ops:my-actuator-1234",
 				AtTypes:             make([]string, 0),
 				Title:               "ActuatorExample",
@@ -52,7 +52,7 @@ func TestNew(t *testing.T) {
 				description: "An actuator example",
 			},
 			want: &Thing{
-				AtContext:           "http://www.w3.org/ns/td",
+				AtContext:           "https://www.w3.org/2022/wot/td/v1.1",
 				ID:                  "urn:dev:ops:my-actuator-1234",
 				AtTypes:             []string{"OnOffSwitch", "Lamp"},
 				Title:               "ActuatorExample",
@@ -93,7 +93,7 @@ func TestAddSecurity(t *testing.T) {
 	noSecurityScheme := securityScheme.NewNoSecurity()
 	mything.AddSecurity("no_sec", noSecurityScheme)
 	want := &Thing{
-		AtContext:   "http://www.w3.org/ns/td",
+		AtContext:   "https://www.w3.org/2022/wot/td/v1.1",
 		ID:          "urn:dev:ops:my-actuator-1234",
 		AtTypes:     []string{},
 		Title:       "ActuatorExample",
@@ -121,7 +121,7 @@ func TestAddProperty(t *testing.T) {
 	)
 	mything.AddProperty(&property)
 	want := &Thing{
-		AtContext:           "http://www.w3.org/ns/td",
+		AtContext:           "https://www.w3.org/2022/wot/td/v1.1",
 		ID:                  "urn:dev:ops:my-actuator-1234",
 		AtTypes:             []string{},
 		Title:               "ActuatorExample",
@@ -146,7 +146,7 @@ func TestAddAction(t *testing.T) {
 	)
 	mything.AddAction(aAction)
 	want := &Thing{
-		AtContext:           "http://www.w3.org/ns/td",
+		AtContext:           "https://www.w3.org/2022/wot/td/v1.1",
 		ID:                  "urn:dev:ops:my-actuator-1234",
 		AtTypes:             []string{},
 		Title:               "ActuatorExample",

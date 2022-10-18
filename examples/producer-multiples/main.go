@@ -32,7 +32,7 @@ func main() {
 	// THING 1
 	mything1, err := thing.New(
 		"dev:ops:my-actuator-1234",
-		"v0.0.0",
+		"0.0.0-dev",
 		"Actuator1 Example",
 		"An actuator 1st example",
 		[]string{},

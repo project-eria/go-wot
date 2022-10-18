@@ -15,7 +15,7 @@ var consumedThing *consumer.ConsumedThing
 
 const jsonTD string = `{
 	"id": "urn:dev:ops:my-actuator-1234",
-	"@context": "http://www.w3.org/ns/td",
+	"@context": "https://www.w3.org/2022/wot/td/v1.1",
 	"title": "Actuator1 Example",
 	"description": "An actuator 1st example",
 	"securityDefinitions": {

@@ -26,7 +26,7 @@ func Test_RWOBoolProperty(t *testing.T) {
 	myProducer.Expose()
 	client := createClient()
 
-	checkGet(t, client, "", 200, "{\"id\":\"urn:dev:ops:my-actuator-1234\",\"@context\":\"http://www.w3.org/ns/td\",\"title\":\"Actuator1 Example\",\"description\":\"An actuator 1st example\",\"properties\":{\"boolRWO\":{\"observable\":true,\"title\":\"RWO bool\",\"description\":\"Readable/Writable/Observable boolean\",\"forms\":[{\"href\":\"http://127.0.0.1:8888/boolRWO\",\"contentType\":\"application/json\",\"op\":[\"writeproperty\",\"readproperty\"]},{\"href\":\"ws://127.0.0.1:8888/boolRWO\",\"contentType\":\"application/json\",\"op\":[\"observeproperty\",\"unobserveproperty\"]}],\"default\":false,\"readOnly\":false,\"writeOnly\":false,\"type\":\"boolean\"}},\"securityDefinitions\":{\"no_sec\":{\"scheme\":\"nosec\"}},\"security\":\"no_sec\"}")
+	checkGet(t, client, "", 200, "{\"id\":\"urn:dev:ops:my-actuator-1234\",\"@context\":\"https://www.w3.org/2022/wot/td/v1.1\",\"title\":\"Actuator1 Example\",\"description\":\"An actuator 1st example\",\"properties\":{\"boolRWO\":{\"observable\":true,\"title\":\"RWO bool\",\"description\":\"Readable/Writable/Observable boolean\",\"forms\":[{\"href\":\"http://127.0.0.1:8888/boolRWO\",\"contentType\":\"application/json\",\"op\":[\"writeproperty\",\"readproperty\"]},{\"href\":\"ws://127.0.0.1:8888/boolRWO\",\"contentType\":\"application/json\",\"op\":[\"observeproperty\",\"unobserveproperty\"]}],\"default\":false,\"readOnly\":false,\"writeOnly\":false,\"type\":\"boolean\"}},\"securityDefinitions\":{\"no_sec\":{\"scheme\":\"nosec\"}},\"security\":\"no_sec\"}")
 
 	myProducer.Close()
 }
@@ -98,7 +98,7 @@ func Test_RWBoolProperty(t *testing.T) {
 	myProducer.Expose()
 	client := createClient()
 
-	checkGet(t, client, "", 200, "{\"id\":\"urn:dev:ops:my-actuator-1234\",\"@context\":\"http://www.w3.org/ns/td\",\"title\":\"Actuator1 Example\",\"description\":\"An actuator 1st example\",\"properties\":{\"boolRW\":{\"observable\":false,\"title\":\"RW bool\",\"description\":\"Readable/Writable/Not Observable boolean\",\"forms\":[{\"href\":\"http://127.0.0.1:8888/boolRW\",\"contentType\":\"application/json\",\"op\":[\"writeproperty\",\"readproperty\"]}],\"default\":false,\"readOnly\":false,\"writeOnly\":false,\"type\":\"boolean\"}},\"securityDefinitions\":{\"no_sec\":{\"scheme\":\"nosec\"}},\"security\":\"no_sec\"}")
+	checkGet(t, client, "", 200, "{\"id\":\"urn:dev:ops:my-actuator-1234\",\"@context\":\"https://www.w3.org/2022/wot/td/v1.1\",\"title\":\"Actuator1 Example\",\"description\":\"An actuator 1st example\",\"properties\":{\"boolRW\":{\"observable\":false,\"title\":\"RW bool\",\"description\":\"Readable/Writable/Not Observable boolean\",\"forms\":[{\"href\":\"http://127.0.0.1:8888/boolRW\",\"contentType\":\"application/json\",\"op\":[\"writeproperty\",\"readproperty\"]}],\"default\":false,\"readOnly\":false,\"writeOnly\":false,\"type\":\"boolean\"}},\"securityDefinitions\":{\"no_sec\":{\"scheme\":\"nosec\"}},\"security\":\"no_sec\"}")
 
 	myProducer.Close()
 }
@@ -170,7 +170,7 @@ func Test_RBoolProperty(t *testing.T) {
 	myProducer.Expose()
 	client := createClient()
 
-	checkGet(t, client, "", 200, "{\"id\":\"urn:dev:ops:my-actuator-1234\",\"@context\":\"http://www.w3.org/ns/td\",\"title\":\"Actuator1 Example\",\"description\":\"An actuator 1st example\",\"properties\":{\"boolR\":{\"observable\":false,\"title\":\"R bool\",\"description\":\"Readable only/Not Observable boolean\",\"forms\":[{\"href\":\"http://127.0.0.1:8888/boolR\",\"contentType\":\"application/json\",\"op\":[\"readproperty\"]}],\"default\":false,\"readOnly\":true,\"writeOnly\":false,\"type\":\"boolean\"}},\"securityDefinitions\":{\"no_sec\":{\"scheme\":\"nosec\"}},\"security\":\"no_sec\"}")
+	checkGet(t, client, "", 200, "{\"id\":\"urn:dev:ops:my-actuator-1234\",\"@context\":\"https://www.w3.org/2022/wot/td/v1.1\",\"title\":\"Actuator1 Example\",\"description\":\"An actuator 1st example\",\"properties\":{\"boolR\":{\"observable\":false,\"title\":\"R bool\",\"description\":\"Readable only/Not Observable boolean\",\"forms\":[{\"href\":\"http://127.0.0.1:8888/boolR\",\"contentType\":\"application/json\",\"op\":[\"readproperty\"]}],\"default\":false,\"readOnly\":true,\"writeOnly\":false,\"type\":\"boolean\"}},\"securityDefinitions\":{\"no_sec\":{\"scheme\":\"nosec\"}},\"security\":\"no_sec\"}")
 
 	myProducer.Close()
 }
@@ -239,7 +239,7 @@ func Test_WBoolProperty(t *testing.T) {
 	myProducer.Expose()
 	client := createClient()
 
-	checkGet(t, client, "", 200, "{\"id\":\"urn:dev:ops:my-actuator-1234\",\"@context\":\"http://www.w3.org/ns/td\",\"title\":\"Actuator1 Example\",\"description\":\"An actuator 1st example\",\"properties\":{\"boolW\":{\"observable\":false,\"title\":\"W bool\",\"description\":\"Writable only/Not Observable boolean\",\"forms\":[{\"href\":\"http://127.0.0.1:8888/boolW\",\"contentType\":\"application/json\",\"op\":[\"writeproperty\"]}],\"default\":false,\"readOnly\":false,\"writeOnly\":true,\"type\":\"boolean\"}},\"securityDefinitions\":{\"no_sec\":{\"scheme\":\"nosec\"}},\"security\":\"no_sec\"}")
+	checkGet(t, client, "", 200, "{\"id\":\"urn:dev:ops:my-actuator-1234\",\"@context\":\"https://www.w3.org/2022/wot/td/v1.1\",\"title\":\"Actuator1 Example\",\"description\":\"An actuator 1st example\",\"properties\":{\"boolW\":{\"observable\":false,\"title\":\"W bool\",\"description\":\"Writable only/Not Observable boolean\",\"forms\":[{\"href\":\"http://127.0.0.1:8888/boolW\",\"contentType\":\"application/json\",\"op\":[\"writeproperty\"]}],\"default\":false,\"readOnly\":false,\"writeOnly\":true,\"type\":\"boolean\"}},\"securityDefinitions\":{\"no_sec\":{\"scheme\":\"nosec\"}},\"security\":\"no_sec\"}")
 
 	myProducer.Close()
 }

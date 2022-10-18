@@ -13,7 +13,7 @@ func Test_Root(t *testing.T) {
 	myProducer.Expose()
 	client := createClient()
 
-	checkGet(t, client, "", 200, "{\"id\":\"urn:dev:ops:my-actuator-1234\",\"@context\":\"http://www.w3.org/ns/td\",\"title\":\"Actuator1 Example\",\"description\":\"An actuator 1st example\",\"securityDefinitions\":{\"no_sec\":{\"scheme\":\"nosec\"}},\"security\":\"no_sec\"}")
+	checkGet(t, client, "", 200, "{\"id\":\"urn:dev:ops:my-actuator-1234\",\"@context\":\"https://www.w3.org/2022/wot/td/v1.1\",\"title\":\"Actuator1 Example\",\"description\":\"An actuator 1st example\",\"securityDefinitions\":{\"no_sec\":{\"scheme\":\"nosec\"}},\"security\":\"no_sec\"}")
 
 	checkGet(t, client, "/x", 404, "{\"error\":\"Property not found\",\"type\":\"NotFoundError\"}")
 

@@ -31,7 +31,7 @@ func main() {
 
 	mything, err := thing.New(
 		"dev:ops:my-actuator-1234",
-		"v0.0.0",
+		"0.0.0-dev",
 		"Actuator1 Example",
 		"An actuator 1st example",
 		[]string{},
@@ -39,6 +39,9 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("[main]")
 	}
+	mything.AddContext("schema", "https://schema.org/")
+	mything.AddVersion("schema:softwareVersion", "1.1.1")
+
 	// Add Security
 	noSecurityScheme := securityScheme.NewNoSecurity()
 	mything.AddSecurity("no_sec", noSecurityScheme)

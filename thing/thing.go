@@ -10,17 +10,19 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var namespace = "https://www.w3.org/2022/wot/td/v1.1"
+
 // Thing resource provides a Thing Description for a device.
 // A Thing Resource is considered the root resource of a Thing.
 type Thing struct {
-	ID           string   `json:"id,omitempty"`           // (optional) Identifier of the Thing in form of a URI [RFC3986] (e.g., stable URI, temporary and mutable URI, URI with local IP address, URN, etc.).
-	AtContext    string   `json:"@context"`               // (mandatory) JSON-LD keyword to define short-hand names called terms that are used throughout a TD document. anyURI or Array
-	AtTypes      []string `json:"@type,omitempty"`        // (optional) JSON-LD keyword to label the object with semantic tags (or types).
-	Title        string   `json:"title"`                  // (mandatory) Provides a human-readable title (e.g., display a text for UI representation) based on a default language.
-	Titles       []string `json:"titles,omitempty"`       // (optional) Provides multi-language human-readable titles (e.g., display a text for UI representation in different languages).
-	Description  string   `json:"description,omitempty"`  // (optional) Provides additional (human-readable) information based on a default language.
-	Descriptions []string `json:"descriptions,omitempty"` // Can be used to support (human-readable) information in different languages. Also see MultiLanguage.
-	Version      Version  `json:"version,omitempty"`      // Provides version information.	optional	VersionInfo
+	ID           string            `json:"id,omitempty"`           // (optional) Identifier of the Thing in form of a URI [RFC3986] (e.g., stable URI, temporary and mutable URI, URI with local IP address, URN, etc.).
+	AtContext    map[string]string `json:"@context"`               // (mandatory) JSON-LD keyword to define short-hand names called terms that are used throughout a TD document. anyURI or Array
+	AtTypes      []string          `json:"@type,omitempty"`        // (optional) JSON-LD keyword to label the object with semantic tags (or types).
+	Title        string            `json:"title"`                  // (mandatory) Provides a human-readable title (e.g., display a text for UI representation) based on a default language.
+	Titles       []string          `json:"titles,omitempty"`       // (optional) Provides multi-language human-readable titles (e.g., display a text for UI representation in different languages).
+	Description  string            `json:"description,omitempty"`  // (optional) Provides additional (human-readable) information based on a default language.
+	Descriptions []string          `json:"descriptions,omitempty"` // Can be used to support (human-readable) information in different languages. Also see MultiLanguage.
+	Version      map[string]string `json:"version,omitempty"`      // Provides version information.	optional	VersionInfo
 	// created	Provides information when the TD instance was created.	optional	dateTime
 	// modified	Provides information when the TD instance was last modified.	optional	dateTime
 	// support	Provides information about the TD maintainer as URI scheme (e.g., mailto [RFC6068], tel [RFC3966], https).	optional	anyURI
@@ -39,10 +41,6 @@ type Thing struct {
 	MU sync.RWMutex `json:"-"`
 }
 
-type Version struct {
-	Instance string `json:"instance,omitempty"`
-}
-
 // New thing construct
 func New(urn string, version string, title string, description string, types []string) (*Thing, error) {
 	if urn == "" {
@@ -50,10 +48,10 @@ func New(urn string, version string, title string, description string, types []s
 	}
 
 	thing := Thing{
-		AtContext:           "http://www.w3.org/ns/td",
+		AtContext:           map[string]string{namespace: namespace},
 		AtTypes:             types,
 		ID:                  "urn:" + urn,
-		Version:             Version{Instance: version},
+		Version:             map[string]string{"instance": version},
 		Title:               title,
 		Description:         description,
 		Security:            []string{},
@@ -69,6 +67,18 @@ func New(urn string, version string, title string, description string, types []s
 	return &thing, nil
 }
 
+func (t *Thing) AddContext(key string, context string) {
+	if key == "" {
+		log.Error().Str("uri", context).Msg("[thing:AddContext] missing prefix for context")
+		return
+	}
+	t.AtContext[key] = context
+}
+
+func (t *Thing) AddVersion(key string, version string) {
+	t.Version[key] = version
+}
+
 func (t *Thing) AddSecurity(key string, definition securityScheme.SecurityScheme) {
 	t.Security = append(t.Security, key)
 	t.SecurityDefinitions[key] = definition
@@ -78,7 +88,26 @@ func (t *Thing) AddSecurity(key string, definition securityScheme.SecurityScheme
 func (t *Thing) MarshalJSON() ([]byte, error) {
 	type ThingOrigin Thing
 
-	var modifiedSecurity interface{}
+	var (
+		modifiedSecurity  interface{}
+		modifiedAtContext interface{}
+	)
+
+	// AtContext can be a string or an map of string
+	if len(t.AtContext) == 1 {
+		modifiedAtContext = t.AtContext[""]
+	} else {
+		modifiedAtContext = []interface{}{}
+		atcontext := make(map[string]string)
+		for k, v := range t.AtContext {
+			if k == v {
+				modifiedAtContext = append(modifiedAtContext.([]interface{}), v)
+			} else {
+				atcontext[k] = v
+			}
+		}
+		modifiedAtContext = append(modifiedAtContext.([]interface{}), atcontext)
+	}
 
 	// Security can be a string of array of string
 	if len(t.Security) == 1 {
@@ -89,10 +118,12 @@ func (t *Thing) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(&struct {
 		*ThingOrigin
-		ModifiedSecurity interface{} `json:"security"`
+		ModifiedAtContext interface{} `json:"@context"`
+		ModifiedSecurity  interface{} `json:"security"`
 	}{
-		ThingOrigin:      (*ThingOrigin)(t),
-		ModifiedSecurity: modifiedSecurity,
+		ThingOrigin:       (*ThingOrigin)(t),
+		ModifiedAtContext: modifiedAtContext,
+		ModifiedSecurity:  modifiedSecurity,
 	})
 }
 
@@ -100,13 +131,33 @@ func (t *Thing) UnmarshalJSON(data []byte) error {
 	type ThingOrigin Thing
 	mt := &struct {
 		*ThingOrigin
-		ModifiedSecurity interface{} `json:"security"`
+		ModifiedAtContext interface{} `json:"@context"`
+		ModifiedSecurity  interface{} `json:"security"`
 	}{
 		ThingOrigin: (*ThingOrigin)(t),
 	}
 	if err := json.Unmarshal(data, &mt); err != nil {
 		return err
 	}
+	// AtContext can be a string or an map of string
+
+	switch mt.ModifiedAtContext.(type) {
+	case string:
+		t.AtContext = map[string]string{"": mt.ModifiedAtContext.(string)}
+	case []interface{}:
+		t.AtContext = map[string]string{}
+		for _, v := range mt.ModifiedAtContext.([]interface{}) {
+			switch v.(type) {
+			case string:
+				t.AtContext[v.(string)] = v.(string)
+			case map[string]interface{}:
+				for k, v := range v.(map[string]interface{}) {
+					t.AtContext[k] = v.(string)
+				}
+			}
+		}
+	}
+
 	// Security can be a string of array of string
 	switch mt.ModifiedSecurity.(type) {
 	case string:
