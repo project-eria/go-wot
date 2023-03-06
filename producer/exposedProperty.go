@@ -2,20 +2,17 @@ package producer
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/project-eria/go-wot/interaction"
-	"github.com/rs/zerolog/log"
 )
 
 // https://w3c.github.io/wot-scripting-api/#the-exposedthing-interface
 type ExposedProperty struct {
-	Value                  interface{}
+	mu                     sync.RWMutex
 	propertyReadHandler    PropertyReadHandler
 	propertyWriteHandler   PropertyWriteHandler
 	propertyObserveHandler PropertyObserveHandler
-	mu                     sync.RWMutex
 	*interaction.Property
 }
 
@@ -27,9 +24,8 @@ type PropertyChange struct {
 
 func NewExposedProperty(interaction *interaction.Property) *ExposedProperty {
 	return &ExposedProperty{
-		Value:                  interaction.Default,
-		propertyReadHandler:    defaultPropertyReadHandler,
-		propertyWriteHandler:   defaultPropertyWriteHandler,
+		propertyReadHandler:    nil,
+		propertyWriteHandler:   nil,
 		propertyObserveHandler: nil,
 		Property:               interaction,
 	}
@@ -84,33 +80,4 @@ func (p *ExposedProperty) GetWriteHandler() PropertyWriteHandler {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.propertyWriteHandler
-}
-
-func defaultPropertyReadHandler(t *ExposedThing, name string) (interface{}, error) {
-	if property, ok := t.ExposedProperties[name]; ok {
-		log.Trace().Str("property", name).Interface("value", property.Value).Msg("[exposedProperty:defaultPropertyReadHandler] Value get")
-		property.mu.Lock()
-		defer property.mu.Unlock()
-		return property.Value, nil
-	}
-	return nil, fmt.Errorf("property %s not found", name)
-}
-
-func defaultPropertyWriteHandler(t *ExposedThing, name string, value interface{}) error {
-	if property, ok := t.ExposedProperties[name]; ok {
-		if err := property.Data.Check(value); err != nil {
-			log.Error().Str("property", name).Interface("value", value).Err(err).Msg("[exposedProperty:defaultPropertyWriteHandler]")
-			return err
-		}
-		property.mu.Lock()
-		property.Value = value
-		property.mu.Unlock()
-		log.Trace().Str("property", name).Interface("value", value).Msg("[exposedProperty:defaultPropertyWriteHandler] Value set")
-		if err := t.EmitPropertyChange(name); err != nil {
-			log.Error().Str("property", name).Interface("value", value).Err(err).Msg("[exposedProperty:defaultPropertyWriteHandler]")
-			return err
-		}
-		return nil
-	}
-	return fmt.Errorf("property %s not found", name)
 }
