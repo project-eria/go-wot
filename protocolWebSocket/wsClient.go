@@ -124,7 +124,7 @@ func (c *wsConn) connect() <-chan bool {
 		for {
 			ws := websocket.DefaultDialer
 			wsConn, _, err := ws.Dial(c.wsURL, http.Header{"Sec-WebSocket-Protocol": []string{"webthing"}})
-
+    
 			c.mu.Lock()
 			c.Conn = wsConn
 			c.dialErr = err

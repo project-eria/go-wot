@@ -4,22 +4,28 @@ go 1.19
 
 require (
 	github.com/go-resty/resty/v2 v2.7.0
-	github.com/gofiber/fiber/v2 v2.38.1
-	github.com/gofiber/websocket/v2 v2.1.0
-	github.com/rs/zerolog v1.28.0
+	github.com/gofiber/fiber/v2 v2.43.0
+	github.com/gofiber/websocket/v2 v2.1.5
+	github.com/rs/zerolog v1.29.0
 )
 
 require (
-	github.com/andybalholm/brotli v1.0.4 // indirect
-	github.com/fasthttp/websocket v1.5.0 // indirect
-	github.com/klauspost/compress v1.15.11 // indirect
+	github.com/andybalholm/brotli v1.0.5 // indirect
+	github.com/fasthttp/websocket v1.5.2 // indirect
+	github.com/google/uuid v1.3.0 // indirect
+	github.com/klauspost/compress v1.16.3 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.16 // indirect
-	github.com/savsgio/gotils v0.0.0-20220530130905-52f3993e8d6d // indirect
+	github.com/mattn/go-isatty v0.0.18 // indirect
+	github.com/mattn/go-runewidth v0.0.14 // indirect
+	github.com/philhofer/fwd v1.1.2 // indirect
+	github.com/rivo/uniseg v0.4.4 // indirect
+	github.com/savsgio/dictpool v0.0.0-20221023140959-7bf2e61cea94 // indirect
+	github.com/savsgio/gotils v0.0.0-20230208104028-c358bd845dee // indirect
+	github.com/tinylib/msgp v1.1.8 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.40.0 // indirect
+	github.com/valyala/fasthttp v1.45.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
 )
 
 require (
@@ -27,7 +33,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
+	golang.org/x/net v0.8.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
