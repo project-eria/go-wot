@@ -12,7 +12,7 @@ func checkUpgrade() func(*fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
 			key := c.Get("Sec-Websocket-Key")
 			c.Locals("key", key)
-			c.Locals("websocket", true)
+			c.Locals("websocket", true) // Add a 'websocket' flag for the http handlers
 		}
 		return c.Next()
 	}

@@ -12,7 +12,7 @@ import (
 func propertyReadHandler(t *producer.ExposedThing, tdProperty *interaction.Property) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		if c.Locals("websocket") == true {
-			c.Next()
+			return c.Next() // delegate to the next handler (websocket)
 		}
 		log.Trace().Str("uri", c.Path()).Msg("[protocolHttp:propertyReadHandler] Received Thing property GET request")
 		if tdProperty.WriteOnly {

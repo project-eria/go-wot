@@ -10,7 +10,7 @@ import (
 func thingHandler(t *producer.ExposedThing) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		if c.Locals("websocket") == true {
-			c.Next()
+			return c.Next() // delegate to the next handler (websocket)
 		}
 		log.Trace().Str("uri", c.Path()).Msg("[protocolHttp:thingHandler] Received Thing GET request")
 		td := t.GetThingDescription()
