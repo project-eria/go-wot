@@ -24,8 +24,6 @@ type WsServer struct {
 }
 
 func NewServer(httpServer *protocolHttp.HttpServer) *WsServer {
-	httpServer.Use(checkUpgrade())
-
 	return &WsServer{
 		HttpServer: httpServer,
 	}
@@ -73,7 +71,14 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *
 			return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, property.Key)
 		},
 	}
-	g.Get("/"+property.Key, websocket.New(propertyObserverHandler(t, property)))
+	g.Use("/"+property.Key, func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			key := c.Get("Sec-Websocket-Key")
+			c.Locals("key", key)
+			return websocket.New(propertyObserverHandler(t, property))(c)
+		}
+		return c.Next()
+	})
 
 	property.Forms = append(property.Forms, form)
 	if _, in := propertiesObservers[t.Ref]; !in {

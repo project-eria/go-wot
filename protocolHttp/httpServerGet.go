@@ -11,9 +11,6 @@ import (
 // https://w3c.github.io/wot-scripting-api/#handling-requests-for-reading-a-property
 func propertyReadHandler(t *producer.ExposedThing, tdProperty *interaction.Property) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		if c.Locals("websocket") == true {
-			return c.Next() // delegate to the next handler (websocket)
-		}
 		log.Trace().Str("uri", c.Path()).Msg("[protocolHttp:propertyReadHandler] Received Thing property GET request")
 		if tdProperty.WriteOnly {
 			log.Trace().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Access to WriteOnly property")
