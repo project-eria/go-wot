@@ -2,55 +2,53 @@ package dataSchema
 
 import "errors"
 
+type SimpleType interface {
+	bool | string | int8 | int16 | int32 | int64 | float32 | float64
+}
+
 type DataSchema interface {
 	Check(interface{}) error
 }
 
 type Data struct {
+	Title string `json:"title,omitempty"` // (optional) Provides a human-readable title (e.g., display a text for UI representation) based on a default language.
+	// titles 	Provides multi-language human-readable titles (e.g., display a text for UI representation in different languages). Also see MultiLanguage. 	optional 	Map of MultiLanguage
+	Description string `json:"description,omitempty"` // (optional)	Provides additional (human-readable) information based on a default language.
+	// descriptions 	Can be used to support (human-readable) information in different languages. Also see MultiLanguage. 	optional 	Map of MultiLanguage
+
 	Const   interface{} `json:"const,omitempty"`   // (optional) Provides a constant value.
 	Default interface{} `json:"default,omitempty"` // (optional) Supply a default value. The value should validate against the data schema in which it resides.
 	Unit    string      `json:"unit,omitempty"`    // (optional) Provides unit information that is used, e.g., in international science, engineering, and business.
 	// oneOf	Used to ensure that the data is valid against one of the specified schemas in the array.	optional	Array of DataSchema
-	Enum             []interface{} `json:"enum,omitempty"`             // (optional) Restricted set of values provided as an array.
-	ReadOnly         bool          `json:"readOnly"`                   // (default = false) Boolean value that is a hint to indicate whether a property interaction / value is read only.
-	WriteOnly        bool          `json:"writeOnly"`                  // (default = false) Boolean value that is a hint to indicate whether a property interaction / value is write only.
-	Format           string        `json:"format,omitempty"`           // (optional) Allows validation based on a format pattern such as "date-time", "email", "uri", etc.
-	ContentEncoding  string        `json:"contentEncoding,omitempty"`  // (optional) Specifies the encoding used to store the contents, as specified in RFC 2054. The values that are accepted: "7bit", "8bit", "binary", "quoted-printable" and "base64".
-	ContentMediaType string        `json:"contentMediaType,omitempty"` // (optional) Specifies the MIME type (e.g., image/png, audio/mpeg) of the contents of a string value, as described in RFC 2046.
-	Type             string        `json:"type,omitempty"`             // (optional) Assignment of JSON-based data types compatible with JSON Schema (one of boolean, integer, number, string, object, array, or null)
-	DataSchema       `json:"-"`
+	Enum       []interface{} `json:"enum,omitempty"`   // (optional) Restricted set of values provided as an array.
+	Format     string        `json:"format,omitempty"` // (optional) Allows validation based on a format pattern such as "date-time", "email", "uri", etc.
+	Type       string        `json:"type,omitempty"`   // (optional) Assignment of JSON-based data types compatible with JSON Schema (one of boolean, integer, number, string, object, array, or null)
+	DataSchema `json:"-"`
 }
 
 func (d *Data) Check(value interface{}) error {
 	if value == nil {
 		return errors.New("missing value")
 	}
+
+	// TODO check for enum, format,...
+	var err error
 	switch d.DataSchema.(type) {
 	case Boolean:
-		err := d.DataSchema.(Boolean).Check(value)
-		if err != nil {
-			return err
-		}
+		err = d.DataSchema.(Boolean).Check(value)
 	case Integer:
-		err := d.DataSchema.(Integer).Check(value)
-		if err != nil {
-			return err
-		}
+		err = d.DataSchema.(Integer).Check(value)
 	case Number:
-		err := d.DataSchema.(Number).Check(value)
-		if err != nil {
-			return err
-		}
+		err = d.DataSchema.(Number).Check(value)
 	case String:
-		err := d.DataSchema.(String).Check(value)
-		if err != nil {
-			return err
-		}
+		err = d.DataSchema.(String).Check(value)
 	case Object:
-		err := d.DataSchema.(Object).Check(value)
-		if err != nil {
-			return err
-		}
+		err = d.DataSchema.(Object).Check(value)
+	case Array:
+		err = d.DataSchema.(Array).Check(value)
+	}
+	if err != nil {
+		return err
 	}
 	return nil
 }
