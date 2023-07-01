@@ -3,13 +3,34 @@ package protocolWebSocket
 import (
 	"fmt"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/project-eria/go-wot/interaction"
 	"github.com/project-eria/go-wot/producer"
+	"github.com/project-eria/go-wot/protocolHttp"
 	"github.com/rs/zerolog/log"
 )
 
-func propertyObserverHandler(t *producer.ExposedThing, tdProperty *interaction.Property) func(*websocket.Conn) {
+func propertyObserverHandler(t *producer.ExposedThing, tdProperty *interaction.Property) func(*fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		if _, ok := t.ExposedProperties[tdProperty.Key]; ok {
+			if websocket.IsWebSocketUpgrade(c) {
+				key := c.Get("Sec-Websocket-Key")
+				c.Locals("key", key)
+				return websocket.New(propertyObserverWSHandler(t, tdProperty))(c)
+			}
+			return c.Next()
+		} else {
+			log.Error().Str("property", tdProperty.Key).Msg("[protocolWebSocket:propertyObserverHandler] ExposedProperty not found")
+			return c.Status(protocolHttp.UnknownError.HttpStatus).JSON(fiber.Map{
+				"error": fmt.Errorf("ExposedProperty `%s` not found", tdProperty.Key),
+				"type":  protocolHttp.UnknownError.ErrorType,
+			})
+		}
+	}
+}
+
+func propertyObserverWSHandler(t *producer.ExposedThing, tdProperty *interaction.Property) func(*websocket.Conn) {
 	return func(c *websocket.Conn) {
 		log.Trace().Str("ThingRef", t.Ref).Str("property", tdProperty.Key).Msg("[protocolWebSocket:propertyObserverHandler] Received Thing property WS request")
 
@@ -48,6 +69,7 @@ func propertyObserverHandler(t *producer.ExposedThing, tdProperty *interaction.P
 			// TODO
 			// h.processRxMsg(wsConn, &message)
 		}
+
 	}
 }
 
@@ -67,7 +89,7 @@ func removePropertyObserver(t *producer.ExposedThing, name string, key string) e
 		if t.ExposedProperties[name].Observable {
 			log.Trace().Str("ThingRef", t.Ref).Str("property", name).Str("key", key).Msg("[protocolWebSocket:removePropertyObserver] Unregister WS Connection")
 			if _, ok := propertiesObservers[t.Ref][name]; ok {
-				//		conn.Close() // don't close the websocket.Conn or ReadJSON returns a "use of closed network connection" error
+				// conn.Close() // don't close the websocket.Conn or ReadJSON returns a "use of closed network connection" error
 				delete(propertiesObservers[t.Ref][name], key)
 				// TODO t._wait.Done()
 			}

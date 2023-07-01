@@ -3,13 +3,34 @@ package protocolWebSocket
 import (
 	"fmt"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/project-eria/go-wot/interaction"
 	"github.com/project-eria/go-wot/producer"
+	"github.com/project-eria/go-wot/protocolHttp"
 	"github.com/rs/zerolog/log"
 )
 
-func eventHandler(t *producer.ExposedThing, tdEvent *interaction.Event) func(*websocket.Conn) {
+func eventHandler(t *producer.ExposedThing, tdEvent *interaction.Event) func(*fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		if _, ok := t.ExposedEvents[tdEvent.Key]; ok {
+			if websocket.IsWebSocketUpgrade(c) {
+				key := c.Get("Sec-Websocket-Key")
+				c.Locals("key", key)
+				return websocket.New(eventWSHandler(t, tdEvent))(c)
+			}
+			return c.Next()
+		} else {
+			log.Error().Str("event", tdEvent.Key).Msg("[protocolWebSocket:eventHandler] ExposedEvent not found")
+			return c.Status(protocolHttp.UnknownError.HttpStatus).JSON(fiber.Map{
+				"error": fmt.Errorf("ExposedEvent `%s` not found", tdEvent.Key),
+				"type":  protocolHttp.UnknownError.ErrorType,
+			})
+		}
+	}
+}
+
+func eventWSHandler(t *producer.ExposedThing, tdEvent *interaction.Event) func(*websocket.Conn) {
 	return func(c *websocket.Conn) {
 		log.Trace().Str("event", tdEvent.Key).Msg("[protocolWebSocket:propertyEventHandler] Received Thing event WS request")
 

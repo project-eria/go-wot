@@ -71,14 +71,7 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *
 			return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, property.Key)
 		},
 	}
-	g.Use("/"+property.Key, func(c *fiber.Ctx) error {
-		if websocket.IsWebSocketUpgrade(c) {
-			key := c.Get("Sec-Websocket-Key")
-			c.Locals("key", key)
-			return websocket.New(propertyObserverHandler(t, property))(c)
-		}
-		return c.Next()
-	})
+	g.Use("/"+property.Key, propertyObserverHandler(t, property))
 
 	property.Forms = append(property.Forms, form)
 	if _, in := propertiesObservers[t.Ref]; !in {
@@ -103,7 +96,7 @@ func addEventEndPoints(g fiber.Router, exposedAddr string, prefix string, t *pro
 			return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, event.Key)
 		},
 	}
-	g.Get("/"+event.Key, websocket.New(eventHandler(t, event)))
+	g.Get("/"+event.Key, eventHandler(t, event))
 
 	event.Forms = append(event.Forms, form)
 	if _, in := eventSubscriptions[t.Ref]; !in {

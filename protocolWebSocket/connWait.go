@@ -23,10 +23,8 @@ func (c *connWait) nextDuration() time.Duration {
 	switch {
 	case c.next == 0:
 		c.next = c.min
-		break
 	case c.next >= c.max:
 		c.next = c.max
-		break
 	default:
 		c.next = c.next * time.Duration(c.factor)
 		if c.next >= c.max {
