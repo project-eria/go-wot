@@ -141,6 +141,16 @@ func addEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer
 }
 
 func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, property *interaction.Property) {
+	var uriVars string
+	var handlerVars string
+	// TODO https://w3c.github.io/wot-thing-description/#form-uriVariables
+	// How to decide /{city} or {?unit} format?
+	if len(property.UriVariables) > 0 {
+		for uriVar := range property.UriVariables {
+			uriVars += fmt.Sprintf("/{%s}", uriVar)
+			handlerVars += fmt.Sprintf("/:%s", uriVar)
+		}
+	}
 	form := &interaction.Form{
 		ContentType: "application/json",
 		Supplement:  map[string]interface{}{},
@@ -152,7 +162,7 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *
 			if exposedAddr != "" { // force exposed host
 				host = exposedAddr
 			}
-			return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, property.Key)
+			return fmt.Sprintf("%s://%s%s/%s%s", protocol, host, prefix, property.Key, uriVars)
 		},
 	}
 
@@ -171,8 +181,8 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *
 	} else {
 		form.Op = []string{"readproperty", "writeproperty"}
 	}
-	g.Get("/"+property.Key, propertyReadHandler(t, property))
-	g.Put("/"+property.Key, propertyWriteHandler(t, property))
+	g.Get("/"+property.Key+handlerVars, propertyReadHandler(t, property))
+	g.Put("/"+property.Key+handlerVars, propertyWriteHandler(t, property))
 
 	property.Forms = append(property.Forms, form)
 
@@ -189,6 +199,17 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *
 }
 
 func addActionEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, action *interaction.Action) {
+	var uriVars string
+	var handlerVars string
+	// TODO https://w3c.github.io/wot-thing-description/#form-uriVariables
+	// How to decide /{city} or {?unit} format?
+	if len(action.UriVariables) > 0 {
+		for uriVar := range action.UriVariables {
+			uriVars += fmt.Sprintf("/{%s}", uriVar)
+			handlerVars += fmt.Sprintf("/:%s", uriVar)
+		}
+	}
+
 	form := &interaction.Form{
 		ContentType: "application/json",
 		Op:          []string{"invokeaction"},
@@ -203,11 +224,11 @@ func addActionEndPoints(g fiber.Router, exposedAddr string, prefix string, t *pr
 			if exposedAddr != "" { // force exposed host
 				host = exposedAddr
 			}
-			return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, action.Key)
+			return fmt.Sprintf("%s://%s%s/%s%s", protocol, host, prefix, action.Key, uriVars)
 		},
 	}
 
-	g.Post("/"+action.Key, actionHandler(t, action))
+	g.Post("/"+action.Key+handlerVars, actionHandler(t, action))
 
 	action.Forms = append(action.Forms, form)
 }

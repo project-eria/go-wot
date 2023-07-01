@@ -3,34 +3,34 @@ package protocolHttp
 import "net/http"
 
 type errorReturn struct {
-	errorType  string
-	httpStatus int
+	ErrorType  string
+	HttpStatus int
 }
 
 // https://heycam.github.io/webidl/#idl-DOMException-error-names
 var (
 	NotSupportedError = errorReturn{
-		errorType:  "NotSupportedError",
-		httpStatus: http.StatusBadRequest,
+		ErrorType:  "NotSupportedError",
+		HttpStatus: http.StatusBadRequest,
 	}
 	NotFoundError = errorReturn{
-		errorType:  "NotFoundError",
-		httpStatus: http.StatusNotFound,
+		ErrorType:  "NotFoundError",
+		HttpStatus: http.StatusNotFound,
 	}
 	EncodingError = errorReturn{
-		errorType:  "EncodingError",
-		httpStatus: http.StatusBadRequest,
+		ErrorType:  "EncodingError",
+		HttpStatus: http.StatusBadRequest,
 	}
 	UnknownError = errorReturn{
-		errorType:  "UnknownError",
-		httpStatus: http.StatusInternalServerError,
+		ErrorType:  "UnknownError",
+		HttpStatus: http.StatusInternalServerError,
 	}
 	NotAllowedError = errorReturn{
-		errorType:  "NotAllowedError",
-		httpStatus: http.StatusUnauthorized,
+		ErrorType:  "NotAllowedError",
+		HttpStatus: http.StatusUnauthorized,
 	}
 	DataError = errorReturn{
-		errorType:  "DataError",
-		httpStatus: http.StatusBadRequest,
+		ErrorType:  "DataError",
+		HttpStatus: http.StatusBadRequest,
 	}
 )

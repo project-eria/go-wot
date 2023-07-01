@@ -32,11 +32,11 @@ func NewExposedProperty(interaction *interaction.Property) *ExposedProperty {
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-propertyreadhandler-callback
-type PropertyReadHandler func(*ExposedThing, string) (interface{}, error)
-type PropertyObserveHandler func(*ExposedThing, string) (interface{}, error)
+type PropertyReadHandler func(*ExposedThing, string, map[string]string) (interface{}, error)
+type PropertyObserveHandler func(*ExposedThing, string, map[string]string) (interface{}, error)
 
 // https://w3c.github.io/wot-scripting-api/#the-propertywritehandler-callback
-type PropertyWriteHandler func(*ExposedThing, string, interface{}) error
+type PropertyWriteHandler func(*ExposedThing, string, interface{}, map[string]string) error
 
 func (p *ExposedProperty) SetReadHandler(handler PropertyReadHandler) error {
 	if handler == nil {

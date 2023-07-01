@@ -1,6 +1,8 @@
 package protocolHttp
 
 import (
+	"fmt"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/project-eria/go-wot/interaction"
 	"github.com/project-eria/go-wot/producer"
@@ -14,29 +16,45 @@ func propertyReadHandler(t *producer.ExposedThing, tdProperty *interaction.Prope
 		log.Trace().Str("uri", c.Path()).Msg("[protocolHttp:propertyReadHandler] Received Thing property GET request")
 		if tdProperty.WriteOnly {
 			log.Trace().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Access to WriteOnly property")
-			return c.Status(NotAllowedError.httpStatus).JSON(fiber.Map{
+			return c.Status(NotAllowedError.HttpStatus).JSON(fiber.Map{
 				"error": "Write Only property",
-				"type":  NotAllowedError.errorType,
+				"type":  NotAllowedError.ErrorType,
 			})
 		} else {
-			property := t.ExposedProperties[tdProperty.Key]
-			handler := property.GetReadHandler()
-			if handler != nil {
-				content, err := handler(t, tdProperty.Key)
-				if err != nil {
-					log.Error().Str("uri", c.Path()).Err(err).Msg("[protocolHttp:propertyReadHandler]")
-					return c.Status(UnknownError.httpStatus).JSON(fiber.Map{
-						"error": err.Error(),
-						"type":  UnknownError.errorType,
+			if property, ok := t.ExposedProperties[tdProperty.Key]; ok {
+				handler := property.GetReadHandler()
+				if handler != nil {
+					// Check the params (uriVariables) data
+					params := c.AllParams()
+					if err := property.CheckUriVariables(params); err != nil {
+						return c.Status(DataError.HttpStatus).JSON(fiber.Map{
+							"error": err.Error(),
+							"type":  DataError.ErrorType,
+						})
+					}
+					// Call the function that handle the property read
+					content, err := handler(t, tdProperty.Key, params)
+					if err != nil {
+						log.Error().Str("uri", c.Path()).Err(err).Msg("[protocolHttp:propertyReadHandler]")
+						return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
+							"error": err.Error(),
+							"type":  UnknownError.ErrorType,
+						})
+					}
+					log.Trace().Interface("response", content).Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Response to Thing property GET request")
+					return c.JSON(content)
+				} else {
+					log.Warn().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Not Implemented")
+					return c.Status(NotSupportedError.HttpStatus).JSON(fiber.Map{
+						"error": "Not Implemented",
+						"type":  NotSupportedError.ErrorType,
 					})
 				}
-				log.Trace().Interface("response", content).Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Response to Thing property GET request")
-				return c.JSON(content)
 			} else {
-				log.Warn().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Not Implemented")
-				return c.Status(NotSupportedError.httpStatus).JSON(fiber.Map{
-					"error": "Not Implemented",
-					"type":  NotSupportedError.errorType,
+				log.Error().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] ExposedProperty not found")
+				return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
+					"error": fmt.Errorf("ExposedProperty `%s` not found", tdProperty.Key),
+					"type":  UnknownError.ErrorType,
 				})
 			}
 		}

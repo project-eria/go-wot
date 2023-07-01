@@ -11,9 +11,9 @@ func checkContentType() func(*fiber.Ctx) error {
 		if (c.Method() == fiber.MethodPut || c.Method() == fiber.MethodPost) && c.Get("Content-Type") != fiber.MIMEApplicationJSON {
 			log.Error().Msg("[protocolHttp:checkContentType] Request without Content-type='application/json'")
 			// break here instead of continuing the chain
-			return c.Status(EncodingError.httpStatus).JSON(fiber.Map{
+			return c.Status(EncodingError.HttpStatus).JSON(fiber.Map{
 				"error": "Content-type 'application/json' is required",
-				"type":  EncodingError.errorType,
+				"type":  EncodingError.ErrorType,
 			})
 		}
 		return c.Next()

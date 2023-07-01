@@ -31,7 +31,7 @@ func NewExposedEvent(interaction *interaction.Event) *ExposedEvent {
 type EventListenerHandler func() (interface{}, error)
 
 // https://w3c.github.io/wot-scripting-api/#the-eventsubscriptionhandler-callback
-type EventSubscriptionHandler func(*ExposedThing, string) (interface{}, error)
+type EventSubscriptionHandler func(*ExposedThing, string, map[string]string) (interface{}, error)
 
 // https://w3c.github.io/wot-scripting-api/#the-seteventsubscribehandler-method
 func (e *ExposedEvent) SetSubscribeHandler(handler EventSubscriptionHandler) {

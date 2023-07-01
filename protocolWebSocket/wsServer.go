@@ -56,6 +56,7 @@ func addEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer
 }
 
 func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, property *interaction.Property) {
+	// TODO https://w3c.github.io/wot-thing-description/#form-uriVariables
 	form := &interaction.Form{
 		ContentType: "application/json",
 		Supplement:  map[string]interface{}{},
@@ -81,6 +82,7 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *
 }
 
 func addEventEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, event *interaction.Event) {
+	// TODO https://w3c.github.io/wot-thing-description/#form-uriVariables
 	form := &interaction.Form{
 		ContentType: "application/json",
 		Supplement:  map[string]interface{}{},

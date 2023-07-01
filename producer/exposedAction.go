@@ -22,7 +22,7 @@ func NewExposedAction(interaction *interaction.Action) *ExposedAction {
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-actionhandler-callback
-type ActionHandler func(interface{}) (interface{}, error)
+type ActionHandler func(interface{}, map[string]string) (interface{}, error)
 
 // https://w3c.github.io/wot-scripting-api/#the-setactionhandler-method
 func (e *ExposedAction) SetHandler(handler ActionHandler) error {

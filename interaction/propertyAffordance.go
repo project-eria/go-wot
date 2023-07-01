@@ -17,12 +17,13 @@ type Property struct {
 	dataSchema.Data
 }
 
-func NewProperty(key string, title string, description string, readOnly bool, writeOnly bool, observable bool, data dataSchema.Data) *Property {
+func NewProperty(key string, title string, description string, readOnly bool, writeOnly bool, observable bool, uriVariables map[string]dataSchema.Data, data dataSchema.Data) *Property {
 	interaction := Interaction{
-		Key:         key,
-		Title:       title,
-		Description: description,
-		Forms:       []*Form{},
+		Key:          key,
+		Title:        title,
+		Description:  description,
+		Forms:        []*Form{},
+		UriVariables: uriVariables,
 	}
 
 	return &Property{

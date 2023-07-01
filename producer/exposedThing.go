@@ -105,18 +105,18 @@ func (t *ExposedThing) SetPropertyUnobserveHandler(name string) error {
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-emitpropertychange-method
-func (t *ExposedThing) EmitPropertyChange(name string) error {
+func (t *ExposedThing) EmitPropertyChange(name string, params map[string]string) error {
 	if _, ok := t.Td.Properties[name]; ok {
 		p := t.ExposedProperties[name]
 		var value interface{}
 		var err error
 		if handler := p.GetObserveHandler(); handler != nil {
-			if value, err = handler(t, name); err != nil {
+			if value, err = handler(t, name, params); err != nil {
 				log.Error().Str("ThingRef", t.Ref).Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] observer handler error for property")
 				return err
 			}
 		} else if handler := p.GetReadHandler(); handler != nil {
-			if value, err = handler(t, name); err != nil {
+			if value, err = handler(t, name, params); err != nil {
 				log.Error().Str("ThingRef", t.Ref).Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] read handler error for property")
 				return err
 			}
