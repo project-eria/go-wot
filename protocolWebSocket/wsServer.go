@@ -56,7 +56,15 @@ func addEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer
 }
 
 func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, property *interaction.Property) {
-	// TODO https://w3c.github.io/wot-thing-description/#form-uriVariables
+	// https://w3c.github.io/wot-thing-description/#form-uriVariables
+	var uriVars string
+	var handlerVars string
+	if len(property.UriVariables) > 0 {
+		for uriVar := range property.UriVariables {
+			uriVars += fmt.Sprintf("/{%s}", uriVar)
+			handlerVars += fmt.Sprintf("/:%s", uriVar)
+		}
+	}
 	form := &interaction.Form{
 		ContentType: "application/json",
 		Supplement:  map[string]interface{}{},
@@ -69,10 +77,10 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *
 			if exposedAddr != "" { // force exposed host
 				host = exposedAddr
 			}
-			return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, property.Key)
+			return fmt.Sprintf("%s://%s%s/%s%s", protocol, host, prefix, property.Key, uriVars)
 		},
 	}
-	g.Use("/"+property.Key, propertyObserverHandler(t, property))
+	g.Use("/"+property.Key+handlerVars, propertyObserverHandler(t, property))
 
 	property.Forms = append(property.Forms, form)
 	if _, in := propertiesObservers[t.Ref]; !in {
@@ -82,7 +90,16 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *
 }
 
 func addEventEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, event *interaction.Event) {
-	// TODO https://w3c.github.io/wot-thing-description/#form-uriVariables
+	// https://w3c.github.io/wot-thing-description/#form-uriVariables
+	var uriVars string
+	var handlerVars string
+	if len(event.UriVariables) > 0 {
+		for uriVar := range event.UriVariables {
+			uriVars += fmt.Sprintf("/{%s}", uriVar)
+			handlerVars += fmt.Sprintf("/:%s", uriVar)
+		}
+	}
+
 	form := &interaction.Form{
 		ContentType: "application/json",
 		Supplement:  map[string]interface{}{},
@@ -95,10 +112,10 @@ func addEventEndPoints(g fiber.Router, exposedAddr string, prefix string, t *pro
 			if exposedAddr != "" { // force exposed host
 				host = exposedAddr
 			}
-			return fmt.Sprintf("%s://%s%s/%s", protocol, host, prefix, event.Key)
+			return fmt.Sprintf("%s://%s%s/%s%s", protocol, host, prefix, event.Key, uriVars)
 		},
 	}
-	g.Get("/"+event.Key, eventHandler(t, event))
+	g.Get("/"+event.Key+handlerVars, eventHandler(t, event))
 
 	event.Forms = append(event.Forms, form)
 	if _, in := eventSubscriptions[t.Ref]; !in {
@@ -136,7 +153,8 @@ func (s *WsServer) Stop() {
 // }
 
 type wsConnection struct {
-	mu sync.RWMutex
+	mu      sync.RWMutex
+	options map[string]string
 	*websocket.Conn
 }
 
@@ -171,9 +189,15 @@ func monitorPropertyObserver(c <-chan producer.PropertyChange) {
 		if observers, ok := propertiesObservers[propertyChange.ThingRef][propertyChange.Name]; ok {
 			log.Trace().Str("ThingRef", propertyChange.ThingRef).Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver] Sending property change")
 			for _, wsConn := range observers {
-				err := wsConn.jsonWSRenderer(propertyChange.Value)
-				if err != nil {
-					log.Error().Err(err).Str("ThingRef", propertyChange.ThingRef).Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver]")
+				var send bool = true
+				if propertyChange.Handler != nil {
+					send = propertyChange.Handler(propertyChange.Options, wsConn.options)
+				}
+				if send {
+					err := wsConn.jsonWSRenderer(propertyChange.Value)
+					if err != nil {
+						log.Error().Err(err).Str("ThingRef", propertyChange.ThingRef).Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver]")
+					}
 				}
 			}
 		}
@@ -190,9 +214,15 @@ func monitorEvent(c <-chan producer.Event) {
 		if subscribers, ok := eventSubscriptions[event.ThingRef][event.Name]; ok {
 			log.Trace().Str("ThingRef", event.ThingRef).Str("event", event.Name).Msg("[protocolWebSocket:monitorEvent] Sending event")
 			for _, wsConn := range subscribers {
-				err := wsConn.jsonWSRenderer(event.Value)
-				if err != nil {
-					log.Error().Err(err).Str("ThingRef", event.ThingRef).Str("property", event.Name).Msg("[protocolWebSocket:monitorEvent]")
+				var send bool = true
+				if event.Handler != nil {
+					send = event.Handler(event.Options, wsConn.options)
+				}
+				if send {
+					err := wsConn.jsonWSRenderer(event.Value)
+					if err != nil {
+						log.Error().Err(err).Str("ThingRef", event.ThingRef).Str("property", event.Name).Msg("[protocolWebSocket:monitorEvent]")
+					}
 				}
 			}
 		}

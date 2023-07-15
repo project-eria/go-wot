@@ -2,6 +2,7 @@ package protocolWebSocket
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -13,11 +14,21 @@ import (
 
 func eventHandler(t *producer.ExposedThing, tdEvent *interaction.Event) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		if _, ok := t.ExposedEvents[tdEvent.Key]; ok {
+		if event, ok := t.ExposedEvents[tdEvent.Key]; ok {
 			if websocket.IsWebSocketUpgrade(c) {
 				key := c.Get("Sec-Websocket-Key")
 				c.Locals("key", key)
-				return websocket.New(eventWSHandler(t, tdEvent))(c)
+
+				// Check the params (uriVariables) data
+				options := c.AllParams()
+				if err := event.CheckUriVariables(options); err != nil {
+					return c.Status(protocolHttp.DataError.HttpStatus).JSON(fiber.Map{
+						"error": err.Error(),
+						"type":  protocolHttp.DataError.ErrorType,
+					})
+				}
+
+				return websocket.New(eventWSHandler(t, tdEvent, options))(c)
 			}
 			return c.Next()
 		} else {
@@ -30,9 +41,9 @@ func eventHandler(t *producer.ExposedThing, tdEvent *interaction.Event) func(*fi
 	}
 }
 
-func eventWSHandler(t *producer.ExposedThing, tdEvent *interaction.Event) func(*websocket.Conn) {
+func eventWSHandler(t *producer.ExposedThing, tdEvent *interaction.Event, options map[string]string) func(*websocket.Conn) {
 	return func(c *websocket.Conn) {
-		log.Trace().Str("event", tdEvent.Key).Msg("[protocolWebSocket:propertyEventHandler] Received Thing event WS request")
+		log.Trace().Str("event", tdEvent.Key).Interface("options", options).Msg("[protocolWebSocket:propertyEventHandler] Received Thing event WS request")
 
 		// TODO Handle Origin for debug plugins
 		// upgrader.CheckOrigin = func(r *http.Request) bool { return true }
@@ -43,7 +54,12 @@ func eventWSHandler(t *producer.ExposedThing, tdEvent *interaction.Event) func(*
 		// 	return
 		// }
 		key := c.Locals("key").(string)
-		wsConn := &wsConnection{Conn: c}
+		// Deep clone the options
+		optionsCopy := make(map[string]string)
+		for k, v := range options {
+			optionsCopy[k] = strings.Clone(v)
+		}
+		wsConn := &wsConnection{Conn: c, options: optionsCopy}
 
 		if err := addEventSubscription(t, tdEvent.Key, key, wsConn); err != nil {
 			wsConn.errorWSRenderer(err.Error())

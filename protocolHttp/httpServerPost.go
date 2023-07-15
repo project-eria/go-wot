@@ -14,13 +14,13 @@ import (
 // https://w3c.github.io/wot-scripting-api/#handling-action-requests
 func actionHandler(t *producer.ExposedThing, tdAction *interaction.Action) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		log.Trace().Str("uri", c.Path()).Msg("[protocolHttp:actionHandler] Received Thing action POST request")
+		options := c.AllParams()
+		log.Trace().Str("uri", c.Path()).Interface("options", options).Msg("[protocolHttp:actionHandler] Received Thing action POST request")
 		if action, ok := t.ExposedActions[tdAction.Key]; ok {
 			handler := action.GetHandler()
 			if handler != nil {
 				// Check the params (uriVariables) data
-				params := c.AllParams()
-				if err := action.CheckUriVariables(params); err != nil {
+				if err := action.CheckUriVariables(options); err != nil {
 					return c.Status(DataError.HttpStatus).JSON(fiber.Map{
 						"error": err.Error(),
 						"type":  DataError.ErrorType,
@@ -52,7 +52,7 @@ func actionHandler(t *producer.ExposedThing, tdAction *interaction.Action) func(
 					}
 				}
 				// Execute the action requests
-				output, err := handler(data, params)
+				output, err := handler(data, options)
 				if err != nil {
 					log.Error().Str("action", tdAction.Key).Err(err).Msg("[protocolHttp:actionHandler]")
 					return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{

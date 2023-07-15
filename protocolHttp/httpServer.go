@@ -143,7 +143,7 @@ func addEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer
 func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, property *interaction.Property) {
 	var uriVars string
 	var handlerVars string
-	// TODO https://w3c.github.io/wot-thing-description/#form-uriVariables
+	// https://w3c.github.io/wot-thing-description/#form-uriVariables
 	// How to decide /{city} or {?unit} format?
 	if len(property.UriVariables) > 0 {
 		for uriVar := range property.UriVariables {
@@ -201,7 +201,7 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *
 func addActionEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, action *interaction.Action) {
 	var uriVars string
 	var handlerVars string
-	// TODO https://w3c.github.io/wot-thing-description/#form-uriVariables
+	// https://w3c.github.io/wot-thing-description/#form-uriVariables
 	// How to decide /{city} or {?unit} format?
 	if len(action.UriVariables) > 0 {
 		for uriVar := range action.UriVariables {

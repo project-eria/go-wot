@@ -9,10 +9,11 @@ import (
 
 // https://w3c.github.io/wot-scripting-api/#the-exposedthing-interface
 type ExposedProperty struct {
-	mu                     sync.RWMutex
-	propertyReadHandler    PropertyReadHandler
-	propertyWriteHandler   PropertyWriteHandler
-	propertyObserveHandler PropertyObserveHandler
+	mu                      sync.RWMutex
+	propertyReadHandler     PropertyReadHandler
+	propertyWriteHandler    PropertyWriteHandler
+	propertyObserveHandler  PropertyObserveHandler
+	observerSelectorHandler ObserverSelectorHandler
 	*interaction.Property
 }
 
@@ -20,14 +21,17 @@ type PropertyChange struct {
 	ThingRef string
 	Name     string
 	Value    interface{}
+	Handler  ObserverSelectorHandler
+	Options  map[string]string
 }
 
 func NewExposedProperty(interaction *interaction.Property) *ExposedProperty {
 	return &ExposedProperty{
-		propertyReadHandler:    nil,
-		propertyWriteHandler:   nil,
-		propertyObserveHandler: nil,
-		Property:               interaction,
+		propertyReadHandler:     nil,
+		propertyWriteHandler:    nil,
+		propertyObserveHandler:  nil,
+		observerSelectorHandler: nil,
+		Property:                interaction,
 	}
 }
 
@@ -37,6 +41,8 @@ type PropertyObserveHandler func(*ExposedThing, string, map[string]string) (inte
 
 // https://w3c.github.io/wot-scripting-api/#the-propertywritehandler-callback
 type PropertyWriteHandler func(*ExposedThing, string, interface{}, map[string]string) error
+
+type ObserverSelectorHandler func(map[string]string, map[string]string) bool
 
 func (p *ExposedProperty) SetReadHandler(handler PropertyReadHandler) error {
 	if handler == nil {
@@ -64,6 +70,18 @@ func (p *ExposedProperty) GetObserveHandler() PropertyObserveHandler {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.propertyObserveHandler
+}
+
+func (p *ExposedProperty) SetObserverSelectorHandler(handler ObserverSelectorHandler) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.observerSelectorHandler = handler
+}
+
+func (p *ExposedProperty) GetObserverSelectorHandler() ObserverSelectorHandler {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.observerSelectorHandler
 }
 
 func (p *ExposedProperty) SetWriteHandler(handler PropertyWriteHandler) error {

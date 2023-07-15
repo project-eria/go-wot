@@ -13,7 +13,8 @@ import (
 // https://w3c.github.io/wot-scripting-api/#handling-requests-for-reading-a-property
 func propertyReadHandler(t *producer.ExposedThing, tdProperty *interaction.Property) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		log.Trace().Str("uri", c.Path()).Msg("[protocolHttp:propertyReadHandler] Received Thing property GET request")
+		options := c.AllParams()
+		log.Trace().Str("uri", c.Path()).Interface("options", options).Msg("[protocolHttp:propertyReadHandler] Received Thing property GET request")
 		if tdProperty.WriteOnly {
 			log.Trace().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Access to WriteOnly property")
 			return c.Status(NotAllowedError.HttpStatus).JSON(fiber.Map{
@@ -24,16 +25,15 @@ func propertyReadHandler(t *producer.ExposedThing, tdProperty *interaction.Prope
 			if property, ok := t.ExposedProperties[tdProperty.Key]; ok {
 				handler := property.GetReadHandler()
 				if handler != nil {
-					// Check the params (uriVariables) data
-					params := c.AllParams()
-					if err := property.CheckUriVariables(params); err != nil {
+					// Check the options (uriVariables) data
+					if err := property.CheckUriVariables(options); err != nil {
 						return c.Status(DataError.HttpStatus).JSON(fiber.Map{
 							"error": err.Error(),
 							"type":  DataError.ErrorType,
 						})
 					}
 					// Call the function that handle the property read
-					content, err := handler(t, tdProperty.Key, params)
+					content, err := handler(t, tdProperty.Key, options)
 					if err != nil {
 						log.Error().Str("uri", c.Path()).Err(err).Msg("[protocolHttp:propertyReadHandler]")
 						return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
