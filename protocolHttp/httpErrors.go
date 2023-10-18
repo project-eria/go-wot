@@ -7,11 +7,11 @@ type errorReturn struct {
 	HttpStatus int
 }
 
-// https://heycam.github.io/webidl/#idl-DOMException-error-names
+// https://webidl.spec.whatwg.org/#idl-DOMException-error-names
 var (
 	NotSupportedError = errorReturn{
 		ErrorType:  "NotSupportedError",
-		HttpStatus: http.StatusBadRequest,
+		HttpStatus: http.StatusNotImplemented,
 	}
 	NotFoundError = errorReturn{
 		ErrorType:  "NotFoundError",
