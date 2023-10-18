@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"os"
 	"os/signal"
 	"sync"
@@ -55,78 +54,80 @@ func main() {
 		false,
 		false,
 		true,
+		nil,
 		booleanData,
 	)
 	mything.AddProperty(propertyRWO)
 
-	propertyRW := interaction.NewProperty(
-		"boolRW",
-		"RW bool",
-		"Readable/Writable/Not Observable boolean",
-		false,
-		false,
-		false,
-		booleanData,
-	)
-	mything.AddProperty(propertyRW)
+	// 	propertyRW := interaction.NewProperty(
+	// 		"boolRW",
+	// 		"RW bool",
+	// 		"Readable/Writable/Not Observable boolean",
+	// 		false,
+	// 		false,
+	// 		false,
+	// 		booleanData,
+	// 	)
+	// 	mything.AddProperty(propertyRW)
 
-	propertyR := interaction.NewProperty(
-		"boolR",
-		"R bool",
-		"Readable only/Not Observable boolean",
-		true,
-		false,
-		false,
-		booleanData,
-	)
-	mything.AddProperty(propertyR)
+	// 	propertyR := interaction.NewProperty(
+	// 		"boolR",
+	// 		"R bool",
+	// 		"Readable only/Not Observable boolean",
+	// 		true,
+	// 		false,
+	// 		false,
+	// 		booleanData,
+	// 	)
+	// 	mything.AddProperty(propertyR)
 
-	propertyW := interaction.NewProperty(
-		"boolW",
-		"W bool",
-		"Writable only/Not Observable boolean",
-		false,
-		true,
-		false,
-		booleanData,
-	)
-	mything.AddProperty(propertyW)
+	// 	propertyW := interaction.NewProperty(
+	// 		"boolW",
+	// 		"W bool",
+	// 		"Writable only/Not Observable boolean",
+	// 		false,
+	// 		true,
+	// 		false,
+	// 		booleanData,
+	// 	)
+	// 	mything.AddProperty(propertyW)
 
-	aAction := interaction.NewAction(
-		"a",
-		"No Input, No Output",
-		"",
-		nil,
-		nil,
-	)
-	mything.AddAction(aAction)
+	// 	aAction := interaction.NewAction(
+	// 		"a",
+	// 		"No Input, No Output",
+	// 		"",
+	// 		nil,
+	// 		nil,
+	// 	)
+	// 	mything.AddAction(aAction)
 
-	stringInput := dataSchema.NewString("", 0, 0, "")
-	bAction := interaction.NewAction(
-		"b",
-		"String Input, No Output",
-		"",
-		&stringInput,
-		nil,
-	)
-	mything.AddAction(bAction)
-	stringOutput := dataSchema.NewString("", 0, 0, "")
-	cAction := interaction.NewAction(
-		"c",
-		"String Input, String Output",
-		"",
-		&stringInput,
-		&stringOutput,
-	)
-	mything.AddAction(cAction)
+	// 	stringInput := dataSchema.NewString("", 0, 0, "")
+	// 	bAction := interaction.NewAction(
+	// 		"b",
+	// 		"String Input, No Output",
+	// 		"",
+	// 		&stringInput,
+	// 		nil,
+	// 	)
+	// 	mything.AddAction(bAction)
+	// 	stringOutput := dataSchema.NewString("", 0, 0, "")
+	// 	cAction := interaction.NewAction(
+	// 		"c",
+	// 		"String Input, String Output",
+	// 		"",
+	// 		&stringInput,
+	// 		&stringOutput,
+	// 	)
+	// 	mything.AddAction(cAction)
 
 	// Run Server
 	var wait sync.WaitGroup
 	myProducer := producer.New(&wait)
-	exposedThing := myProducer.Produce("", mything)
-	exposedThing.SetActionHandler("a", handlerA)
-	exposedThing.SetActionHandler("b", handlerB)
-	exposedThing.SetActionHandler("c", handlerC)
+	//exposedThing :=
+	myProducer.Produce("", mything)
+	// 	exposedThing.SetActionHandler("a", handlerA)
+	// 	exposedThing.SetActionHandler("b", handlerB)
+	// 	exposedThing.SetActionHandler("c", handlerC)
 	httpServer := protocolHttp.NewServer(":8888", "", "My App", "My App v0.0.0")
 	myProducer.AddServer(httpServer)
 	wsServer := protocolWebSocket.NewServer(httpServer)
@@ -134,11 +135,11 @@ func main() {
 
 	myProducer.Expose()
 
-	for {
-		time.Sleep(10 * time.Second)
-		exposedThing.ExposedProperties["boolRWO"].Value = !(exposedThing.ExposedProperties["boolRWO"].Value.(bool))
-		exposedThing.EmitPropertyChange("boolRWO")
-	}
+	// 	for {
+	// 		time.Sleep(10 * time.Second)
+	// 		exposedThing.ExposedProperties["boolRWO"].Value = !(exposedThing.ExposedProperties["boolRWO"].Value.(bool))
+	// 		exposedThing.EmitPropertyChange("boolRWO")
+	// 	}
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c,
@@ -152,21 +153,21 @@ func main() {
 	wait.Wait()
 }
 
-func handlerA(interface{}) (interface{}, error) {
-	println("a action")
-	return nil, nil
-}
+// func handlerA(interface{}) (interface{}, error) {
+// 	println("a action")
+// 	return nil, nil
+// }
 
-func handlerB(value interface{}) (interface{}, error) {
-	println("b action: " + value.(string))
-	return nil, nil
-}
+// func handlerB(value interface{}) (interface{}, error) {
+// 	println("b action: " + value.(string))
+// 	return nil, nil
+// }
 
-func handlerC(value interface{}) (interface{}, error) {
-	v := value.(string)
-	if v != "c" {
-		return nil, errors.New("the input string should be 'c'")
-	}
-	println("c action: " + v)
-	return "ok", nil
-}
+// func handlerC(value interface{}) (interface{}, error) {
+// 	v := value.(string)
+// 	if v != "c" {
+// 		return nil, errors.New("the input string should be 'c'")
+// 	}
+// 	println("c action: " + v)
+// 	return "ok", nil
+// }

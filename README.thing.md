@@ -75,13 +75,14 @@
 
 	...
 
-	func handlerA(interface{}) (interface{}, error) {
+	func handlerA(interface{}, map[string]string) (interface{}, error) {
 		println("a action")
 		return nil, nil
 	}
 ```
 
-## Expose the services
+## Expose and start the services
 ```
 	myProducer.Expose()
+	myProducer.Start()
 ```

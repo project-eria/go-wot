@@ -61,13 +61,12 @@ func (p *Producer) Produce(ref string, td *thing.Thing) *ExposedThing {
 	return exposedThing
 }
 
-// Produce constructs and launch an http server
+// Produce constructs
 func (p *Producer) Expose() {
 	if p == nil {
 		log.Error().Msg("[producer:Expose] nil Producer")
 		return
 	}
-	log.Info().Msg("[producer:Expose] Starting...")
 
 	if len(p.servers) == 0 {
 		log.Fatal().Msg("[producer:Expose] no servers to expose Things")
@@ -77,6 +76,21 @@ func (p *Producer) Expose() {
 		for ref, t := range p.things {
 			s.Expose(ref, t)
 		}
+	}
+}
+
+// Launch servers
+func (p *Producer) Start() {
+	if p == nil {
+		log.Error().Msg("[producer:Start] nil Producer")
+		return
+	}
+	if len(p.servers) == 0 {
+		log.Fatal().Msg("[producer:Start] no servers to start")
+		return
+	}
+	log.Info().Msg("[producer:Start] Starting...")
+	for _, s := range p.servers {
 		s.Start()
 	}
 }
