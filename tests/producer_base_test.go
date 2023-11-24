@@ -8,7 +8,7 @@ import (
 )
 
 //	{
-//	    "@context": "",
+//	    "@context": "https://www.w3.org/2022/wot/td/v1.1",
 //	    "id": "urn:dev:ops:my-actuator-1234",
 //	    "title": "Actuator1 Example",
 //	    "description": "An actuator 1st example",
@@ -34,7 +34,7 @@ func TestBase(t *testing.T) {
 	obj.HasValue("title", "Example")
 	obj.HasValue("description", "An example")
 	obj.Value("version").Object().HasValue("instance", "0.0.0-dev")
-	obj.Value("@context").String().IsEmpty()
+	obj.Value("@context").String().IsEqual("https://www.w3.org/2022/wot/td/v1.1")
 	obj.Value("securityDefinitions").Object().IsEmpty()
 	obj.Value("security").Array().IsEmpty()
 }
@@ -42,9 +42,7 @@ func TestBase(t *testing.T) {
 //	{
 //		"@context": [
 //		  "https://www.w3.org/2022/wot/td/v1.1",
-//		  {
-//			"schema": "https://schema.org/"
-//		  }
+//		  { "schema": "https://schema.org/" }
 //		],
 //		"description": "An example",
 //		"id": "urn:dev:ops:my-actuator-1234",
@@ -65,13 +63,14 @@ func TestBaseContext(t *testing.T) {
 
 	obj := e.GET("/").Expect().
 		Status(http.StatusOK).JSON().Object()
+	obj.Value("@context").Array().Length().IsEqual(2)
 	obj.Value("@context").Array().Value(0).String().IsEqual("https://www.w3.org/2022/wot/td/v1.1")
 	obj.Value("@context").Array().Value(1).Object().HasValue("schema", "https://schema.org/")
 	obj.Value("version").Object().HasValue("schema:softwareVersion", "1.1.1")
 }
 
 //	{
-//		"@context": "",
+//		"@context": "https://www.w3.org/2022/wot/td/v1.1",
 //		"description": "An example",
 //		"id": "urn:dev:ops:my-actuator-1234",
 //		"security": "no_sec",

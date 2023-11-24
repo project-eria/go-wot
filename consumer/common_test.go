@@ -1,17 +1,17 @@
-package test
+package consumer_test
 
 import (
 	"encoding/json"
-	"net/http"
 	"os"
 	"testing"
 
 	"github.com/project-eria/go-wot/consumer"
+	"github.com/project-eria/go-wot/mocks"
+	"github.com/project-eria/go-wot/protocolHttp"
 	"github.com/project-eria/go-wot/thing"
 	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/suite"
 )
-
-var consumedThing *consumer.ConsumedThing
 
 const jsonTD string = `{
 	"id": "urn:dev:ops:my-actuator-1234",
@@ -158,31 +158,49 @@ const jsonTD string = `{
 //   },
 // },
 
-// MockClient is the mock client
-type MockClient struct {
-	DoFunc func(req *http.Request) (*http.Response, error)
+// func TestMain(m *testing.M) {
+// 	//	zerolog.SetGlobalLevel(zerolog.Disabled)
+// 	var td thing.Thing
+// 	if err := json.Unmarshal([]byte(jsonTD), &td); err != nil {
+// 		println(err.Error())
+// 		os.Exit(1)
+// 	}
+// 	myConsumer := consumer.New()
+// 	httpClientProcessor = &mocks.HttpClientProcessor{}
+// 	mockClient := &protocolHttp.HttpClient{
+// 		Client:  httpClientProcessor,
+// 		Schemes: []string{"http"},
+// 	}
+// 	myConsumer.AddClient(mockClient)
+// 	consumedThing = myConsumer.Consume(&td)
+// 	exitVal := m.Run()
+// 	os.Exit(exitVal)
+// }
+
+type ConsumerTestSuite struct {
+	consumedThing       consumer.ConsumedThing
+	httpClientProcessor *mocks.HttpClientProcessor
+	suite.Suite
 }
 
-var (
-	// GetDoFunc fetches the mock client's `Do` func
-	GetDoFunc func(req *http.Request) (*http.Response, error)
-)
-
-// Do is the mock client's `Do` func
-func (m *MockClient) Do(req *http.Request) (*http.Response, error) {
-	return GetDoFunc(req)
+func Test_ConsumerTestSuite(t *testing.T) {
+	suite.Run(t, &ConsumerTestSuite{})
 }
 
-func TestMain(m *testing.M) {
+func (ts *ConsumerTestSuite) SetupTest() {
 	zerolog.SetGlobalLevel(zerolog.Disabled)
 	var td thing.Thing
 	if err := json.Unmarshal([]byte(jsonTD), &td); err != nil {
 		println(err.Error())
 		os.Exit(1)
 	}
-	consumer.Client = &MockClient{}
 	myConsumer := consumer.New()
-	consumedThing = myConsumer.Consume(&td)
-	exitVal := m.Run()
-	os.Exit(exitVal)
+	httpClientProcessor := &mocks.HttpClientProcessor{}
+	mockClient := &protocolHttp.HttpClient{
+		Client:  httpClientProcessor,
+		Schemes: []string{"http"},
+	}
+	myConsumer.AddClient(mockClient)
+	ts.consumedThing = myConsumer.Consume(&td)
+	ts.httpClientProcessor = httpClientProcessor
 }

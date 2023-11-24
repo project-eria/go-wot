@@ -1,19 +1,16 @@
-package test
+package consumer_test
 
 import (
-	"testing"
-
 	"github.com/project-eria/go-wot/dataSchema"
 	"github.com/project-eria/go-wot/interaction"
 	"github.com/project-eria/go-wot/securityScheme"
 	"github.com/project-eria/go-wot/thing"
-	"github.com/stretchr/testify/assert"
 )
 
-func Test_GetThingDescription(t *testing.T) {
+func (ts *ConsumerTestSuite) Test_GetThingDescription() {
 	td := thing.Thing{
 		ID:          "urn:dev:ops:my-actuator-1234",
-		AtContext:   "https://www.w3.org/2022/wot/td/v1.1",
+		AtContext:   map[string]string{"": "https://www.w3.org/2022/wot/td/v1.1"},
 		Title:       "Actuator1 Example",
 		Description: "An actuator 1st example",
 		SecurityDefinitions: map[string]securityScheme.SecurityScheme{
@@ -28,6 +25,7 @@ func Test_GetThingDescription(t *testing.T) {
 		Properties: map[string]*interaction.Property{
 			"boolR": {
 				Observable: false,
+				ReadOnly:   true,
 				Interaction: interaction.Interaction{
 					Key: "",
 					// AtType: ([]string) <nil>,
@@ -35,11 +33,12 @@ func Test_GetThingDescription(t *testing.T) {
 					// Titles: (map[string]string) <nil>,
 					Description: "Readable only/Not Observable boolean",
 					// Descriptions: (map[string]string) <nil>,
-					Forms: []interaction.Form{
+					Forms: []*interaction.Form{
 						{
 							Href:        "http://127.0.0.1:8888/boolR",
 							ContentType: "application/json",
 							Op:          []string{"readproperty"},
+							Supplement:  map[string]interface{}{},
 						},
 					},
 				},
@@ -48,17 +47,14 @@ func Test_GetThingDescription(t *testing.T) {
 					Default: false,
 					Unit:    "",
 					// +    Enum: ([]interface {}) <nil>,
-					ReadOnly:         true,
-					WriteOnly:        false,
-					Format:           "",
-					ContentEncoding:  "",
-					ContentMediaType: "",
-					Type:             "boolean",
+					Format: "",
+					Type:   "boolean",
 					// +    DataSchema: (dataSchema.DataSchema) <nil>
 				},
 			},
 			"boolW": {
 				Observable: false,
+				WriteOnly:  true,
 				Interaction: interaction.Interaction{
 					Key: "",
 					// AtType: ([]string) <nil>,
@@ -66,11 +62,12 @@ func Test_GetThingDescription(t *testing.T) {
 					// Titles: (map[string]string) <nil>,
 					Description: "Writable only/Not Observable boolean",
 					// Descriptions: (map[string]string) <nil>,
-					Forms: []interaction.Form{
+					Forms: []*interaction.Form{
 						{
 							Href:        "http://127.0.0.1:8888/boolW",
 							ContentType: "application/json",
 							Op:          []string{"writeproperty"},
+							Supplement:  map[string]interface{}{},
 						},
 					},
 				},
@@ -79,12 +76,8 @@ func Test_GetThingDescription(t *testing.T) {
 					Default: false,
 					Unit:    "",
 					// +    Enum: ([]interface {}) <nil>,
-					ReadOnly:         false,
-					WriteOnly:        true,
-					Format:           "",
-					ContentEncoding:  "",
-					ContentMediaType: "",
-					Type:             "boolean",
+					Format: "",
+					Type:   "boolean",
 					// +    DataSchema: (dataSchema.DataSchema) <nil>
 				},
 			},
@@ -97,11 +90,12 @@ func Test_GetThingDescription(t *testing.T) {
 					// Titles: (map[string]string) <nil>,
 					Description: "Readable/Writable/Not Observable boolean",
 					// Descriptions: (map[string]string) <nil>,
-					Forms: []interaction.Form{
+					Forms: []*interaction.Form{
 						{
 							Href:        "http://127.0.0.1:8888/boolRW",
 							ContentType: "application/json",
 							Op:          []string{"writeproperty", "readproperty"},
+							Supplement:  map[string]interface{}{},
 						},
 					},
 				},
@@ -110,12 +104,8 @@ func Test_GetThingDescription(t *testing.T) {
 					Default: false,
 					Unit:    "",
 					// +    Enum: ([]interface {}) <nil>,
-					ReadOnly:         false,
-					WriteOnly:        false,
-					Format:           "",
-					ContentEncoding:  "",
-					ContentMediaType: "",
-					Type:             "boolean",
+					Format: "",
+					Type:   "boolean",
 					// +    DataSchema: (dataSchema.DataSchema) <nil>
 				},
 			},
@@ -131,13 +121,14 @@ func Test_GetThingDescription(t *testing.T) {
 					//    Titles: (map[string]string) <nil>,
 					Description: (""),
 					//    Descriptions: (map[string]string) <nil>,
-					Forms: []interaction.Form{
+					Forms: []*interaction.Form{
 						{
 							Href:        "http://127.0.0.1:8888/a",
 							ContentType: "application/json",
 							Op: []string{
 								"invokeaction",
 							},
+							Supplement: map[string]interface{}{},
 						},
 					},
 				},
@@ -148,12 +139,8 @@ func Test_GetThingDescription(t *testing.T) {
 					Default: "",
 					Unit:    "",
 					// Enum: ([]interface {}) <nil>,
-					ReadOnly:         false,
-					WriteOnly:        false,
-					Format:           "",
-					ContentEncoding:  "",
-					ContentMediaType: "",
-					Type:             "string",
+					Format: "",
+					Type:   "string",
 					// DataSchema: (dataSchema.DataSchema) <nil>
 				},
 				//    Output: (*dataSchema.Data)(<nil>),
@@ -164,13 +151,14 @@ func Test_GetThingDescription(t *testing.T) {
 					//    Titles: (map[string]string) <nil>,
 					Description: (""),
 					//    Descriptions: (map[string]string) <nil>,
-					Forms: []interaction.Form{
+					Forms: []*interaction.Form{
 						{
 							Href:        "http://127.0.0.1:8888/b",
 							ContentType: "application/json",
 							Op: []string{
 								"invokeaction",
 							},
+							Supplement: map[string]interface{}{},
 						},
 					},
 				},
@@ -181,12 +169,8 @@ func Test_GetThingDescription(t *testing.T) {
 					Default: "",
 					Unit:    "",
 					// Enum: ([]interface {}) <nil>,
-					ReadOnly:         false,
-					WriteOnly:        false,
-					Format:           "",
-					ContentEncoding:  "",
-					ContentMediaType: "",
-					Type:             "string",
+					Format: "",
+					Type:   "string",
 					// DataSchema: (dataSchema.DataSchema) <nil>
 				},
 				Output: &dataSchema.Data{
@@ -194,12 +178,8 @@ func Test_GetThingDescription(t *testing.T) {
 					Default: "",
 					Unit:    "",
 					// Enum: ([]interface {}) <nil>,
-					ReadOnly:         false,
-					WriteOnly:        false,
-					Format:           "",
-					ContentEncoding:  "",
-					ContentMediaType: "",
-					Type:             "string",
+					Format: "",
+					Type:   "string",
 					// DataSchema: (dataSchema.DataSchema) <nil>
 				},
 				Interaction: interaction.Interaction{
@@ -209,13 +189,14 @@ func Test_GetThingDescription(t *testing.T) {
 					//    Titles: (map[string]string) <nil>,
 					Description: (""),
 					//    Descriptions: (map[string]string) <nil>,
-					Forms: []interaction.Form{
+					Forms: []*interaction.Form{
 						{
 							Href:        "http://127.0.0.1:8888/c",
 							ContentType: "application/json",
 							Op: []string{
 								"invokeaction",
 							},
+							Supplement: map[string]interface{}{},
 						},
 					},
 				},
@@ -223,6 +204,6 @@ func Test_GetThingDescription(t *testing.T) {
 		},
 	}
 
-	tdGet := consumedThing.GetThingDescription()
-	assert.Equal(t, &td, tdGet, "they should be equal")
+	tdGet := ts.consumedThing.GetThingDescription()
+	ts.Equal(&td, tdGet, "they should be equal")
 }

@@ -48,7 +48,7 @@ func New(urn string, version string, title string, description string, types []s
 	}
 
 	thing := Thing{
-		AtContext:           map[string]string{namespace: namespace},
+		AtContext:           map[string]string{"": namespace},
 		AtTypes:             types,
 		ID:                  "urn:" + urn,
 		Version:             map[string]string{"instance": version},
@@ -100,7 +100,7 @@ func (t *Thing) MarshalJSON() ([]byte, error) {
 		modifiedAtContext = []interface{}{}
 		atcontext := make(map[string]string)
 		for k, v := range t.AtContext {
-			if k == v {
+			if k == v || k == "" {
 				modifiedAtContext = append(modifiedAtContext.([]interface{}), v)
 			} else {
 				atcontext[k] = v

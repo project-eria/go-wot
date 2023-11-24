@@ -49,6 +49,7 @@ func main() {
 		false,
 		false,
 		true,
+		nil,
 		booleanData,
 	)
 	mything.AddProperty(propertyRWO)
@@ -70,8 +71,8 @@ func main() {
 
 	for {
 		time.Sleep(10 * time.Second)
-		exposedThing.EmitPropertyChange("boolRWO")
-		exposedThing.EmitEvent("d")
+		exposedThing.EmitPropertyChange("boolRWO", nil, nil)
+		exposedThing.EmitEvent("d", nil)
 	}
 }
 

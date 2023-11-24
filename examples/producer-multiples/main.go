@@ -53,6 +53,7 @@ func main() {
 		false,
 		false,
 		true,
+		nil,
 		booleanData1,
 	)
 	mything1.AddProperty(propertyRWO1)
@@ -81,6 +82,7 @@ func main() {
 		false,
 		false,
 		true,
+		nil,
 		booleanData2,
 	)
 	mything2.AddProperty(propertyRWO2)
@@ -90,7 +92,7 @@ func main() {
 	myProducer := producer.New(&wait)
 	myProducer.Produce("mything1", mything1)
 	myProducer.Produce("mything2", mything2)
-	httpServer := protocolHttp.NewServer(":8888", "")
+	httpServer := protocolHttp.NewServer(":8888", "", "", "")
 	myProducer.AddServer(httpServer)
 	wsServer := protocolWebSocket.NewServer(httpServer)
 	myProducer.AddServer(wsServer)

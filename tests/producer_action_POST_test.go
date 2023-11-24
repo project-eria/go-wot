@@ -7,7 +7,7 @@ import (
 	"github.com/project-eria/go-wot/interaction"
 )
 
-// TODO test all errors /Users/cedric/Documents/PROJETS/eria/v3/src/go-wot/protocolHttp/httpServerPost.go
+// TODO test all errors go-wot/protocolHttp/httpServerPost.go
 func TestActionPOST(t *testing.T) {
 	mything := getThing()
 	aAction := interaction.NewAction(

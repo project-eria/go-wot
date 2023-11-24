@@ -28,7 +28,7 @@ func TestPropertyGET(t *testing.T) {
 
 	httpServer, exposedThing := getProducer(mything)
 
-	exposedThing.SetPropertyReadHandler("boolRWO", func(t *producer.ExposedThing, name string, options map[string]string) (interface{}, error) {
+	exposedThing.SetPropertyReadHandler("boolRWO", func(t producer.ExposedThing, name string, options map[string]string) (interface{}, error) {
 		return true, nil
 	})
 

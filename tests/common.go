@@ -13,13 +13,13 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func getProducer(mything *thing.Thing) (*protocolHttp.HttpServer, *producer.ExposedThing) {
+func getProducer(mything *thing.Thing) (*protocolHttp.HttpServer, producer.ExposedThing) {
 	zerolog.SetGlobalLevel(zerolog.Disabled)
 
 	var wait sync.WaitGroup
 	myProducer := producer.New(&wait)
 	exposedThing := myProducer.Produce("", mything)
-	httpServer := protocolHttp.NewServer(":8888", "127.0.0.1", "", "")
+	httpServer := protocolHttp.NewServer("", "127.0.0.1", "", "")
 	myProducer.AddServer(httpServer)
 	wsServer := protocolWebSocket.NewServer(httpServer)
 	myProducer.AddServer(wsServer)

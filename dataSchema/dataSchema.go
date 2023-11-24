@@ -11,10 +11,10 @@ type DataSchema interface {
 }
 
 type Data struct {
-	Title string `json:"title,omitempty"` // (optional) Provides a human-readable title (e.g., display a text for UI representation) based on a default language.
-	// titles 	Provides multi-language human-readable titles (e.g., display a text for UI representation in different languages). Also see MultiLanguage. 	optional 	Map of MultiLanguage
-	Description string `json:"description,omitempty"` // (optional)	Provides additional (human-readable) information based on a default language.
-	// descriptions 	Can be used to support (human-readable) information in different languages. Also see MultiLanguage. 	optional 	Map of MultiLanguage
+	// (Redondency, with affordance title) Title string `json:"title,omitempty"` // (optional) Provides a human-readable title (e.g., display a text for UI representation) based on a default language.
+	// // titles 	Provides multi-language human-readable titles (e.g., display a text for UI representation in different languages). Also see MultiLanguage. 	optional 	Map of MultiLanguage
+	// (Redondency, with affordance title) Description string `json:"description,omitempty"` // (optional)	Provides additional (human-readable) information based on a default language.
+	// // descriptions 	Can be used to support (human-readable) information in different languages. Also see MultiLanguage. 	optional 	Map of MultiLanguage
 
 	Const   interface{} `json:"const,omitempty"`   // (optional) Provides a constant value.
 	Default interface{} `json:"default,omitempty"` // (optional) Supply a default value. The value should validate against the data schema in which it resides.

@@ -14,6 +14,7 @@ func TestNew(t *testing.T) {
 	type args struct {
 		urn         string
 		title       string
+		version     string
 		description string
 		types       []string
 	}
@@ -29,16 +30,19 @@ func TestNew(t *testing.T) {
 				urn:         "dev:ops:my-actuator-1234",
 				title:       "ActuatorExample",
 				description: "An actuator example",
-				types:       nil,
+				types:       []string{},
 			},
 			want: &Thing{
-				AtContext:           "https://www.w3.org/2022/wot/td/v1.1",
-				ID:                  "urn:dev:ops:my-actuator-1234",
-				AtTypes:             make([]string, 0),
-				Title:               "ActuatorExample",
-				Description:         "An actuator example",
+				AtContext:   map[string]string{"": "https://www.w3.org/2022/wot/td/v1.1"},
+				ID:          "urn:dev:ops:my-actuator-1234",
+				AtTypes:     make([]string, 0),
+				Title:       "ActuatorExample",
+				Description: "An actuator example",
+				Version:     map[string]string{"instance": ""},
+
 				Properties:          make(map[string]*interaction.Property),
 				Actions:             make(map[string]*interaction.Action),
+				Events:              make(map[string]*interaction.Event),
 				Security:            []string{},
 				SecurityDefinitions: make(map[string]securityScheme.SecurityScheme),
 			},
@@ -52,13 +56,16 @@ func TestNew(t *testing.T) {
 				description: "An actuator example",
 			},
 			want: &Thing{
-				AtContext:           "https://www.w3.org/2022/wot/td/v1.1",
-				ID:                  "urn:dev:ops:my-actuator-1234",
-				AtTypes:             []string{"OnOffSwitch", "Lamp"},
-				Title:               "ActuatorExample",
-				Description:         "An actuator example",
+				AtContext:   map[string]string{"": "https://www.w3.org/2022/wot/td/v1.1"},
+				ID:          "urn:dev:ops:my-actuator-1234",
+				AtTypes:     []string{"OnOffSwitch", "Lamp"},
+				Title:       "ActuatorExample",
+				Description: "An actuator example",
+				Version:     map[string]string{"instance": ""},
+
 				Properties:          make(map[string]*interaction.Property),
 				Actions:             make(map[string]*interaction.Action),
+				Events:              make(map[string]*interaction.Event),
 				Security:            []string{},
 				SecurityDefinitions: make(map[string]securityScheme.SecurityScheme),
 			},
@@ -69,14 +76,14 @@ func TestNew(t *testing.T) {
 				urn:         "",
 				title:       "ActuatorExample",
 				description: "An actuator example",
-				types:       nil,
+				types:       []string{},
 			},
 			error: "Thing URN can't be empty",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.urn, tt.args.title, tt.args.description, tt.args.types)
+			got, err := New(tt.args.urn, tt.args.version, tt.args.title, tt.args.description, tt.args.types)
 			if tt.error != "" {
 				assert.Error(t, err, "should return error")
 				assert.Equal(t, tt.error, err.Error(), "they should be equal")
@@ -89,18 +96,21 @@ func TestNew(t *testing.T) {
 }
 
 func TestAddSecurity(t *testing.T) {
-	mything, err := New("dev:ops:my-actuator-1234", "ActuatorExample", "An actuator example", nil)
+	mything, err := New("dev:ops:my-actuator-1234", "", "ActuatorExample", "An actuator example", []string{})
 	noSecurityScheme := securityScheme.NewNoSecurity()
 	mything.AddSecurity("no_sec", noSecurityScheme)
 	want := &Thing{
-		AtContext:   "https://www.w3.org/2022/wot/td/v1.1",
+		AtContext:   map[string]string{"": "https://www.w3.org/2022/wot/td/v1.1"},
 		ID:          "urn:dev:ops:my-actuator-1234",
 		AtTypes:     []string{},
 		Title:       "ActuatorExample",
 		Description: "An actuator example",
-		Properties:  make(map[string]*interaction.Property),
-		Actions:     make(map[string]*interaction.Action),
-		Security:    []string{"no_sec"},
+		Version:     map[string]string{"instance": ""},
+
+		Properties: make(map[string]*interaction.Property),
+		Actions:    make(map[string]*interaction.Action),
+		Events:     make(map[string]*interaction.Event),
+		Security:   []string{"no_sec"},
 		SecurityDefinitions: map[string]securityScheme.SecurityScheme{
 			"no_sec": noSecurityScheme,
 		},
@@ -111,23 +121,31 @@ func TestAddSecurity(t *testing.T) {
 }
 
 func TestAddProperty(t *testing.T) {
-	mything, err := New("dev:ops:my-actuator-1234", "ActuatorExample", "An actuator example", nil)
+	mything, err := New("dev:ops:my-actuator-1234", "", "ActuatorExample", "An actuator example", []string{})
 	data := dataSchema.NewBoolean(false)
 	property := interaction.NewProperty(
 		"x",
 		"y",
 		"z",
+		false,
+		false,
+		true,
+		map[string]dataSchema.Data{},
 		data,
 	)
-	mything.AddProperty(&property)
+
+	mything.AddProperty(property)
 	want := &Thing{
-		AtContext:           "https://www.w3.org/2022/wot/td/v1.1",
-		ID:                  "urn:dev:ops:my-actuator-1234",
-		AtTypes:             []string{},
-		Title:               "ActuatorExample",
-		Description:         "An actuator example",
-		Properties:          map[string]*interaction.Property{"x": &property},
+		AtContext:   map[string]string{"": "https://www.w3.org/2022/wot/td/v1.1"},
+		ID:          "urn:dev:ops:my-actuator-1234",
+		AtTypes:     []string{},
+		Title:       "ActuatorExample",
+		Description: "An actuator example",
+		Version:     map[string]string{"instance": ""},
+
+		Properties:          map[string]*interaction.Property{"x": property},
 		Actions:             make(map[string]*interaction.Action),
+		Events:              make(map[string]*interaction.Event),
 		Security:            []string{},
 		SecurityDefinitions: make(map[string]securityScheme.SecurityScheme),
 	}
@@ -136,7 +154,7 @@ func TestAddProperty(t *testing.T) {
 }
 
 func TestAddAction(t *testing.T) {
-	mything, err := New("dev:ops:my-actuator-1234", "ActuatorExample", "An actuator example", nil)
+	mything, err := New("dev:ops:my-actuator-1234", "", "ActuatorExample", "An actuator example", []string{})
 	aAction := interaction.NewAction(
 		"a",
 		"No Input, No Output",
@@ -146,13 +164,15 @@ func TestAddAction(t *testing.T) {
 	)
 	mything.AddAction(aAction)
 	want := &Thing{
-		AtContext:           "https://www.w3.org/2022/wot/td/v1.1",
+		AtContext:           map[string]string{"": "https://www.w3.org/2022/wot/td/v1.1"},
 		ID:                  "urn:dev:ops:my-actuator-1234",
 		AtTypes:             []string{},
 		Title:               "ActuatorExample",
 		Description:         "An actuator example",
+		Version:             map[string]string{"instance": ""},
 		Properties:          make(map[string]*interaction.Property),
 		Actions:             map[string]*interaction.Action{"a": aAction},
+		Events:              make(map[string]*interaction.Event),
 		Security:            []string{},
 		SecurityDefinitions: make(map[string]securityScheme.SecurityScheme),
 	}
