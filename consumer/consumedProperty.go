@@ -8,7 +8,7 @@ import (
 )
 
 // https://w3c.github.io/wot-scripting-api/#the-readproperty-method
-func (t *ConsumedThing) ReadProperty(name string) (interface{}, error) {
+func (t *consumedThing) ReadProperty(name string) (interface{}, error) {
 	if property, ok := t.td.Properties[name]; ok {
 		for _, form := range property.Forms {
 			form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
@@ -32,17 +32,17 @@ func (t *ConsumedThing) ReadProperty(name string) (interface{}, error) {
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-readmultipleproperties-method
-func (t *ConsumedThing) ReadMultipleProperties() {
+func (t *consumedThing) ReadMultipleProperties() {
 	// TODO
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-readallproperties-method
-func (t *ConsumedThing) ReadAllProperties() {
+func (t *consumedThing) ReadAllProperties() {
 	// TODO
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-writeproperty-method
-func (t *ConsumedThing) WriteProperty(name string, value interface{}) (interface{}, error) {
+func (t *consumedThing) WriteProperty(name string, value interface{}) (interface{}, error) {
 	if property, ok := t.td.Properties[name]; ok {
 		for _, form := range property.Forms {
 			form := form // Copy https://go.dev/doc/faq#closures_and_goroutines
@@ -66,14 +66,14 @@ func (t *ConsumedThing) WriteProperty(name string, value interface{}) (interface
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-writemultipleproperties-method
-func (t *ConsumedThing) WriteMultipleProperties() {
+func (t *consumedThing) WriteMultipleProperties() {
 	// TODO
 }
 
 type Listener func(value interface{}, err error)
 
 // https://w3c.github.io/wot-scripting-api/#the-observeproperty-method
-func (t *ConsumedThing) ObserveProperty(name string, listener Listener) error {
+func (t *consumedThing) ObserveProperty(name string, listener Listener) error {
 	if listener == nil {
 		log.Error().Str("property", name).Msg("[consumer:ObserveProperty] missing listener")
 		return fmt.Errorf("missing listener for property %s", name)

@@ -8,7 +8,7 @@ import (
 )
 
 // https://w3c.github.io/wot-scripting-api/#the-subscribeevent-method
-func (t *ConsumedThing) SubscribeEvent(name string, listener Listener) error {
+func (t *consumedThing) SubscribeEvent(name string, listener Listener) error {
 	if listener == nil {
 		log.Error().Str("event", name).Msg("[consumer:SubscribeEvent] missing listener")
 		return fmt.Errorf("missing listener for event %s", name)

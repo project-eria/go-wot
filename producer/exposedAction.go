@@ -4,18 +4,28 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/project-eria/go-wot/dataSchema"
 	"github.com/project-eria/go-wot/interaction"
 )
 
 // https://w3c.github.io/wot-scripting-api/#the-exposedthing-interface
-type ExposedAction struct {
+type ExposedAction interface {
+	SetHandler(ActionHandler) error
+	GetHandler() ActionHandler
+	Input() *dataSchema.Data
+	Output() *dataSchema.Data
+	// Interaction
+	CheckUriVariables(map[string]string) error
+}
+
+type exposedAction struct {
 	handler ActionHandler
 	mu      sync.RWMutex
 	*interaction.Action
 }
 
-func NewExposedAction(interaction *interaction.Action) *ExposedAction {
-	e := &ExposedAction{
+func NewExposedAction(interaction *interaction.Action) ExposedAction {
+	e := &exposedAction{
 		Action: interaction,
 	}
 	return e
@@ -25,7 +35,7 @@ func NewExposedAction(interaction *interaction.Action) *ExposedAction {
 type ActionHandler func(interface{}, map[string]string) (interface{}, error)
 
 // https://w3c.github.io/wot-scripting-api/#the-setactionhandler-method
-func (e *ExposedAction) SetHandler(handler ActionHandler) error {
+func (e *exposedAction) SetHandler(handler ActionHandler) error {
 	if handler == nil {
 		return errors.New("handler can't be nil")
 	}
@@ -35,6 +45,14 @@ func (e *ExposedAction) SetHandler(handler ActionHandler) error {
 	return nil
 }
 
-func (e *ExposedAction) GetHandler() ActionHandler {
+func (e *exposedAction) GetHandler() ActionHandler {
 	return e.handler
+}
+
+func (e *exposedAction) Input() *dataSchema.Data {
+	return e.Action.Input
+}
+
+func (e *exposedAction) Output() *dataSchema.Data {
+	return e.Action.Output
 }

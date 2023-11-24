@@ -9,7 +9,7 @@ import (
 
 // Makes a request for invoking an Action and return the result
 // https://w3c.github.io/wot-scripting-api/#the-getthingdescription-method
-func (t *ConsumedThing) InvokeAction(name string, params interface{}) (interface{}, error) {
+func (t *consumedThing) InvokeAction(name string, params interface{}) (interface{}, error) {
 	if action, ok := t.td.Actions[name]; ok {
 		for _, form := range action.Forms {
 			form := form // Copy https://go.dev/doc/faq#closures_and_goroutines

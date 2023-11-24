@@ -12,14 +12,14 @@ import (
 
 type Consumer struct {
 	clients map[string]ProtocolClient
-	things  []*ConsumedThing
+	things  []ConsumedThing
 	mu      sync.RWMutex
 }
 
 func New() *Consumer {
 	consumer := &Consumer{
 		clients: map[string]ProtocolClient{},
-		things:  []*ConsumedThing{},
+		things:  []ConsumedThing{},
 	}
 
 	return consumer
@@ -34,13 +34,13 @@ type ProtocolClient interface {
 	Stop()
 }
 
-func (c *Consumer) Consume(td *thing.Thing) *ConsumedThing {
-	consumedThing := &ConsumedThing{
+func (c *Consumer) Consume(td *thing.Thing) ConsumedThing {
+	ct := &consumedThing{
 		consumer: c,
 		td:       td,
 	}
-	c.things = append(c.things, consumedThing)
-	return consumedThing
+	c.things = append(c.things, ct)
+	return ct
 }
 
 func (c *Consumer) GetClientFor(form *interaction.Form) ProtocolClient {

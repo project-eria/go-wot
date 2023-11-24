@@ -4,11 +4,27 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/project-eria/go-wot/dataSchema"
 	"github.com/project-eria/go-wot/interaction"
 )
 
 // https://w3c.github.io/wot-scripting-api/#the-exposedthing-interface
-type ExposedProperty struct {
+type ExposedProperty interface {
+	SetReadHandler(PropertyReadHandler) error
+	GetReadHandler() PropertyReadHandler
+	SetObserveHandler(PropertyObserveHandler)
+	GetObserveHandler() PropertyObserveHandler
+	SetObserverSelectorHandler(ObserverSelectorHandler)
+	GetObserverSelectorHandler() ObserverSelectorHandler
+	SetWriteHandler(PropertyWriteHandler) error
+	GetWriteHandler() PropertyWriteHandler
+	Data() dataSchema.DataSchema
+	IsObservable() bool
+	// Interaction
+	CheckUriVariables(map[string]string) error
+}
+
+type exposedProperty struct {
 	mu                      sync.RWMutex
 	propertyReadHandler     PropertyReadHandler
 	propertyWriteHandler    PropertyWriteHandler
@@ -25,8 +41,8 @@ type PropertyChange struct {
 	Options  map[string]string
 }
 
-func NewExposedProperty(interaction *interaction.Property) *ExposedProperty {
-	return &ExposedProperty{
+func NewExposedProperty(interaction *interaction.Property) ExposedProperty {
+	return &exposedProperty{
 		propertyReadHandler:     nil,
 		propertyWriteHandler:    nil,
 		propertyObserveHandler:  nil,
@@ -36,15 +52,15 @@ func NewExposedProperty(interaction *interaction.Property) *ExposedProperty {
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-propertyreadhandler-callback
-type PropertyReadHandler func(*ExposedThing, string, map[string]string) (interface{}, error)
-type PropertyObserveHandler func(*ExposedThing, string, map[string]string) (interface{}, error)
+type PropertyReadHandler func(ExposedThing, string, map[string]string) (interface{}, error)
+type PropertyObserveHandler func(ExposedThing, string, map[string]string) (interface{}, error)
 
 // https://w3c.github.io/wot-scripting-api/#the-propertywritehandler-callback
-type PropertyWriteHandler func(*ExposedThing, string, interface{}, map[string]string) error
+type PropertyWriteHandler func(ExposedThing, string, interface{}, map[string]string) error
 
 type ObserverSelectorHandler func(map[string]string, map[string]string) bool
 
-func (p *ExposedProperty) SetReadHandler(handler PropertyReadHandler) error {
+func (p *exposedProperty) SetReadHandler(handler PropertyReadHandler) error {
 	if handler == nil {
 		return errors.New("read handler can't be nil")
 	}
@@ -54,37 +70,37 @@ func (p *ExposedProperty) SetReadHandler(handler PropertyReadHandler) error {
 	return nil
 }
 
-func (p *ExposedProperty) GetReadHandler() PropertyReadHandler {
+func (p *exposedProperty) GetReadHandler() PropertyReadHandler {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.propertyReadHandler
 }
 
-func (p *ExposedProperty) SetObserveHandler(handler PropertyObserveHandler) {
+func (p *exposedProperty) SetObserveHandler(handler PropertyObserveHandler) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.propertyObserveHandler = handler
 }
 
-func (p *ExposedProperty) GetObserveHandler() PropertyObserveHandler {
+func (p *exposedProperty) GetObserveHandler() PropertyObserveHandler {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.propertyObserveHandler
 }
 
-func (p *ExposedProperty) SetObserverSelectorHandler(handler ObserverSelectorHandler) {
+func (p *exposedProperty) SetObserverSelectorHandler(handler ObserverSelectorHandler) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.observerSelectorHandler = handler
 }
 
-func (p *ExposedProperty) GetObserverSelectorHandler() ObserverSelectorHandler {
+func (p *exposedProperty) GetObserverSelectorHandler() ObserverSelectorHandler {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.observerSelectorHandler
 }
 
-func (p *ExposedProperty) SetWriteHandler(handler PropertyWriteHandler) error {
+func (p *exposedProperty) SetWriteHandler(handler PropertyWriteHandler) error {
 	if handler == nil {
 		return errors.New("write handler can't be nil")
 	}
@@ -94,8 +110,16 @@ func (p *ExposedProperty) SetWriteHandler(handler PropertyWriteHandler) error {
 	return nil
 }
 
-func (p *ExposedProperty) GetWriteHandler() PropertyWriteHandler {
+func (p *exposedProperty) GetWriteHandler() PropertyWriteHandler {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.propertyWriteHandler
+}
+
+func (p *exposedProperty) Data() dataSchema.DataSchema {
+	return p.DataSchema
+}
+
+func (p *exposedProperty) IsObservable() bool {
+	return p.Property.Observable
 }

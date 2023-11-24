@@ -11,7 +11,7 @@ import (
 
 // get handle the GET method for thing single property
 // https://w3c.github.io/wot-scripting-api/#handling-requests-for-reading-a-property
-func propertyReadHandler(t *producer.ExposedThing, tdProperty *interaction.Property) func(*fiber.Ctx) error {
+func propertyReadHandler(t producer.ExposedThing, tdProperty *interaction.Property) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		options := c.AllParams()
 		log.Trace().Str("uri", c.Path()).Interface("options", options).Msg("[protocolHttp:propertyReadHandler] Received Thing property GET request")
@@ -22,7 +22,14 @@ func propertyReadHandler(t *producer.ExposedThing, tdProperty *interaction.Prope
 				"type":  NotAllowedError.ErrorType,
 			})
 		} else {
-			if property, ok := t.ExposedProperties[tdProperty.Key]; ok {
+			property, err := t.ExposedProperty(tdProperty.Key)
+			if err != nil {
+				log.Error().Err(err).Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler]")
+				return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
+					"error": fmt.Sprintf("ExposedProperty `%s` not found", tdProperty.Key),
+					"type":  UnknownError.ErrorType,
+				})
+			} else {
 				handler := property.GetReadHandler()
 				if handler != nil {
 					// Check the options (uriVariables) data
@@ -50,12 +57,6 @@ func propertyReadHandler(t *producer.ExposedThing, tdProperty *interaction.Prope
 						"type":  NotSupportedError.ErrorType,
 					})
 				}
-			} else {
-				log.Error().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] ExposedProperty not found")
-				return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
-					"error": fmt.Errorf("ExposedProperty `%s` not found", tdProperty.Key),
-					"type":  UnknownError.ErrorType,
-				})
 			}
 		}
 	}

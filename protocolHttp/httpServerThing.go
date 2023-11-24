@@ -7,7 +7,7 @@ import (
 )
 
 // get handle the GET method for single thing root
-func thingHandler(t *producer.ExposedThing) func(*fiber.Ctx) error {
+func thingHandler(t producer.ExposedThing) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		if c.Locals("websocket") == true {
 			return c.Next() // delegate to the next handler (websocket)

@@ -8,15 +8,31 @@ import (
 )
 
 // https://w3c.github.io/wot-scripting-api/#the-consumedthing-interface
-type ConsumedThing struct {
-	consumer *Consumer
-	td       *thing.Thing
-	_ctx     context.Context
-	_wait    *sync.WaitGroup
+type ConsumedThing interface {
+	GetThingDescription() *thing.Thing
+	// Properties
+	ReadProperty(string) (interface{}, error)
+	ReadMultipleProperties()
+	ReadAllProperties()
+	WriteProperty(string, interface{}) (interface{}, error)
+	WriteMultipleProperties()
+	ObserveProperty(string, Listener) error
+	// Actions
+	InvokeAction(string, interface{}) (interface{}, error)
+	// Events
+	SubscribeEvent(string, Listener) error
+}
+
+type consumedThing struct {
+	consumer  *Consumer
+	td        *thing.Thing
+	connected bool
+	_ctx      context.Context // TO CHECK if needed
+	_wait     *sync.WaitGroup // TO CHECK if needed
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-getthingdescription-method
-func (t *ConsumedThing) GetThingDescription() *thing.Thing {
+func (t *consumedThing) GetThingDescription() *thing.Thing {
 	return t.td
 }
 

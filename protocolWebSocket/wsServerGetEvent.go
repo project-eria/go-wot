@@ -12,9 +12,16 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func eventHandler(t *producer.ExposedThing, tdEvent *interaction.Event) func(*fiber.Ctx) error {
+func eventHandler(t producer.ExposedThing, tdEvent *interaction.Event) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		if event, ok := t.ExposedEvents[tdEvent.Key]; ok {
+		event, err := t.ExposedEvent(tdEvent.Key)
+		if err != nil {
+			log.Error().Str("event", tdEvent.Key).Msg("[protocolWebSocket:eventHandler] ExposedEvent not found")
+			return c.Status(protocolHttp.UnknownError.HttpStatus).JSON(fiber.Map{
+				"error": fmt.Sprintf("ExposedEvent `%s` not found", tdEvent.Key),
+				"type":  protocolHttp.UnknownError.ErrorType,
+			})
+		} else {
 			if websocket.IsWebSocketUpgrade(c) {
 				key := c.Get("Sec-Websocket-Key")
 				c.Locals("key", key)
@@ -31,17 +38,11 @@ func eventHandler(t *producer.ExposedThing, tdEvent *interaction.Event) func(*fi
 				return websocket.New(eventWSHandler(t, tdEvent, options))(c)
 			}
 			return c.Next()
-		} else {
-			log.Error().Str("event", tdEvent.Key).Msg("[protocolWebSocket:eventHandler] ExposedEvent not found")
-			return c.Status(protocolHttp.UnknownError.HttpStatus).JSON(fiber.Map{
-				"error": fmt.Errorf("ExposedEvent `%s` not found", tdEvent.Key),
-				"type":  protocolHttp.UnknownError.ErrorType,
-			})
 		}
 	}
 }
 
-func eventWSHandler(t *producer.ExposedThing, tdEvent *interaction.Event, options map[string]string) func(*websocket.Conn) {
+func eventWSHandler(t producer.ExposedThing, tdEvent *interaction.Event, options map[string]string) func(*websocket.Conn) {
 	return func(c *websocket.Conn) {
 		log.Trace().Str("event", tdEvent.Key).Interface("options", options).Msg("[protocolWebSocket:propertyEventHandler] Received Thing event WS request")
 
@@ -85,27 +86,29 @@ func eventWSHandler(t *producer.ExposedThing, tdEvent *interaction.Event, option
 	}
 }
 
-func addEventSubscription(t *producer.ExposedThing, name string, key string, wsConn *wsConnection) error {
+func addEventSubscription(t producer.ExposedThing, name string, key string, wsConn *wsConnection) error {
 	mu.Lock()
 	defer mu.Unlock()
-	log.Trace().Str("ThingRef", t.Ref).Str("event", name).Str("key", key).Msg("[protocolWebSocket:addEventSubscription] Register WS event subscription connection")
-	eventSubscriptions[t.Ref][name][key] = wsConn
+	log.Trace().Str("ThingRef", t.Ref()).Str("event", name).Str("key", key).Msg("[protocolWebSocket:addEventSubscription] Register WS event subscription connection")
+	eventSubscriptions[t.Ref()][name][key] = wsConn
 	// TODO t._wait.Add(1)
 	return nil
 }
 
-func removeEventSubscription(t *producer.ExposedThing, name string, key string) error {
+func removeEventSubscription(t producer.ExposedThing, name string, key string) error {
 	mu.Lock()
 	defer mu.Unlock()
-	if _, ok := t.ExposedEvents[name]; ok {
-		log.Trace().Str("ThingRef", t.Ref).Str("event", name).Str("key", key).Msg("[protocolWebSocket:removePropertyObserver] Unregister WS Connection")
-		if _, ok := eventSubscriptions[t.Ref][name]; ok {
+	_, err := t.ExposedEvent(name)
+	if err != nil {
+		log.Trace().Str("ThingRef", t.Ref()).Str("event", name).Msg("[protocolWebSocket:removePropertyObserver] event not found")
+		return fmt.Errorf("event %s/%s not found", t.Ref(), name)
+	} else {
+		log.Trace().Str("ThingRef", t.Ref()).Str("event", name).Str("key", key).Msg("[protocolWebSocket:removePropertyObserver] Unregister WS Connection")
+		if _, ok := eventSubscriptions[t.Ref()][name]; ok {
 			//		conn.Close() // don't close the websocket.Conn or ReadJSON returns a "use of closed network connection" error
-			delete(eventSubscriptions[t.Ref][name], key)
+			delete(eventSubscriptions[t.Ref()][name], key)
 			// TODO t._wait.Done()
 		}
 		return nil
 	}
-	log.Trace().Str("ThingRef", t.Ref).Str("event", name).Msg("[protocolWebSocket:removePropertyObserver] event not found")
-	return fmt.Errorf("event %s/%s not found", t.Ref, name)
 }

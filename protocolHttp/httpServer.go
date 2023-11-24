@@ -33,7 +33,7 @@ func NewServer(addr string, exposedAddr string, header string, appName string) *
 	return h
 }
 
-func (s *HttpServer) Expose(ref string, thing *producer.ExposedThing) {
+func (s *HttpServer) Expose(ref string, thing producer.ExposedThing) {
 	prefix := ""
 	if ref != "" {
 		prefix = "/" + ref
@@ -90,14 +90,14 @@ func (s *HttpServer) Stop() {
 	// }
 }
 
-func addEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing) {
+func addEndPoints(g fiber.Router, exposedAddr string, prefix string, t producer.ExposedThing) {
 	// var (
 	// allReadOnly   = true
 	// allWriteOnly  = true
 	// anyProperties = false
 	// )
 
-	for _, property := range t.Td.Properties {
+	for _, property := range t.TD().Properties {
 		addPropertyEndPoints(g, exposedAddr, prefix, t, property)
 	}
 
@@ -122,7 +122,7 @@ func addEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer
 	// 	t.Td.Forms = append(t.Td.Forms, form)
 	// }
 
-	for _, action := range t.Td.Actions {
+	for _, action := range t.TD().Actions {
 		addActionEndPoints(g, exposedAddr, prefix, t, action)
 	}
 
@@ -140,7 +140,7 @@ func addEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer
 	// }
 }
 
-func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, property *interaction.Property) {
+func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t producer.ExposedThing, property *interaction.Property) {
 	var uriVars string
 	var handlerVars string
 	// https://w3c.github.io/wot-thing-description/#form-uriVariables
@@ -198,7 +198,7 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *
 	// }
 }
 
-func addActionEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, action *interaction.Action) {
+func addActionEndPoints(g fiber.Router, exposedAddr string, prefix string, t producer.ExposedThing, action *interaction.Action) {
 	var uriVars string
 	var handlerVars string
 	// https://w3c.github.io/wot-thing-description/#form-uriVariables

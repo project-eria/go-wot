@@ -14,13 +14,13 @@ import (
 
 type HttpClient struct {
 	Client  HttpClientProcessor
-	schemes []string
+	Schemes []string
 }
 
 func NewClient() *HttpClient {
 	return &HttpClient{
 		Client:  &http.Client{},
-		schemes: []string{"http"},
+		Schemes: []string{"http"},
 	}
 }
 
@@ -30,7 +30,7 @@ type HttpClientProcessor interface {
 }
 
 func (c *HttpClient) GetSchemes() []string {
-	return c.schemes
+	return c.Schemes
 }
 
 // ReadResource get a JSON data from HTTP GET request

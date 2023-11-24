@@ -18,19 +18,17 @@ type Property struct {
 }
 
 func NewProperty(key string, title string, description string, readOnly bool, writeOnly bool, observable bool, uriVariables map[string]dataSchema.Data, data dataSchema.Data) *Property {
-	interaction := Interaction{
-		Key:          key,
-		Title:        title,
-		Description:  description,
-		Forms:        []*Form{},
-		UriVariables: uriVariables,
-	}
-
 	return &Property{
-		Interaction: interaction,
-		ReadOnly:    readOnly,
-		WriteOnly:   writeOnly,
-		Observable:  observable,
+		Interaction: Interaction{
+			Key:          key,
+			Title:        title,
+			Description:  description,
+			Forms:        []*Form{},
+			UriVariables: uriVariables,
+		},
+		ReadOnly:   readOnly,
+		WriteOnly:  writeOnly,
+		Observable: observable,
 
 		Data: data,
 	}

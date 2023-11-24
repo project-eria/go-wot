@@ -7,7 +7,18 @@ import (
 )
 
 // https://w3c.github.io/wot-scripting-api/#the-exposedthing-interface
-type ExposedEvent struct {
+type ExposedEvent interface {
+	SetSubscribeHandler(EventSubscriptionHandler)
+	SetUnSubscribeHandler()
+	SetEventHandler(EventListenerHandler)
+	GetEventHandler() EventListenerHandler
+	SetListenerSelectorHandler(ListenerSelectorHandler)
+	GetListenerSelectorHandler() ListenerSelectorHandler
+	// Interaction
+	CheckUriVariables(map[string]string) error
+}
+
+type exposedEvent struct {
 	eventListenerHandler     EventListenerHandler
 	eventSubscriptionHandler EventSubscriptionHandler
 	listenerSelectorHandler  ListenerSelectorHandler
@@ -23,8 +34,8 @@ type Event struct {
 	Options  map[string]string
 }
 
-func NewExposedEvent(interaction *interaction.Event) *ExposedEvent {
-	e := &ExposedEvent{
+func NewExposedEvent(interaction *interaction.Event) ExposedEvent {
+	e := &exposedEvent{
 		Event: interaction,
 	}
 	return e
@@ -34,44 +45,44 @@ func NewExposedEvent(interaction *interaction.Event) *ExposedEvent {
 type EventListenerHandler func() (interface{}, error)
 
 // https://w3c.github.io/wot-scripting-api/#the-eventsubscriptionhandler-callback
-type EventSubscriptionHandler func(*ExposedThing, string, map[string]string) (interface{}, error)
+type EventSubscriptionHandler func(ExposedThing, string, map[string]string) (interface{}, error)
 
 type ListenerSelectorHandler func(map[string]string, map[string]string) bool
 
 // https://w3c.github.io/wot-scripting-api/#the-seteventsubscribehandler-method
-func (e *ExposedEvent) SetSubscribeHandler(handler EventSubscriptionHandler) {
+func (e *exposedEvent) SetSubscribeHandler(handler EventSubscriptionHandler) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.eventSubscriptionHandler = handler
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-seteventunsubscribehandler-method
-func (e *ExposedEvent) SetUnSubscribeHandler() {
+func (e *exposedEvent) SetUnSubscribeHandler() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.eventSubscriptionHandler = nil
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-seteventhandler-method
-func (e *ExposedEvent) SetEventHandler(handler EventListenerHandler) {
+func (e *exposedEvent) SetEventHandler(handler EventListenerHandler) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.eventListenerHandler = handler
 }
 
-func (e *ExposedEvent) GetEventHandler() EventListenerHandler {
+func (e *exposedEvent) GetEventHandler() EventListenerHandler {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return e.eventListenerHandler
 }
 
-func (e *ExposedEvent) SetListenerSelectorHandler(handler ListenerSelectorHandler) {
+func (e *exposedEvent) SetListenerSelectorHandler(handler ListenerSelectorHandler) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.listenerSelectorHandler = handler
 }
 
-func (e *ExposedEvent) GetListenerSelectorHandler() ListenerSelectorHandler {
+func (e *exposedEvent) GetListenerSelectorHandler() ListenerSelectorHandler {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return e.listenerSelectorHandler

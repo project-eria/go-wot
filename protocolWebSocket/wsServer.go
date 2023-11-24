@@ -29,7 +29,7 @@ func NewServer(httpServer *protocolHttp.HttpServer) *WsServer {
 	}
 }
 
-func (s *WsServer) Expose(ref string, thing *producer.ExposedThing) {
+func (s *WsServer) Expose(ref string, thing producer.ExposedThing) {
 	prefix := ""
 	if ref != "" {
 		prefix = "/" + ref
@@ -43,19 +43,19 @@ func (s *WsServer) Expose(ref string, thing *producer.ExposedThing) {
 	go monitorEvent(eventChan)
 }
 
-func addEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing) {
-	for _, property := range t.Td.Properties {
+func addEndPoints(g fiber.Router, exposedAddr string, prefix string, t producer.ExposedThing) {
+	for _, property := range t.TD().Properties {
 		if property.Observable {
 			addPropertyEndPoints(g, exposedAddr, prefix, t, property)
 		}
 	}
 
-	for _, event := range t.Td.Events {
+	for _, event := range t.TD().Events {
 		addEventEndPoints(g, exposedAddr, prefix, t, event)
 	}
 }
 
-func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, property *interaction.Property) {
+func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t producer.ExposedThing, property *interaction.Property) {
 	// https://w3c.github.io/wot-thing-description/#form-uriVariables
 	var uriVars string
 	var handlerVars string
@@ -83,13 +83,13 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t *
 	g.Use("/"+property.Key+handlerVars, propertyObserverHandler(t, property))
 
 	property.Forms = append(property.Forms, form)
-	if _, in := propertiesObservers[t.Ref]; !in {
-		propertiesObservers[t.Ref] = map[string]map[string]*wsConnection{}
+	if _, in := propertiesObservers[t.Ref()]; !in {
+		propertiesObservers[t.Ref()] = map[string]map[string]*wsConnection{}
 	}
-	propertiesObservers[t.Ref][property.Key] = map[string]*wsConnection{}
+	propertiesObservers[t.Ref()][property.Key] = map[string]*wsConnection{}
 }
 
-func addEventEndPoints(g fiber.Router, exposedAddr string, prefix string, t *producer.ExposedThing, event *interaction.Event) {
+func addEventEndPoints(g fiber.Router, exposedAddr string, prefix string, t producer.ExposedThing, event *interaction.Event) {
 	// https://w3c.github.io/wot-thing-description/#form-uriVariables
 	var uriVars string
 	var handlerVars string
@@ -118,10 +118,10 @@ func addEventEndPoints(g fiber.Router, exposedAddr string, prefix string, t *pro
 	g.Get("/"+event.Key+handlerVars, eventHandler(t, event))
 
 	event.Forms = append(event.Forms, form)
-	if _, in := eventSubscriptions[t.Ref]; !in {
-		eventSubscriptions[t.Ref] = map[string]map[string]*wsConnection{}
+	if _, in := eventSubscriptions[t.Ref()]; !in {
+		eventSubscriptions[t.Ref()] = map[string]map[string]*wsConnection{}
 	}
-	eventSubscriptions[t.Ref][event.Key] = map[string]*wsConnection{}
+	eventSubscriptions[t.Ref()][event.Key] = map[string]*wsConnection{}
 }
 
 func (s *WsServer) Start() {
@@ -133,7 +133,7 @@ func (s *WsServer) Stop() {
 	// Stop Chan monitoring routines
 }
 
-// func (t *ExposedThing) gracefullWSShutdown() {
+// func (t ExposedThing) gracefullWSShutdown() {
 // 	for _, p := range t.exposedProperties {
 // 		p.mu.RLock()
 // 		conns := p.observersProperties

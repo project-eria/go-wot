@@ -12,11 +12,18 @@ import (
 
 // post handle the POST request method for a thing action
 // https://w3c.github.io/wot-scripting-api/#handling-action-requests
-func actionHandler(t *producer.ExposedThing, tdAction *interaction.Action) func(*fiber.Ctx) error {
+func actionHandler(t producer.ExposedThing, tdAction *interaction.Action) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		options := c.AllParams()
 		log.Trace().Str("uri", c.Path()).Interface("options", options).Msg("[protocolHttp:actionHandler] Received Thing action POST request")
-		if action, ok := t.ExposedActions[tdAction.Key]; ok {
+		action, err := t.ExposedAction(tdAction.Key)
+		if err != nil {
+			zlog.Error().Err(err).Str("action", tdAction.Key).Msg("[protocolHttp:actionHandler]")
+			return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
+				"error": fmt.Sprintf("ExposedAction `%s` not found", tdAction.Key),
+				"type":  UnknownError.ErrorType,
+			})
+		} else {
 			handler := action.GetHandler()
 			if handler != nil {
 				// Check the params (uriVariables) data
@@ -41,8 +48,8 @@ func actionHandler(t *producer.ExposedThing, tdAction *interaction.Action) func(
 				}
 
 				// Check the input data
-				if action.Input != nil {
-					if err := action.Input.Check(data); err != nil {
+				if action.Input() != nil {
+					if err := action.Input().Check(data); err != nil {
 						message := "incorrect input value: " + err.Error()
 						log.Trace().Str("action", tdAction.Key).Msg("[protocolHttp:actionHandler] " + message)
 						return c.Status(DataError.HttpStatus).JSON(fiber.Map{
@@ -62,8 +69,8 @@ func actionHandler(t *producer.ExposedThing, tdAction *interaction.Action) func(
 				}
 
 				// Check the output data
-				if action.Output != nil {
-					if err := action.Output.Check(output); err != nil {
+				if action.Output() != nil {
+					if err := action.Output().Check(output); err != nil {
 						log.Error().Str("action", tdAction.Key).Err(err).Msg("[protocolHttp:actionHandler] incorrect handler returned value")
 						return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
 							"error": "Incorrect handler returned value",
@@ -71,7 +78,7 @@ func actionHandler(t *producer.ExposedThing, tdAction *interaction.Action) func(
 						})
 					}
 					log.Trace().Interface("response", output).Str("action", tdAction.Key).Msg("[protocolHttp:actionHandler] JSON Response to Thing action POST request")
-					return c.JSON(fiber.Map{"ok": true})
+					return c.JSON(output)
 				}
 
 				log.Trace().Str("action", tdAction.Key).Msg("[protocolHttp:actionHandler] OK Response to Thing action POST request")
@@ -83,12 +90,6 @@ func actionHandler(t *producer.ExposedThing, tdAction *interaction.Action) func(
 					"type":  NotSupportedError.ErrorType,
 				})
 			}
-		} else {
-			zlog.Error().Str("action", tdAction.Key).Msg("[protocolHttp:actionHandler] ExposedAction not found")
-			return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
-				"error": fmt.Errorf("ExposedAction `%s` not found", tdAction.Key),
-				"type":  UnknownError.ErrorType,
-			})
 		}
 	}
 }

@@ -6,13 +6,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/project-eria/go-wot/interaction"
 	"github.com/project-eria/go-wot/producer"
-	"github.com/rs/zerolog/log"
 	zlog "github.com/rs/zerolog/log"
 )
 
 // put handle the PUT method for thing single property
 // https://w3c.github.io/wot-scripting-api/#handling-requests-for-writing-a-property
-func propertyWriteHandler(t *producer.ExposedThing, tdProperty *interaction.Property) func(*fiber.Ctx) error {
+func propertyWriteHandler(t producer.ExposedThing, tdProperty *interaction.Property) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		options := c.AllParams()
 		zlog.Trace().Str("uri", c.Path()).Interface("options", options).Msg("[protocolHttp:propertyWriteHandler] Received Thing property PUT request")
@@ -23,7 +22,14 @@ func propertyWriteHandler(t *producer.ExposedThing, tdProperty *interaction.Prop
 				"type":  NotAllowedError.ErrorType,
 			})
 		} else {
-			if property, ok := t.ExposedProperties[tdProperty.Key]; ok {
+			property, err := t.ExposedProperty(tdProperty.Key)
+			if err != nil {
+				zlog.Error().Err(err).Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler]")
+				return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
+					"error": fmt.Sprintf("ExposedProperty `%s` not found", tdProperty.Key),
+					"type":  UnknownError.ErrorType,
+				})
+			} else {
 				handler := property.GetWriteHandler()
 				if handler != nil {
 					// Check the params (uriVariables) data
@@ -55,9 +61,9 @@ func propertyWriteHandler(t *producer.ExposedThing, tdProperty *interaction.Prop
 					}
 
 					// Check the data sent format
-					if err := property.Data.Check(data); err != nil {
+					if err := property.Data().Check(data); err != nil {
 						message := "incorrect input value: " + err.Error()
-						log.Trace().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyWriteHandler] " + message)
+						zlog.Trace().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyWriteHandler] " + message)
 						return c.Status(DataError.HttpStatus).JSON(fiber.Map{
 							"error": message,
 							"type":  DataError.ErrorType,
@@ -89,12 +95,6 @@ func propertyWriteHandler(t *producer.ExposedThing, tdProperty *interaction.Prop
 						"type":  NotSupportedError.ErrorType,
 					})
 				}
-			} else {
-				zlog.Error().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] ExposedProperty not found")
-				return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
-					"error": fmt.Errorf("ExposedProperty `%s` not found", tdProperty.Key),
-					"type":  UnknownError.ErrorType,
-				})
 			}
 		}
 	}
