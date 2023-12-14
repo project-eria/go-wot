@@ -7,7 +7,7 @@ import (
 	"github.com/project-eria/go-wot/interaction"
 
 	"github.com/project-eria/go-wot/thing"
-	"github.com/rs/zerolog/log"
+	zlog "github.com/rs/zerolog/log"
 )
 
 type Consumer struct {
@@ -27,10 +27,10 @@ func New() *Consumer {
 
 type ProtocolClient interface {
 	GetSchemes() []string
-	ReadResource(*interaction.Form) (interface{}, error)
-	WriteResource(*interaction.Form, interface{}) (interface{}, error)
-	InvokeResource(*interaction.Form, interface{}) (interface{}, error)
-	SubscribeResource(*interaction.Form, *Subscription, Listener) error
+	ReadResource(*interaction.Form, map[string]interface{}) (interface{}, string, error)
+	WriteResource(*interaction.Form, map[string]interface{}, interface{}) (interface{}, string, error)
+	InvokeResource(*interaction.Form, map[string]interface{}, interface{}) (interface{}, string, error)
+	SubscribeResource(*interaction.Form, map[string]interface{}, *Subscription, Listener) (string, error)
 	Stop()
 }
 
@@ -46,20 +46,20 @@ func (c *Consumer) Consume(td *thing.Thing) ConsumedThing {
 func (c *Consumer) GetClientFor(form *interaction.Form) ProtocolClient {
 	u, err := url.Parse(form.Href)
 	if err != nil {
-		log.Error().Str("href", form.Href).Err(err).Msg("[consumer:getClientFor] href not readable")
+		zlog.Error().Str("href", form.Href).Err(err).Msg("[consumer:getClientFor] href not readable")
 		return nil
 	}
 	if client, found := c.clients[u.Scheme]; found {
-		log.Trace().Str("scheme", u.Scheme).Msg("[consumer:getClientFor] got client for scheme")
+		zlog.Trace().Str("scheme", u.Scheme).Msg("[consumer:getClientFor] got client for scheme")
 		return client
 	}
-	log.Error().Str("scheme", u.Scheme).Msg("[consumer:getClientFor] missing client for scheme")
+	zlog.Error().Str("scheme", u.Scheme).Msg("[consumer:getClientFor] missing client for scheme")
 	return nil
 }
 
 func (c *Consumer) AddClient(client ProtocolClient) {
 	if c == nil {
-		log.Error().Msg("[consumer:AddClient] nil Consumer")
+		zlog.Error().Msg("[consumer:AddClient] nil Consumer")
 		return
 	}
 	c.mu.Lock()
@@ -111,8 +111,8 @@ func (c *Consumer) Shutdown() {
 // 	if err != nil {
 // 		return nil, err
 // 	}
-// 	log.Info().Str("url", url.String()).Msg("[consumer:New] Successfully got thing description")
-// 	log.Trace().Interface("data", data).Msg("Description raw data")
+// 	zlog.Info().Str("url", url.String()).Msg("[consumer:New] Successfully got thing description")
+// 	zlog.Trace().Interface("data", data).Msg("Description raw data")
 
 // 	if _, ok := data["id"]; !ok {
 // 		return nil, errors.New("Incorrect JSON thing properties")
@@ -134,14 +134,14 @@ func (c *Consumer) Shutdown() {
 // // call the handler when a change event is received
 // func (t *Consumer) SubscribeSingle(property string, handler SingleHandler, context ...interface{}) {
 // 	if t == nil {
-// 		log.Error().Msg("[consumer:SubscribeSingle] nil connection")
+// 		zlog.Error().Msg("[consumer:SubscribeSingle] nil connection")
 // 		return
 // 	}
 // 	t.mu.Lock()
 // 	defer t.mu.Unlock()
 
 // 	if !t.wsRequired {
-// 		log.Error().Msg("[consumer:SubscribeSingle] Subscription require WebSocket connection")
+// 		zlog.Error().Msg("[consumer:SubscribeSingle] Subscription require WebSocket connection")
 // 		return
 // 	}
 // 	t.subscriptions = append(t.subscriptions, subscription{property: property, handlerSingle: handler, context: context})
@@ -151,14 +151,14 @@ func (c *Consumer) Shutdown() {
 // // call the handler when a change event is received
 // func (t *Consumer) SubscribeAll(handler AllHandler, context ...interface{}) {
 // 	if t == nil {
-// 		log.Error().Msg("[consumer:SubscribeAll] Subscription require WebSocket connection")
+// 		zlog.Error().Msg("[consumer:SubscribeAll] Subscription require WebSocket connection")
 // 		return
 // 	}
 // 	t.mu.Lock()
 // 	defer t.mu.Unlock()
 
 // 	if !t.wsRequired {
-// 		log.Error().Msg("[consumer:SubscribeAll] the WebSocket is not connected")
+// 		zlog.Error().Msg("[consumer:SubscribeAll] the WebSocket is not connected")
 // 		return
 // 	}
 // 	t.subscriptions = append(t.subscriptions, subscription{handlerAll: handler, context: context})
@@ -167,7 +167,7 @@ func (c *Consumer) Shutdown() {
 // // getWSURL returns current WebSocket connection url
 // func (t *Consumer) getWSURL() string {
 // 	if t == nil {
-// 		log.Error().Msg("[consumer:getWSURL] nil connection")
+// 		zlog.Error().Msg("[consumer:getWSURL] nil connection")
 // 		return ""
 // 	}
 // 	t.mu.RLock()
@@ -182,7 +182,7 @@ func (c *Consumer) Shutdown() {
 // // getHTTPURL returns current WebSocket connection url
 // func (t *Consumer) getHTTPURL(subpath string) string {
 // 	if t == nil {
-// 		log.Error().Msg("[consumer:getWSURL] nil connection")
+// 		zlog.Error().Msg("[consumer:getWSURL] nil connection")
 // 		return ""
 // 	}
 // 	t.mu.RLock()

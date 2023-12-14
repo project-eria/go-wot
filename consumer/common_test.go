@@ -7,7 +7,6 @@ import (
 
 	"github.com/project-eria/go-wot/consumer"
 	"github.com/project-eria/go-wot/mocks"
-	"github.com/project-eria/go-wot/protocolHttp"
 	"github.com/project-eria/go-wot/thing"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/suite"
@@ -74,6 +73,35 @@ const jsonTD string = `{
 			"default": false,
 			"readOnly": false,
 			"writeOnly": true,
+			"type": "boolean"
+		},
+		"uriVars": {
+			"observable": false,
+			"title": "URI Vars",
+			"description": "With URI Vars",
+			"forms": [
+				{
+				"href": "http://127.0.0.1:8888/uriVars/{var1}/{var2}",
+				"contentType": "application/json",
+				"op": [
+					"writeproperty",
+					"readproperty"
+				]
+				}
+			],
+			"uriVariables": {
+				"var1": {
+					"default": "",
+					"type": "string"
+				},
+				"var2": {
+					"default": "test",
+					"type": "string"
+				}
+			},
+			"default": false,
+			"readOnly": false,
+			"writeOnly": false,
 			"type": "boolean"
 		}
 	},
@@ -178,8 +206,8 @@ const jsonTD string = `{
 // }
 
 type ConsumerTestSuite struct {
-	consumedThing       consumer.ConsumedThing
-	httpClientProcessor *mocks.HttpClientProcessor
+	consumedThing consumer.ConsumedThing
+	client        *mocks.ProtocolClient
 	suite.Suite
 }
 
@@ -195,12 +223,9 @@ func (ts *ConsumerTestSuite) SetupTest() {
 		os.Exit(1)
 	}
 	myConsumer := consumer.New()
-	httpClientProcessor := &mocks.HttpClientProcessor{}
-	mockClient := &protocolHttp.HttpClient{
-		Client:  httpClientProcessor,
-		Schemes: []string{"http"},
-	}
+	mockClient := &mocks.ProtocolClient{}
+	mockClient.On("GetSchemes").Return([]string{"http"})
 	myConsumer.AddClient(mockClient)
 	ts.consumedThing = myConsumer.Consume(&td)
-	ts.httpClientProcessor = httpClientProcessor
+	ts.client = mockClient
 }

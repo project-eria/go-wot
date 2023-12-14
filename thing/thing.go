@@ -7,7 +7,7 @@ import (
 
 	"github.com/project-eria/go-wot/interaction"
 	"github.com/project-eria/go-wot/securityScheme"
-	"github.com/rs/zerolog/log"
+	zlog "github.com/rs/zerolog/log"
 )
 
 var namespace = "https://www.w3.org/2022/wot/td/v1.1"
@@ -69,7 +69,7 @@ func New(urn string, version string, title string, description string, types []s
 
 func (t *Thing) AddContext(key string, context string) {
 	if key == "" {
-		log.Error().Str("uri", context).Msg("[thing:AddContext] missing prefix for context")
+		zlog.Error().Str("uri", context).Msg("[thing:AddContext] missing prefix for context")
 		return
 	}
 	t.AtContext[key] = context
@@ -171,7 +171,7 @@ func (t *Thing) UnmarshalJSON(data []byte) error {
 // AddProperty add property to a thing
 func (t *Thing) AddProperty(property *interaction.Property) {
 	if t == nil {
-		log.Error().Msg("[thing:AddProperty] nil thing")
+		zlog.Error().Msg("[thing:AddProperty] nil thing")
 		return
 	}
 
@@ -183,7 +183,7 @@ func (t *Thing) AddProperty(property *interaction.Property) {
 // AddAction add action to a thing
 func (t *Thing) AddAction(action *interaction.Action) {
 	if t == nil {
-		log.Error().Msg("[thing:AddAction] nil thing")
+		zlog.Error().Msg("[thing:AddAction] nil thing")
 		return
 	}
 
@@ -195,7 +195,7 @@ func (t *Thing) AddAction(action *interaction.Action) {
 // AddEvent add event to a thing
 func (t *Thing) AddEvent(event *interaction.Event) {
 	if t == nil {
-		log.Error().Msg("[thing:AddEvent] nil thing")
+		zlog.Error().Msg("[thing:AddEvent] nil thing")
 		return
 	}
 

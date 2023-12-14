@@ -1,102 +1,55 @@
 package consumer_test
 
 import (
-	"bytes"
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
+	"errors"
 
 	"github.com/stretchr/testify/mock"
 )
 
 func (ts *ConsumerTestSuite) Test_Action_NotFound() {
-	_, err := ts.consumedThing.InvokeAction("x", nil)
+	_, err := ts.consumedThing.InvokeAction("x", nil, nil)
 	ts.Error(err, "should return error")
 	ts.EqualError(err, "action x not found", "they should be equal")
+	ts.client.AssertNotCalled(ts.T(), "InvokeResource")
 }
 
 func (ts *ConsumerTestSuite) Test_Action_NoInput_NoOutput() {
-	// build response JSON
-	result := map[string]interface{}{"ok": true}
-	jsonBytes, _ := json.Marshal(result)
-	// create a new reader with that JSON
-	r := ioutil.NopCloser(bytes.NewReader([]byte(jsonBytes)))
-	ts.httpClientProcessor.On("Do", mock.Anything).Return(&http.Response{
-		StatusCode: 200,
-		Body:       r,
-	}, nil)
-
-	data, err := ts.consumedThing.InvokeAction("a", nil)
+	ts.client.On("InvokeResource", mock.Anything, map[string]interface{}{}, nil).Return(true, "http://", nil)
+	result, err := ts.consumedThing.InvokeAction("a", nil, nil)
 	ts.NoError(err, "should not return error")
-	ts.Equal(data, result)
+	ts.Equal(result.(bool), true, "they should be equal")
+	ts.client.AssertExpectations(ts.T())
 }
 
 func (ts *ConsumerTestSuite) Test_Action_StringInput_NoOutput() {
-	// build response JSON
-	result := map[string]interface{}{"ok": true}
-	jsonBytes, _ := json.Marshal(result)
-	// create a new reader with that JSON
-	r := ioutil.NopCloser(bytes.NewReader([]byte(jsonBytes)))
-	ts.httpClientProcessor.On("Do", mock.Anything).Return(&http.Response{
-		StatusCode: 200,
-		Body:       r,
-	}, nil)
-
-	data, err := ts.consumedThing.InvokeAction("b", "test")
+	ts.client.On("InvokeResource", mock.Anything, map[string]interface{}{}, "test").Return(true, "http://", nil)
+	result, err := ts.consumedThing.InvokeAction("b", nil, "test")
 	ts.NoError(err, "should not return error")
-	ts.Equal(data, result)
+	ts.Equal(result.(bool), true, "they should be equal")
+	ts.client.AssertExpectations(ts.T())
 }
 
 func (ts *ConsumerTestSuite) Test_Action_StringInput_NoOutput_Missing_data() {
-	// build response JSON
-	result := map[string]interface{}{
-		"error": "incorrect input value: missing value",
-		"type":  "DataError",
-	}
-	jsonBytes, _ := json.Marshal(result)
-	// create a new reader with that JSON
-	r := ioutil.NopCloser(bytes.NewReader([]byte(jsonBytes)))
-	ts.httpClientProcessor.On("Do", mock.Anything).Return(&http.Response{
-		StatusCode: 400,
-		Body:       r,
-	}, nil)
-
-	_, err := ts.consumedThing.InvokeAction("b", nil)
+	ts.client.On("InvokeResource", mock.Anything, map[string]interface{}{}, nil).Return(false, "http://", errors.New("incorrect input value: missing value"))
+	_, err := ts.consumedThing.InvokeAction("b", nil, nil)
 	ts.Error(err, "should return error")
 	ts.EqualError(err, "incorrect input value: missing value", "they should be equal")
+	ts.client.AssertExpectations(ts.T())
 }
 
 func (ts *ConsumerTestSuite) Test_Action_StringInput_NoOutput_Incorrect_Type() {
-	// build response JSON
-	result := map[string]interface{}{
-		"error": "incorrect input value: incorrect string value type",
-		"type":  "DataError",
-	}
-	jsonBytes, _ := json.Marshal(result)
-	// create a new reader with that JSON
-	r := ioutil.NopCloser(bytes.NewReader([]byte(jsonBytes)))
-	ts.httpClientProcessor.On("Do", mock.Anything).Return(&http.Response{
-		StatusCode: 400,
-		Body:       r,
-	}, nil)
-
-	_, err := ts.consumedThing.InvokeAction("b", true)
+	ts.client.On("InvokeResource", mock.Anything, map[string]interface{}{}, true).Return(false, "http://", errors.New("incorrect input value: incorrect string value type"))
+	_, err := ts.consumedThing.InvokeAction("b", nil, true)
 	ts.Error(err, "should return error")
 	ts.EqualError(err, "incorrect input value: incorrect string value type", "they should be equal")
+	ts.client.AssertExpectations(ts.T())
 }
 
 func (ts *ConsumerTestSuite) Test_Action_StringInput_StringOutput() {
-	// build response JSON
-	result := "test"
-	jsonBytes, _ := json.Marshal(result)
-	// create a new reader with that JSON
-	r := ioutil.NopCloser(bytes.NewReader([]byte(jsonBytes)))
-	ts.httpClientProcessor.On("Do", mock.Anything).Return(&http.Response{
-		StatusCode: 200,
-		Body:       r,
-	}, nil)
-
-	data, err := ts.consumedThing.InvokeAction("c", "test")
+	ts.client.On("InvokeResource", mock.Anything, map[string]interface{}{}, "test").Return(true, "http://", nil)
+	result, err := ts.consumedThing.InvokeAction("c", nil, "test")
 	ts.NoError(err, "should not return error")
-	ts.Equal(data, result)
+	ts.Equal(result.(bool), true, "they should be equal")
+	ts.client.AssertExpectations(ts.T())
+
 }

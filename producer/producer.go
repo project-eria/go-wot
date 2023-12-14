@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/project-eria/go-wot/thing"
-	"github.com/rs/zerolog/log"
+	zlog "github.com/rs/zerolog/log"
 )
 
 // Producer is an protocols server (http, ws, ...) made for webthings model
@@ -35,7 +35,7 @@ type ProtocolServer interface {
 
 func (p *Producer) AddServer(server ProtocolServer) {
 	if p == nil {
-		log.Error().Msg("[producer:AddServer] nil Producer")
+		zlog.Error().Msg("[producer:AddServer] nil Producer")
 		return
 	}
 	p.mu.Lock()
@@ -46,7 +46,7 @@ func (p *Producer) AddServer(server ProtocolServer) {
 // New constructs the http server, and register the router
 func (p *Producer) Produce(ref string, td *thing.Thing) ExposedThing {
 	if p == nil {
-		log.Error().Msg("[producer:Produce] nil Producer")
+		zlog.Error().Msg("[producer:Produce] nil Producer")
 		return nil
 	}
 	exposedThing := NewExposedThing(td, ref, p._wait)
@@ -54,7 +54,7 @@ func (p *Producer) Produce(ref string, td *thing.Thing) ExposedThing {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if _, exists := p.things[ref]; exists {
-		log.Error().Msg("[producer:Produce] thing ref already exists")
+		zlog.Error().Msg("[producer:Produce] thing ref already exists")
 		return nil
 	}
 	p.things[ref] = exposedThing
@@ -64,12 +64,12 @@ func (p *Producer) Produce(ref string, td *thing.Thing) ExposedThing {
 // Produce constructs
 func (p *Producer) Expose() {
 	if p == nil {
-		log.Error().Msg("[producer:Expose] nil Producer")
+		zlog.Error().Msg("[producer:Expose] nil Producer")
 		return
 	}
 
 	if len(p.servers) == 0 {
-		log.Fatal().Msg("[producer:Expose] no servers to expose Things")
+		zlog.Fatal().Msg("[producer:Expose] no servers to expose Things")
 		return
 	}
 	for _, s := range p.servers {
@@ -82,14 +82,14 @@ func (p *Producer) Expose() {
 // Launch servers
 func (p *Producer) Start() {
 	if p == nil {
-		log.Error().Msg("[producer:Start] nil Producer")
+		zlog.Error().Msg("[producer:Start] nil Producer")
 		return
 	}
 	if len(p.servers) == 0 {
-		log.Fatal().Msg("[producer:Start] no servers to start")
+		zlog.Fatal().Msg("[producer:Start] no servers to start")
 		return
 	}
-	log.Info().Msg("[producer:Start] Starting...")
+	zlog.Info().Msg("[producer:Start] Starting...")
 	for _, s := range p.servers {
 		s.Start()
 	}
@@ -97,10 +97,10 @@ func (p *Producer) Start() {
 
 func (p *Producer) Stop() {
 	if p == nil {
-		log.Error().Msg("[producer:Stop] nil server")
+		zlog.Error().Msg("[producer:Stop] nil server")
 		return
 	}
-	log.Info().Msg("[producer:Stop] Stopping...")
+	zlog.Info().Msg("[producer:Stop] Stopping...")
 	for _, s := range p.servers {
 		s.Stop()
 	}

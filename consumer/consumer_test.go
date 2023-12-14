@@ -109,6 +109,44 @@ func (ts *ConsumerTestSuite) Test_GetThingDescription() {
 					// +    DataSchema: (dataSchema.DataSchema) <nil>
 				},
 			},
+			"uriVars": {
+				Observable: false,
+				Interaction: interaction.Interaction{
+					Key: "",
+					// AtType: ([]string) <nil>,
+					Title: "URI Vars",
+					// Titles: (map[string]string) <nil>,
+					Description: "With URI Vars",
+					// Descriptions: (map[string]string) <nil>,
+					Forms: []*interaction.Form{
+						{
+							Href:        "http://127.0.0.1:8888/uriVars/{var1}/{var2}",
+							ContentType: "application/json",
+							Op:          []string{"writeproperty", "readproperty"},
+							Supplement:  map[string]interface{}{},
+						},
+					},
+					UriVariables: map[string]dataSchema.Data{
+						"var1": {
+							Default: "",
+							Type:    "string",
+						},
+						"var2": {
+							Default: "test",
+							Type:    "string",
+						},
+					},
+				},
+				Data: dataSchema.Data{
+					// Const: (interface {}) <nil>,
+					Default: false,
+					Unit:    "",
+					// +    Enum: ([]interface {}) <nil>,
+					Format: "",
+					Type:   "boolean",
+					// +    DataSchema: (dataSchema.DataSchema) <nil>
+				},
+			},
 		},
 		Actions: map[string]*interaction.Action{
 			"a": {

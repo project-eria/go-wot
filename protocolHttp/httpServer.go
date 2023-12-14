@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/project-eria/go-wot/interaction"
 	"github.com/project-eria/go-wot/producer"
-	"github.com/rs/zerolog/log"
+	zlog "github.com/rs/zerolog/log"
 )
 
 type HttpServer struct {
@@ -49,7 +49,7 @@ func (s *HttpServer) Expose(ref string, thing producer.ExposedThing) {
 func (s *HttpServer) Start() {
 	// TODO
 	// s.RegisterOnShutdown(func() {
-	// 	log.Trace().Msg("[protocolHttp:Start] Gracefully shutdown all websocket connections")
+	// 	zlog.Trace().Msg("[protocolHttp:Start] Gracefully shutdown all websocket connections")
 	// 	// Wait for Gracefully shutdown all active websocket connections, for all things
 	// 	// for _, wsHandler := range s.wsHandlers {
 	// 	// 	wsHandler.gracefullWSShutdown()
@@ -57,14 +57,14 @@ func (s *HttpServer) Start() {
 	// })
 
 	go func() {
-		log.Info().Msg("[protocolHttp:Start] Server listening")
+		zlog.Info().Msg("[protocolHttp:Start] Server listening")
 		err := s.Listen(s.addr)
 		// always returns error. ErrServerClosed on graceful close
 		if err == http.ErrServerClosed {
-			log.Info().Msg("[protocolHttp:Start] Server closed")
+			zlog.Info().Msg("[protocolHttp:Start] Server closed")
 		} else {
 			// unexpected error. port in use?
-			log.Error().Err(err).Msg("[protocolHttp:Start]")
+			zlog.Error().Err(err).Msg("[protocolHttp:Start]")
 		}
 	}()
 }
@@ -72,21 +72,21 @@ func (s *HttpServer) Start() {
 // stop Gracefully the server and all connections
 func (s *HttpServer) Stop() {
 	// if p == nil {
-	// 	log.Error().Msg("[protocolHttp:GracefullyShutdown] nil server")
+	// 	zlog.Error().Msg("[protocolHttp:GracefullyShutdown] nil server")
 	// 	return
 	// }
 	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	// defer cancel()
 	// // https://golang.org/pkg/net/http/#Server.Shutdown
 	// if err := p.Shutdown(ctx); err != nil {
-	// 	log.Info().Msg("[thing:Shutdown] Shutdown error")
+	// 	zlog.Info().Msg("[thing:Shutdown] Shutdown error")
 	// } else {
-	// 	log.Trace().Msg("[thing:Shutdown] Wait on websocket connections shutdown")
+	// 	zlog.Trace().Msg("[thing:Shutdown] Wait on websocket connections shutdown")
 	// 	// Wait for Gracefully shutdown all active websocket connections, for all things
 	// 	// for _, wsHandler := range s.wsHandlers {
 	// 	// 	wsHandler.waitWebSocket.Wait()
 	// 	// }
-	// 	log.Info().Msg("[thing:Shutdown] Gracefully stopped")
+	// 	zlog.Info().Msg("[thing:Shutdown] Gracefully stopped")
 	// }
 }
 
@@ -144,6 +144,7 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t p
 	var uriVars string
 	var handlerVars string
 	// https://w3c.github.io/wot-thing-description/#form-uriVariables
+	// TODO Implement other uri variables https://www.rfc-editor.org/rfc/rfc6570
 	// How to decide /{city} or {?unit} format?
 	if len(property.UriVariables) > 0 {
 		for uriVar := range property.UriVariables {
@@ -202,6 +203,7 @@ func addActionEndPoints(g fiber.Router, exposedAddr string, prefix string, t pro
 	var uriVars string
 	var handlerVars string
 	// https://w3c.github.io/wot-thing-description/#form-uriVariables
+	// TODO Implement other uri variables https://www.rfc-editor.org/rfc/rfc6570
 	// How to decide /{city} or {?unit} format?
 	if len(action.UriVariables) > 0 {
 		for uriVar := range action.UriVariables {

@@ -11,16 +11,16 @@ import (
 type ConsumedThing interface {
 	GetThingDescription() *thing.Thing
 	// Properties
-	ReadProperty(string) (interface{}, error)
+	ReadProperty(string, map[string]interface{}) (interface{}, error)
 	ReadMultipleProperties()
 	ReadAllProperties()
-	WriteProperty(string, interface{}) (interface{}, error)
+	WriteProperty(string, map[string]interface{}, interface{}) (interface{}, error)
 	WriteMultipleProperties()
-	ObserveProperty(string, Listener) error
+	ObserveProperty(string, map[string]interface{}, Listener) error
 	// Actions
-	InvokeAction(string, interface{}) (interface{}, error)
+	InvokeAction(string, map[string]interface{}, interface{}) (interface{}, error)
 	// Events
-	SubscribeEvent(string, Listener) error
+	SubscribeEvent(string, map[string]interface{}, Listener) error
 }
 
 type consumedThing struct {

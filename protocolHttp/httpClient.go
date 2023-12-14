@@ -9,7 +9,7 @@ import (
 
 	"github.com/project-eria/go-wot/consumer"
 	"github.com/project-eria/go-wot/interaction"
-	"github.com/rs/zerolog/log"
+	zlog "github.com/rs/zerolog/log"
 )
 
 type HttpClient struct {
@@ -34,34 +34,37 @@ func (c *HttpClient) GetSchemes() []string {
 }
 
 // ReadResource get a JSON data from HTTP GET request
-func (c *HttpClient) ReadResource(form *interaction.Form) (interface{}, error) {
-	data, err := c.sendJSON(form.Href, http.MethodGet, nil)
+func (c *HttpClient) ReadResource(form *interaction.Form, dataVariables map[string]interface{}) (interface{}, string, error) {
+	uri := getUri(form, dataVariables)
+	data, err := c.sendJSON(uri, http.MethodGet, nil)
 	if err != nil {
-		return nil, err
+		return nil, uri, err
 	}
-	return data, nil
+	return data, uri, nil
 }
 
 // WriteResource send JSON data using HTTP PUT request
-func (c *HttpClient) WriteResource(form *interaction.Form, value interface{}) (interface{}, error) {
-	data, err := c.sendJSON(form.Href, http.MethodPut, value)
+func (c *HttpClient) WriteResource(form *interaction.Form, dataVariables map[string]interface{}, value interface{}) (interface{}, string, error) {
+	uri := getUri(form, dataVariables)
+	data, err := c.sendJSON(uri, http.MethodPut, value)
 	if err != nil {
-		return nil, err
+		return nil, uri, err
 	}
-	return data, nil
+	return data, uri, nil
 }
 
 // InvokeResource send JSON data using HTTP POST request
-func (c *HttpClient) InvokeResource(form *interaction.Form, value interface{}) (interface{}, error) {
-	data, err := c.sendJSON(form.Href, http.MethodPost, value)
+func (c *HttpClient) InvokeResource(form *interaction.Form, dataVariables map[string]interface{}, value interface{}) (interface{}, string, error) {
+	uri := getUri(form, dataVariables)
+	data, err := c.sendJSON(uri, http.MethodPost, value)
 	if err != nil {
-		return nil, err
+		return nil, uri, err
 	}
-	return data, nil
+	return data, uri, nil
 }
 
-func (c *HttpClient) SubscribeResource(form *interaction.Form, sub *consumer.Subscription, listener consumer.Listener) error {
-	return errors.New("not implemented")
+func (c *HttpClient) SubscribeResource(form *interaction.Form, dataVariables map[string]interface{}, sub *consumer.Subscription, listener consumer.Listener) (string, error) {
+	return form.Href, errors.New("not implemented")
 }
 
 func (c *HttpClient) Stop() {
@@ -98,10 +101,10 @@ func (c *HttpClient) sendJSON(url string, method string, payload interface{}) (i
 	if resp.StatusCode != http.StatusOK {
 		dataMap := data.(map[string]interface{})
 		if msg, hasError := dataMap["error"]; hasError {
-			log.Error().Str("status", resp.Status).Str("url", url).Str("msg", msg.(string)).Msg("[consumer:sendJSON]")
+			zlog.Error().Str("status", resp.Status).Str("url", url).Str("msg", msg.(string)).Msg("[consumer:sendJSON]")
 			return data, errors.New(msg.(string))
 		}
-		log.Error().Str("status", resp.Status).Str("url", url).Msg("[consumer:sendJSON] request returned error")
+		zlog.Error().Str("status", resp.Status).Str("url", url).Msg("[consumer:sendJSON] request returned error")
 		return data, errors.New("request returned error")
 	}
 	return data, nil

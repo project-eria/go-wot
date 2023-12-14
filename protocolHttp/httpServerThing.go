@@ -3,7 +3,7 @@ package protocolHttp
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/project-eria/go-wot/producer"
-	"github.com/rs/zerolog/log"
+	zlog "github.com/rs/zerolog/log"
 )
 
 // get handle the GET method for single thing root
@@ -12,7 +12,7 @@ func thingHandler(t producer.ExposedThing) func(*fiber.Ctx) error {
 		if c.Locals("websocket") == true {
 			return c.Next() // delegate to the next handler (websocket)
 		}
-		log.Trace().Str("uri", c.Path()).Msg("[protocolHttp:thingHandler] Received Thing GET request")
+		zlog.Trace().Str("uri", c.Path()).Msg("[protocolHttp:thingHandler] Received Thing GET request")
 		td := t.GetThingDescription()
 
 		// Dynamically build href

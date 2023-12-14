@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/project-eria/go-wot/interaction"
 	"github.com/project-eria/go-wot/producer"
-	"github.com/rs/zerolog/log"
+	zlog "github.com/rs/zerolog/log"
 )
 
 // get handle the GET method for thing single property
@@ -14,9 +14,9 @@ import (
 func propertyReadHandler(t producer.ExposedThing, tdProperty *interaction.Property) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		options := c.AllParams()
-		log.Trace().Str("uri", c.Path()).Interface("options", options).Msg("[protocolHttp:propertyReadHandler] Received Thing property GET request")
+		zlog.Trace().Str("uri", c.Path()).Interface("options", options).Msg("[protocolHttp:propertyReadHandler] Received Thing property GET request")
 		if tdProperty.WriteOnly {
-			log.Trace().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Access to WriteOnly property")
+			zlog.Trace().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Access to WriteOnly property")
 			return c.Status(NotAllowedError.HttpStatus).JSON(fiber.Map{
 				"error": "Write Only property",
 				"type":  NotAllowedError.ErrorType,
@@ -24,7 +24,7 @@ func propertyReadHandler(t producer.ExposedThing, tdProperty *interaction.Proper
 		} else {
 			property, err := t.ExposedProperty(tdProperty.Key)
 			if err != nil {
-				log.Error().Err(err).Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler]")
+				zlog.Error().Err(err).Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler]")
 				return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
 					"error": fmt.Sprintf("ExposedProperty `%s` not found", tdProperty.Key),
 					"type":  UnknownError.ErrorType,
@@ -42,16 +42,16 @@ func propertyReadHandler(t producer.ExposedThing, tdProperty *interaction.Proper
 					// Call the function that handle the property read
 					content, err := handler(t, tdProperty.Key, options)
 					if err != nil {
-						log.Error().Str("uri", c.Path()).Err(err).Msg("[protocolHttp:propertyReadHandler]")
+						zlog.Error().Str("uri", c.Path()).Err(err).Msg("[protocolHttp:propertyReadHandler]")
 						return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
 							"error": err.Error(),
 							"type":  UnknownError.ErrorType,
 						})
 					}
-					log.Trace().Interface("response", content).Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Response to Thing property GET request")
+					zlog.Trace().Interface("response", content).Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Response to Thing property GET request")
 					return c.JSON(content)
 				} else {
-					log.Warn().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Not Implemented")
+					zlog.Warn().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Not Implemented")
 					return c.Status(NotSupportedError.HttpStatus).JSON(fiber.Map{
 						"error": "Not Implemented",
 						"type":  NotSupportedError.ErrorType,

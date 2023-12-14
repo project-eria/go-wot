@@ -467,3 +467,72 @@ func (ts *ProducerTestSuite) Test_WBoolPropertyWrite() {
 		Expect().
 		Status(http.StatusOK).JSON().Object().HasValue("ok", true)
 }
+
+func (ts *ProducerTestSuite) Test_URIVariablesProperty() {
+	booleanData := dataSchema.NewBoolean(false)
+	propertyRWO := interaction.NewProperty(
+		"uriVars",
+		"URI Variables",
+		"With URI Variables",
+		false,
+		false,
+		true,
+		map[string]dataSchema.Data{
+			"var1": {
+				Default: "",
+				Type:    "string",
+			},
+		},
+		booleanData,
+	)
+	ts.myThing.AddProperty(propertyRWO)
+
+	expect, _ := getProducer(ts, ts.myThing)
+
+	obj := expect.GET("/").Expect().
+		Status(http.StatusOK).JSON().Object()
+	// "id": "urn:dev:ops:my-actuator-1234",
+	obj.HasValue("id", "urn:dev:ops:my-actuator-1234")
+	// "@context": "https://www.w3.org/2022/wot/td/v1.1",
+	obj.Value("@context").String().IsEqual("https://www.w3.org/2022/wot/td/v1.1")
+	// "title": "Example",
+	obj.HasValue("title", "Example")
+	// "description": "A 1st example",
+	obj.HasValue("description", "A 1st example")
+	// "version": {
+	// 	"instance": "0.0.0-dev"
+	// },
+	obj.Value("version").Object().HasValue("instance", "0.0.0-dev")
+	// "securityDefinitions": {
+	// 	"no_sec": {
+	// 		"scheme": "nosec"
+	// 	}
+	// },
+	obj.Value("securityDefinitions").Object().HasValue("no_sec", map[string]interface{}{"scheme": "nosec"})
+	// "security": "no_sec"
+	obj.Value("security").String().IsEqual("no_sec")
+	// "properties": {
+	properties := obj.Value("properties").Object()
+	property := properties.Value("uriVars").Object()
+	property.HasValue("title", "URI Variables")
+	property.HasValue("description", "With URI Variables")
+	property.HasValue("readOnly", false)
+	property.HasValue("writeOnly", false)
+	property.HasValue("observable", true)
+	property.HasValue("type", "boolean")
+	property.HasValue("default", false)
+	property.Value("forms").Array().Length().IsEqual(2)
+	form1 := property.Value("forms").Array().Value(0).Object()
+	form1.HasValue("href", "http://127.0.0.1/uriVars/{var1}")
+	form1.HasValue("contentType", "application/json")
+	form1.Value("op").Array().IsEqualUnordered([]string{"writeproperty", "readproperty"})
+	form2 := property.Value("forms").Array().Value(1).Object()
+	form2.HasValue("href", "ws://127.0.0.1/uriVars/{var1}")
+	form2.HasValue("contentType", "application/json")
+	form2.Value("op").Array().IsEqualUnordered([]string{"observeproperty", "unobserveproperty"})
+	uriVariables := property.Value("uriVariables").Object()
+	uriVariables.HasValue("var1", map[string]interface{}{
+		"default": "",
+		"type":    "string",
+	})
+}

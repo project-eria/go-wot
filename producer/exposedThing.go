@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/project-eria/go-wot/thing"
-	"github.com/rs/zerolog/log"
+	zlog "github.com/rs/zerolog/log"
 )
 
 // https://w3c.github.io/wot-scripting-api/#the-exposedthing-interface
@@ -129,7 +129,7 @@ func (t *exposedThing) SetPropertyReadHandler(name string, handler PropertyReadH
 		t.exposedProperties[name].SetReadHandler(handler)
 		return nil
 	}
-	log.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyReadHandler] property not found")
+	zlog.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyReadHandler] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
@@ -140,10 +140,10 @@ func (t *exposedThing) SetPropertyObserveHandler(name string, handler PropertyOb
 			t.exposedProperties[name].SetObserveHandler(handler)
 			return nil
 		}
-		log.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyObserveHandler] property not observable")
+		zlog.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyObserveHandler] property not observable")
 		return fmt.Errorf("property %s not observable", name)
 	}
-	log.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyObserveHandler] property not found")
+	zlog.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyObserveHandler] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
@@ -153,10 +153,10 @@ func (t *exposedThing) SetObserverSelectorHandler(name string, handler ObserverS
 			t.exposedProperties[name].SetObserverSelectorHandler(handler)
 			return nil
 		}
-		log.Trace().Str("property", name).Msg("[ExposedThing:SetObserverSelectorHandler] property not observable")
+		zlog.Trace().Str("property", name).Msg("[ExposedThing:SetObserverSelectorHandler] property not observable")
 		return fmt.Errorf("property %s not observable", name)
 	}
-	log.Trace().Str("property", name).Msg("[ExposedThing:SetObserverSelectorHandler] property not found")
+	zlog.Trace().Str("property", name).Msg("[ExposedThing:SetObserverSelectorHandler] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
@@ -167,10 +167,10 @@ func (t *exposedThing) SetPropertyUnobserveHandler(name string) error {
 			t.exposedProperties[name].SetObserveHandler(nil)
 			return nil
 		}
-		log.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyUnobserveHandler] property not observable")
+		zlog.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyUnobserveHandler] property not observable")
 		return fmt.Errorf("property %s not observable", name)
 	}
-	log.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyUnobserveHandler] property not found")
+	zlog.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyUnobserveHandler] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
@@ -184,12 +184,12 @@ func (t *exposedThing) EmitPropertyChange(name string, data interface{}, options
 			value = data
 		} else if handler := p.GetReadHandler(); handler != nil {
 			if value, err = handler(t, name, options); err != nil {
-				log.Error().Str("ThingRef", t.ref).Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] read handler error for property")
+				zlog.Error().Str("ThingRef", t.ref).Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] read handler error for property")
 				return err
 			}
 		} else {
 			// No handler
-			log.Trace().Str("ThingRef", t.ref).Str("property", name).Msg("[ExposedThing:EmitPropertyChange] no handler available for property")
+			zlog.Trace().Str("ThingRef", t.ref).Str("property", name).Msg("[ExposedThing:EmitPropertyChange] no handler available for property")
 			return fmt.Errorf("no handler available for property %s", name)
 		}
 		// Send the notification to all protocols, that requested a channel
@@ -199,14 +199,14 @@ func (t *exposedThing) EmitPropertyChange(name string, data interface{}, options
 				case c <- PropertyChange{ThingRef: t.ref, Name: name, Value: value, Handler: p.GetObserverSelectorHandler(), Options: options}:
 					return
 				default:
-					log.Error().Msg("[ExposedThing:EmitPropertyChange] channel blocked (no reader?), can not write")
+					zlog.Error().Msg("[ExposedThing:EmitPropertyChange] channel blocked (no reader?), can not write")
 					return
 				}
 			}(c)
 		}
 		return nil
 	}
-	log.Trace().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] property not found")
+	zlog.Trace().Str("property", name).Msg("[ExposedThing:EmitPropertyChange] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
@@ -216,7 +216,7 @@ func (t *exposedThing) SetPropertyWriteHandler(name string, handler PropertyWrit
 		t.exposedProperties[name].SetWriteHandler(handler)
 		return nil
 	}
-	log.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyWriteHandler] property not found")
+	zlog.Trace().Str("property", name).Msg("[ExposedThing:SetPropertyWriteHandler] property not found")
 	return fmt.Errorf("property %s not found", name)
 }
 
@@ -229,7 +229,7 @@ func (t *exposedThing) SetActionHandler(name string, handler ActionHandler) erro
 		t.exposedActions[name].SetHandler(handler)
 		return nil
 	}
-	log.Trace().Str("action", name).Msg("[ExposedThing:SetActionHandler] action not found")
+	zlog.Trace().Str("action", name).Msg("[ExposedThing:SetActionHandler] action not found")
 	return fmt.Errorf("action %s not found", name)
 }
 
@@ -242,7 +242,7 @@ func (t *exposedThing) SetEventSubscribeHandler(name string, handler EventSubscr
 		t.exposedEvents[name].SetSubscribeHandler(handler)
 		return nil
 	}
-	log.Trace().Str("event", name).Msg("[ExposedThing:SetEventSubscribeHandler] event not found")
+	zlog.Trace().Str("event", name).Msg("[ExposedThing:SetEventSubscribeHandler] event not found")
 	return fmt.Errorf("event %s not found", name)
 }
 
@@ -252,7 +252,7 @@ func (t *exposedThing) SetEventUnsubscribeHandler(name string) error {
 		t.exposedEvents[name].SetUnSubscribeHandler()
 		return nil
 	}
-	log.Trace().Str("event", name).Msg("[ExposedThing:SetEventUnsubscribeHandler] event not found")
+	zlog.Trace().Str("event", name).Msg("[ExposedThing:SetEventUnsubscribeHandler] event not found")
 	return fmt.Errorf("event %s not found", name)
 }
 
@@ -262,7 +262,7 @@ func (t *exposedThing) SetEventHandler(name string, handler EventListenerHandler
 		t.exposedEvents[name].SetEventHandler(handler)
 		return nil
 	}
-	log.Trace().Str("event", name).Msg("[ExposedThing:SetEventHandler] event not found")
+	zlog.Trace().Str("event", name).Msg("[ExposedThing:SetEventHandler] event not found")
 	return fmt.Errorf("event %s not found", name)
 }
 
@@ -274,7 +274,7 @@ func (t *exposedThing) EmitEvent(name string, options map[string]string) error {
 			var value interface{}
 			var err error
 			if value, err = handler(); err != nil {
-				log.Trace().Str("ThingRef", t.ref).Str("event", name).Err(err).Msg("[ExposedThing:EmitEvent] handler error for event")
+				zlog.Trace().Str("ThingRef", t.ref).Str("event", name).Err(err).Msg("[ExposedThing:EmitEvent] handler error for event")
 				return err
 			}
 			// Send the notification to all protocols, that requested a channel
@@ -284,7 +284,7 @@ func (t *exposedThing) EmitEvent(name string, options map[string]string) error {
 					case c <- Event{ThingRef: t.ref, Name: name, Value: value, Handler: e.GetListenerSelectorHandler(), Options: options}:
 						return
 					default:
-						log.Error().Msg("[ExposedThing:EmitEvente] channel blocked (no reader?), can not write")
+						zlog.Error().Msg("[ExposedThing:EmitEvente] channel blocked (no reader?), can not write")
 						return
 					}
 				}(c)
@@ -292,11 +292,11 @@ func (t *exposedThing) EmitEvent(name string, options map[string]string) error {
 			return nil
 		} else {
 			// No handler
-			log.Trace().Str("ThingRef", t.ref).Str("event", name).Msg("[ExposedThing:EmitEvent] no handler available for event")
+			zlog.Trace().Str("ThingRef", t.ref).Str("event", name).Msg("[ExposedThing:EmitEvent] no handler available for event")
 			return fmt.Errorf("no handler available for event %s", name)
 		}
 	}
-	log.Trace().Str("ThingRef", t.ref).Str("event", name).Msg("[ExposedThing:EmitEvent] event not found")
+	zlog.Trace().Str("ThingRef", t.ref).Str("event", name).Msg("[ExposedThing:EmitEvent] event not found")
 	return fmt.Errorf("event %s not found", name)
 }
 

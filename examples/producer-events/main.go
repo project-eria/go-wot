@@ -15,16 +15,16 @@ import (
 	"github.com/project-eria/go-wot/securityScheme"
 	"github.com/project-eria/go-wot/thing"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	zlog "github.com/rs/zerolog/log"
 )
 
 func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "02/01|15:04:05"})
+	zlog.Logger = zlog.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "02/01|15:04:05"})
 	zerolog.TimestampFunc = func() time.Time {
 		return time.Now().In(time.Local)
 	}
 	defer func() {
-		log.Info().Msg("[main] Stopped")
+		zlog.Info().Msg("[main] Stopped")
 	}()
 
 	mything, err := thing.New(
@@ -35,7 +35,7 @@ func main() {
 		[]string{},
 	)
 	if err != nil {
-		log.Fatal().Err(err).Msg("[main]")
+		zlog.Fatal().Err(err).Msg("[main]")
 	}
 	// Add Security
 	noSecurityScheme := securityScheme.NewNoSecurity()

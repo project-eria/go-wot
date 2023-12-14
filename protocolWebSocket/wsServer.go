@@ -10,7 +10,7 @@ import (
 	"github.com/project-eria/go-wot/interaction"
 	"github.com/project-eria/go-wot/producer"
 	"github.com/project-eria/go-wot/protocolHttp"
-	"github.com/rs/zerolog/log"
+	zlog "github.com/rs/zerolog/log"
 )
 
 var (
@@ -139,12 +139,12 @@ func (s *WsServer) Stop() {
 // 		conns := p.observersProperties
 // 		p.mu.RUnlock()
 // 		for key, wsConn := range conns {
-// 			log.Trace().Str("key", key).Msg("[ExposedProperty:gracefullWSShutdown] Send Close message")
+// 			zlog.Trace().Str("key", key).Msg("[ExposedProperty:gracefullWSShutdown] Send Close message")
 // 			err := wsConn.WriteControl(websocket.CloseMessage,
 // 				websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
 // 				time.Time{})
 // 			if err != nil {
-// 				log.Error().Str("key", key).Err(err).Msg("[ExposedProperty:gracefullWSShutdown] Sending error")
+// 				zlog.Error().Str("key", key).Err(err).Msg("[ExposedProperty:gracefullWSShutdown] Sending error")
 // 			}
 // 			delete(p.observersProperties, key)
 // 			t._wait.Done()
@@ -183,11 +183,11 @@ func monitorPropertyObserver(c <-chan producer.PropertyChange) {
 	for {
 		propertyChange, ok := <-c
 		if !ok {
-			log.Trace().Str("ThingRef", propertyChange.ThingRef).Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver] channel closed")
+			zlog.Trace().Str("ThingRef", propertyChange.ThingRef).Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver] channel closed")
 			break
 		}
 		if observers, ok := propertiesObservers[propertyChange.ThingRef][propertyChange.Name]; ok {
-			log.Trace().Str("ThingRef", propertyChange.ThingRef).Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver] Sending property change")
+			zlog.Trace().Str("ThingRef", propertyChange.ThingRef).Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver] Sending property change")
 			for _, wsConn := range observers {
 				var send bool = true
 				if propertyChange.Handler != nil {
@@ -196,7 +196,7 @@ func monitorPropertyObserver(c <-chan producer.PropertyChange) {
 				if send {
 					err := wsConn.jsonWSRenderer(propertyChange.Value)
 					if err != nil {
-						log.Error().Err(err).Str("ThingRef", propertyChange.ThingRef).Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver]")
+						zlog.Error().Err(err).Str("ThingRef", propertyChange.ThingRef).Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver]")
 					}
 				}
 			}
@@ -208,11 +208,11 @@ func monitorEvent(c <-chan producer.Event) {
 	for {
 		event, ok := <-c
 		if !ok {
-			log.Trace().Str("ThingRef", event.ThingRef).Str("property", event.Name).Msg("[protocolWebSocket:monitorEvent] channel closed")
+			zlog.Trace().Str("ThingRef", event.ThingRef).Str("property", event.Name).Msg("[protocolWebSocket:monitorEvent] channel closed")
 			break
 		}
 		if subscribers, ok := eventSubscriptions[event.ThingRef][event.Name]; ok {
-			log.Trace().Str("ThingRef", event.ThingRef).Str("event", event.Name).Msg("[protocolWebSocket:monitorEvent] Sending event")
+			zlog.Trace().Str("ThingRef", event.ThingRef).Str("event", event.Name).Msg("[protocolWebSocket:monitorEvent] Sending event")
 			for _, wsConn := range subscribers {
 				var send bool = true
 				if event.Handler != nil {
@@ -221,7 +221,7 @@ func monitorEvent(c <-chan producer.Event) {
 				if send {
 					err := wsConn.jsonWSRenderer(event.Value)
 					if err != nil {
-						log.Error().Err(err).Str("ThingRef", event.ThingRef).Str("property", event.Name).Msg("[protocolWebSocket:monitorEvent]")
+						zlog.Error().Err(err).Str("ThingRef", event.ThingRef).Str("property", event.Name).Msg("[protocolWebSocket:monitorEvent]")
 					}
 				}
 			}
@@ -231,19 +231,19 @@ func monitorEvent(c <-chan producer.Event) {
 
 // TODO processRxMsg processes incoming messages
 // func (h *affordanceHandler) processRxMsg(wsConn *wsConnection, message *wsMessage) {
-// 	log.Trace().Str("key", message.key).Str("type", message.MessageType).Msg("[producer:processRxMsg] Processing WS request")
+// 	zlog.Trace().Str("key", message.key).Str("type", message.MessageType).Msg("[producer:processRxMsg] Processing WS request")
 // 	switch message.MessageType {
 // 	case "setProperty":
 // 		content, err := message.thing.processSetProperties(message.Data)
 // 		if err != nil {
 // 			wsConn.errorWSRenderer(err.Error())
-// 			log.Error().Str("key", message.key).Err(err).Msg("[producer:processRxMsg] SetProperty request")
+// 			zlog.Error().Str("key", message.key).Err(err).Msg("[producer:processRxMsg] SetProperty request")
 // 			break
 // 		}
 // 		wsConn.jsonWSRenderer(content)
 // 		break
 // 	default:
 // 		wsConn.errorWSRenderer("Unsupported RX request type")
-// 		log.Error().Str("key", message.key).Str("type", message.MessageType).Msg("[producer:processRxMsg] Unsupported RX request type")
+// 		zlog.Error().Str("key", message.key).Str("type", message.MessageType).Msg("[producer:processRxMsg] Unsupported RX request type")
 // 	}
 // }
