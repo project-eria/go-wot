@@ -15,7 +15,7 @@ type ExposedEvent interface {
 	SetListenerSelectorHandler(ListenerSelectorHandler)
 	GetListenerSelectorHandler() ListenerSelectorHandler
 	// Interaction
-	CheckUriVariables(map[string]string) error
+	CheckUriVariables(map[string]string) (map[string]interface{}, error)
 }
 
 type exposedEvent struct {
@@ -27,11 +27,11 @@ type exposedEvent struct {
 }
 
 type Event struct {
-	ThingRef string
-	Name     string
-	Value    interface{}
-	Handler  ListenerSelectorHandler
-	Options  map[string]string
+	ThingRef       string
+	Name           string
+	Value          interface{}
+	Handler        ListenerSelectorHandler
+	EmitParameters map[string]interface{} // Parameters sent via the emit method
 }
 
 func NewExposedEvent(interaction *interaction.Event) ExposedEvent {
@@ -47,7 +47,7 @@ type EventListenerHandler func() (interface{}, error)
 // https://w3c.github.io/wot-scripting-api/#the-eventsubscriptionhandler-callback
 type EventSubscriptionHandler func(ExposedThing, string, map[string]string) (interface{}, error)
 
-type ListenerSelectorHandler func(map[string]string, map[string]string) bool
+type ListenerSelectorHandler func(map[string]interface{}, map[string]interface{}) bool // ? Explain why 2 options maps
 
 // https://w3c.github.io/wot-scripting-api/#the-seteventsubscribehandler-method
 func (e *exposedEvent) SetSubscribeHandler(handler EventSubscriptionHandler) {

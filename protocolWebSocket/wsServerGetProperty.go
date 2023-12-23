@@ -1,8 +1,8 @@
 package protocolWebSocket
 
 import (
+	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -27,24 +27,25 @@ func propertyObserverHandler(t producer.ExposedThing, tdProperty *interaction.Pr
 				c.Locals("key", key)
 
 				// Check the params (uriVariables) data
-				options := c.AllParams()
-				if err := property.CheckUriVariables(options); err != nil {
+				parametersStr := c.AllParams()
+				parameters, err := property.CheckUriVariables(parametersStr)
+				if err != nil {
 					return c.Status(protocolHttp.DataError.HttpStatus).JSON(fiber.Map{
 						"error": err.Error(),
 						"type":  protocolHttp.DataError.ErrorType,
 					})
 				}
 
-				return websocket.New(propertyObserverWSHandler(t, tdProperty, options))(c)
+				return websocket.New(propertyObserverWSHandler(t, tdProperty, parameters))(c)
 			}
 			return c.Next()
 		}
 	}
 }
 
-func propertyObserverWSHandler(t producer.ExposedThing, tdProperty *interaction.Property, options map[string]string) func(*websocket.Conn) {
+func propertyObserverWSHandler(t producer.ExposedThing, tdProperty *interaction.Property, parameters map[string]interface{}) func(*websocket.Conn) {
 	return func(c *websocket.Conn) {
-		zlog.Trace().Str("ThingRef", t.Ref()).Str("property", tdProperty.Key).Interface("options", options).Msg("[protocolWebSocket:propertyObserverHandler] Received Thing property WS request")
+		zlog.Trace().Str("ThingRef", t.Ref()).Str("property", tdProperty.Key).Interface("parameters", parameters).Msg("[protocolWebSocket:propertyObserverHandler] Received Thing property WS request")
 
 		// TODO Handle Origin for debug plugins
 		// upgrader.CheckOrigin = func(r *http.Request) bool { return true }
@@ -57,12 +58,12 @@ func propertyObserverWSHandler(t producer.ExposedThing, tdProperty *interaction.
 
 		key := c.Locals("key").(string)
 
-		// Deep clone the options
-		optionsCopy := make(map[string]string)
-		for k, v := range options {
-			optionsCopy[k] = strings.Clone(v)
-		}
-		wsConn := &wsConnection{Conn: c, options: optionsCopy}
+		// Deep clone the listener parameters
+		parametersCopy := make(map[string]interface{})
+		parametersJSON, _ := json.Marshal(parameters)   // Marshalling the map to JSON
+		json.Unmarshal(parametersJSON, &parametersCopy) // Unmarshalling JSON to a new map (Deep Copy)
+
+		wsConn := &wsConnection{Conn: c, listenerParameters: parametersCopy}
 		if err := addPropertyObserver(t, tdProperty.Key, key, wsConn); err != nil {
 			wsConn.errorWSRenderer(err.Error())
 			wsConn.Close()

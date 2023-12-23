@@ -1,8 +1,8 @@
 package protocolWebSocket
 
 import (
+	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -27,24 +27,25 @@ func eventHandler(t producer.ExposedThing, tdEvent *interaction.Event) func(*fib
 				c.Locals("key", key)
 
 				// Check the params (uriVariables) data
-				options := c.AllParams()
-				if err := event.CheckUriVariables(options); err != nil {
+				parametersStr := c.AllParams()
+				parameters, err := event.CheckUriVariables(parametersStr)
+				if err != nil {
 					return c.Status(protocolHttp.DataError.HttpStatus).JSON(fiber.Map{
 						"error": err.Error(),
 						"type":  protocolHttp.DataError.ErrorType,
 					})
 				}
 
-				return websocket.New(eventWSHandler(t, tdEvent, options))(c)
+				return websocket.New(eventWSHandler(t, tdEvent, parameters))(c)
 			}
 			return c.Next()
 		}
 	}
 }
 
-func eventWSHandler(t producer.ExposedThing, tdEvent *interaction.Event, options map[string]string) func(*websocket.Conn) {
+func eventWSHandler(t producer.ExposedThing, tdEvent *interaction.Event, parameters map[string]interface{}) func(*websocket.Conn) {
 	return func(c *websocket.Conn) {
-		zlog.Trace().Str("event", tdEvent.Key).Interface("options", options).Msg("[protocolWebSocket:propertyEventHandler] Received Thing event WS request")
+		zlog.Trace().Str("event", tdEvent.Key).Interface("parameters", parameters).Msg("[protocolWebSocket:propertyEventHandler] Received Thing event WS request")
 
 		// TODO Handle Origin for debug plugins
 		// upgrader.CheckOrigin = func(r *http.Request) bool { return true }
@@ -55,12 +56,13 @@ func eventWSHandler(t producer.ExposedThing, tdEvent *interaction.Event, options
 		// 	return
 		// }
 		key := c.Locals("key").(string)
-		// Deep clone the options
-		optionsCopy := make(map[string]string)
-		for k, v := range options {
-			optionsCopy[k] = strings.Clone(v)
-		}
-		wsConn := &wsConnection{Conn: c, options: optionsCopy}
+
+		// Deep clone the listener parameters
+		parametersCopy := make(map[string]interface{})
+		parametersJSON, _ := json.Marshal(parameters)   // Marshalling the map to JSON
+		json.Unmarshal(parametersJSON, &parametersCopy) // Unmarshalling JSON to a new map (Deep Copy)
+
+		wsConn := &wsConnection{Conn: c, listenerParameters: parametersCopy}
 
 		if err := addEventSubscription(t, tdEvent.Key, key, wsConn); err != nil {
 			wsConn.errorWSRenderer(err.Error())

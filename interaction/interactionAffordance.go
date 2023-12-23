@@ -23,15 +23,21 @@ type Interaction struct {
 	UriVariables map[string]dataSchema.Data `json:"uriVariables,omitempty"` // Define URI query template variables as collection based on DataSchema declarations. The individual variables DataSchema cannot be an ObjectSchema or an ArraySchema.	optional	Map of DataSchema
 }
 
-func (i Interaction) CheckUriVariables(variables map[string]string) error {
+func (i Interaction) CheckUriVariables(variables map[string]string) (map[string]interface{}, error) {
+	res := make(map[string]interface{})
 	for varKey, dataDef := range i.UriVariables {
-		if value, ok := variables[varKey]; ok {
-			if err := dataDef.Check(value); err != nil {
-				return fmt.Errorf("incorrect param `%s` value: %s", varKey, err.Error())
+		if valueStr, ok := variables[varKey]; ok {
+			value, err := dataDef.FromString(valueStr)
+			if err != nil {
+				return nil, fmt.Errorf("incorrect param `%s` value: %s", varKey, err.Error())
 			}
+			if err := dataDef.Validate(value); err != nil {
+				return nil, fmt.Errorf("incorrect param `%s` value: %s", varKey, err.Error())
+			}
+			res[varKey] = value
 		} else {
-			return fmt.Errorf("missing required parameter `%s`", varKey)
+			return nil, fmt.Errorf("missing required parameter `%s`", varKey)
 		}
 	}
-	return nil
+	return res, nil
 }

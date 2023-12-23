@@ -13,9 +13,18 @@ func NewBoolean(defaultValue bool) Data {
 	}
 }
 
-func (b Boolean) Check(value interface{}) error {
+func (b Boolean) Validate(value interface{}) error {
 	if _, ok := value.(bool); !ok {
 		return errors.New("incorrect boolean value type")
 	}
 	return nil
+}
+
+func (b Boolean) FromString(value string) (interface{}, error) {
+	if value == "true" {
+		return true, nil
+	} else if value == "false" {
+		return false, nil
+	}
+	return nil, errors.New("incorrect boolean value type")
 }

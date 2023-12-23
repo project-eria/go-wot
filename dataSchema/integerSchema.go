@@ -2,6 +2,7 @@ package dataSchema
 
 import (
 	"errors"
+	"strconv"
 )
 
 type Integer struct {
@@ -24,9 +25,13 @@ func NewInteger(defaultValue int, unit string, minimum int, maximum int) Data {
 	}
 }
 
-func (i Integer) Check(value interface{}) error {
+func (i Integer) Validate(value interface{}) error {
 	if _, ok := value.(int); !ok {
 		return errors.New("incorrect integer value type")
 	}
 	return nil
+}
+
+func (i Integer) FromString(value string) (interface{}, error) {
+	return strconv.Atoi(value)
 }

@@ -13,8 +13,8 @@ import (
 // https://w3c.github.io/wot-scripting-api/#handling-requests-for-reading-a-property
 func propertyReadHandler(t producer.ExposedThing, tdProperty *interaction.Property) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		options := c.AllParams()
-		zlog.Trace().Str("uri", c.Path()).Interface("options", options).Msg("[protocolHttp:propertyReadHandler] Received Thing property GET request")
+		optionsStr := c.AllParams()
+		zlog.Trace().Str("uri", c.Path()).Interface("options", optionsStr).Msg("[protocolHttp:propertyReadHandler] Received Thing property GET request")
 		if tdProperty.WriteOnly {
 			zlog.Trace().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Access to WriteOnly property")
 			return c.Status(NotAllowedError.HttpStatus).JSON(fiber.Map{
@@ -33,7 +33,8 @@ func propertyReadHandler(t producer.ExposedThing, tdProperty *interaction.Proper
 				handler := property.GetReadHandler()
 				if handler != nil {
 					// Check the options (uriVariables) data
-					if err := property.CheckUriVariables(options); err != nil {
+					options, err := property.CheckUriVariables(optionsStr)
+					if err != nil {
 						return c.Status(DataError.HttpStatus).JSON(fiber.Map{
 							"error": err.Error(),
 							"type":  DataError.ErrorType,

@@ -17,9 +17,13 @@ func NewObject(defaultValue map[string]interface{}) Data {
 	}
 }
 
-func (b Object) Check(value interface{}) error {
+func (b Object) Validate(value interface{}) error {
 	if _, ok := value.(map[string]interface{}); !ok {
 		return errors.New("incorrect object value type")
 	}
 	return nil
+}
+
+func (b Object) FromString(value string) (interface{}, error) {
+	return nil, errors.New("not implemented")
 }

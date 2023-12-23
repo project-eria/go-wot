@@ -15,7 +15,7 @@ type ExposedAction interface {
 	Input() *dataSchema.Data
 	Output() *dataSchema.Data
 	// Interaction
-	CheckUriVariables(map[string]string) error
+	CheckUriVariables(map[string]string) (map[string]interface{}, error)
 }
 
 type exposedAction struct {
@@ -32,7 +32,7 @@ func NewExposedAction(interaction *interaction.Action) ExposedAction {
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-actionhandler-callback
-type ActionHandler func(interface{}, map[string]string) (interface{}, error)
+type ActionHandler func(interface{}, map[string]interface{}) (interface{}, error)
 
 // https://w3c.github.io/wot-scripting-api/#the-setactionhandler-method
 func (e *exposedAction) SetHandler(handler ActionHandler) error {

@@ -21,7 +21,7 @@ type ExposedProperty interface {
 	Data() dataSchema.DataSchema
 	IsObservable() bool
 	// Interaction
-	CheckUriVariables(map[string]string) error
+	CheckUriVariables(map[string]string) (map[string]interface{}, error)
 }
 
 type exposedProperty struct {
@@ -34,11 +34,11 @@ type exposedProperty struct {
 }
 
 type PropertyChange struct {
-	ThingRef string
-	Name     string
-	Value    interface{}
-	Handler  ObserverSelectorHandler
-	Options  map[string]string
+	ThingRef       string
+	Name           string
+	Value          interface{}
+	Handler        ObserverSelectorHandler
+	EmitParameters map[string]interface{} // Parameters sent via the emit method
 }
 
 func NewExposedProperty(interaction *interaction.Property) ExposedProperty {
@@ -52,13 +52,15 @@ func NewExposedProperty(interaction *interaction.Property) ExposedProperty {
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-propertyreadhandler-callback
-type PropertyReadHandler func(ExposedThing, string, map[string]string) (interface{}, error)
-type PropertyObserveHandler func(ExposedThing, string, map[string]string) (interface{}, error)
+type PropertyReadHandler func(ExposedThing, string, map[string]interface{}) (interface{}, error)
+type PropertyObserveHandler func(ExposedThing, string, map[string]interface{}) (interface{}, error)
 
 // https://w3c.github.io/wot-scripting-api/#the-propertywritehandler-callback
-type PropertyWriteHandler func(ExposedThing, string, interface{}, map[string]string) error
+type PropertyWriteHandler func(ExposedThing, string, interface{}, map[string]interface{}) error
 
-type ObserverSelectorHandler func(map[string]string, map[string]string) bool
+type ObserverSelectorHandler func(map[string]interface{}, map[string]interface{}) bool
+
+// emitOptions / listenerOptions
 
 func (p *exposedProperty) SetReadHandler(handler PropertyReadHandler) error {
 	if handler == nil {

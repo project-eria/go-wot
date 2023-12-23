@@ -110,7 +110,7 @@ func (ts *ProducerTestSuite) Test_RWOBoolPropertyRead() {
 	ts.myThing.AddProperty(propertyRWO)
 	expect, exposedThing := getProducer(ts, ts.myThing)
 
-	exposedThing.SetPropertyReadHandler("boolRWO", func(t producer.ExposedThing, name string, options map[string]string) (interface{}, error) {
+	exposedThing.SetPropertyReadHandler("boolRWO", func(t producer.ExposedThing, name string, parameters map[string]interface{}) (interface{}, error) {
 		return false, nil
 	})
 
@@ -134,10 +134,10 @@ func (ts *ProducerTestSuite) Test_RWOBoolPropertyWrite() {
 
 	expect, exposedThing := getProducer(ts, ts.myThing)
 
-	exposedThing.SetPropertyReadHandler("boolRWO", func(t producer.ExposedThing, name string, options map[string]string) (interface{}, error) {
+	exposedThing.SetPropertyReadHandler("boolRWO", func(t producer.ExposedThing, name string, parameters map[string]interface{}) (interface{}, error) {
 		return true, nil
 	})
-	exposedThing.SetPropertyWriteHandler("boolRWO", func(t producer.ExposedThing, name string, value interface{}, options map[string]string) error {
+	exposedThing.SetPropertyWriteHandler("boolRWO", func(t producer.ExposedThing, name string, value interface{}, parameters map[string]interface{}) error {
 		return nil
 	})
 
@@ -224,7 +224,7 @@ func (ts *ProducerTestSuite) Test_RWBoolPropertyRead() {
 
 	expect, exposedThing := getProducer(ts, ts.myThing)
 
-	exposedThing.SetPropertyReadHandler("boolRW", func(t producer.ExposedThing, name string, options map[string]string) (interface{}, error) {
+	exposedThing.SetPropertyReadHandler("boolRW", func(t producer.ExposedThing, name string, parameters map[string]interface{}) (interface{}, error) {
 		return false, nil
 	})
 
@@ -247,10 +247,10 @@ func (ts *ProducerTestSuite) Test_RWBoolPropertyWrite() {
 
 	expect, exposedThing := getProducer(ts, ts.myThing)
 
-	exposedThing.SetPropertyReadHandler("boolRW", func(t producer.ExposedThing, name string, options map[string]string) (interface{}, error) {
+	exposedThing.SetPropertyReadHandler("boolRW", func(t producer.ExposedThing, name string, parameters map[string]interface{}) (interface{}, error) {
 		return true, nil
 	})
-	exposedThing.SetPropertyWriteHandler("boolRW", func(t producer.ExposedThing, name string, value interface{}, options map[string]string) error {
+	exposedThing.SetPropertyWriteHandler("boolRW", func(t producer.ExposedThing, name string, value interface{}, parameters map[string]interface{}) error {
 		return nil
 	})
 
@@ -337,7 +337,7 @@ func (ts *ProducerTestSuite) Test_RBoolPropertyRead() {
 
 	expect, exposedThing := getProducer(ts, ts.myThing)
 
-	exposedThing.SetPropertyReadHandler("boolR", func(t producer.ExposedThing, name string, options map[string]string) (interface{}, error) {
+	exposedThing.SetPropertyReadHandler("boolR", func(t producer.ExposedThing, name string, parameters map[string]interface{}) (interface{}, error) {
 		return false, nil
 	})
 
@@ -454,7 +454,7 @@ func (ts *ProducerTestSuite) Test_WBoolPropertyWrite() {
 
 	expect, exposedThing := getProducer(ts, ts.myThing)
 
-	exposedThing.SetPropertyWriteHandler("boolW", func(t producer.ExposedThing, name string, value interface{}, options map[string]string) error {
+	exposedThing.SetPropertyWriteHandler("boolW", func(t producer.ExposedThing, name string, value interface{}, parameters map[string]interface{}) error {
 		return nil
 	})
 

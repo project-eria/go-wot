@@ -23,9 +23,13 @@ func NewString(defaultValue string, minLength uint16, maxLength uint16, pattern 
 	}
 }
 
-func (s String) Check(value interface{}) error {
+func (s String) Validate(value interface{}) error {
 	if _, ok := value.(string); !ok {
 		return errors.New("incorrect string value type")
 	}
 	return nil
+}
+
+func (b String) FromString(value string) (interface{}, error) {
+	return value, nil
 }

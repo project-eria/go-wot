@@ -24,7 +24,7 @@ type ExposedThing interface {
 	SetPropertyObserveHandler(string, PropertyObserveHandler) error
 	SetObserverSelectorHandler(string, ObserverSelectorHandler) error
 	SetPropertyUnobserveHandler(string) error
-	EmitPropertyChange(string, interface{}, map[string]string) error
+	EmitPropertyChange(string, interface{}, map[string]interface{}) error
 	SetPropertyWriteHandler(string, PropertyWriteHandler) error
 	// Actions
 	SetActionHandler(string, ActionHandler) error
@@ -32,7 +32,7 @@ type ExposedThing interface {
 	SetEventSubscribeHandler(string, EventSubscriptionHandler) error
 	SetEventUnsubscribeHandler(string) error
 	SetEventHandler(string, EventListenerHandler) error
-	EmitEvent(string, map[string]string) error
+	EmitEvent(string, map[string]interface{}) error
 	GetPropertyChangeChannel() <-chan PropertyChange
 	GetEventChannel() <-chan Event
 }
@@ -175,7 +175,7 @@ func (t *exposedThing) SetPropertyUnobserveHandler(name string) error {
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-emitpropertychange-method
-func (t *exposedThing) EmitPropertyChange(name string, data interface{}, options map[string]string) error {
+func (t *exposedThing) EmitPropertyChange(name string, data interface{}, parameters map[string]interface{}) error {
 	if _, ok := t.td.Properties[name]; ok {
 		p := t.exposedProperties[name]
 		var value interface{}
@@ -183,7 +183,7 @@ func (t *exposedThing) EmitPropertyChange(name string, data interface{}, options
 		if data != nil {
 			value = data
 		} else if handler := p.GetReadHandler(); handler != nil {
-			if value, err = handler(t, name, options); err != nil {
+			if value, err = handler(t, name, parameters); err != nil {
 				zlog.Error().Str("ThingRef", t.ref).Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] read handler error for property")
 				return err
 			}
@@ -196,7 +196,7 @@ func (t *exposedThing) EmitPropertyChange(name string, data interface{}, options
 		for _, c := range t.propertyChangeChannels {
 			go func(c chan PropertyChange) {
 				select {
-				case c <- PropertyChange{ThingRef: t.ref, Name: name, Value: value, Handler: p.GetObserverSelectorHandler(), Options: options}:
+				case c <- PropertyChange{ThingRef: t.ref, Name: name, Value: value, Handler: p.GetObserverSelectorHandler(), EmitParameters: parameters}:
 					return
 				default:
 					zlog.Error().Msg("[ExposedThing:EmitPropertyChange] channel blocked (no reader?), can not write")
@@ -267,7 +267,7 @@ func (t *exposedThing) SetEventHandler(name string, handler EventListenerHandler
 }
 
 // https://w3c.github.io/wot-scripting-api/#the-emitevent-method
-func (t *exposedThing) EmitEvent(name string, options map[string]string) error {
+func (t *exposedThing) EmitEvent(name string, parameters map[string]interface{}) error {
 	if _, ok := t.td.Events[name]; ok {
 		e := t.exposedEvents[name]
 		if handler := e.GetEventHandler(); handler != nil {
@@ -281,7 +281,7 @@ func (t *exposedThing) EmitEvent(name string, options map[string]string) error {
 			for _, c := range t.eventChannels {
 				go func(c chan Event) {
 					select {
-					case c <- Event{ThingRef: t.ref, Name: name, Value: value, Handler: e.GetListenerSelectorHandler(), Options: options}:
+					case c <- Event{ThingRef: t.ref, Name: name, Value: value, Handler: e.GetListenerSelectorHandler(), EmitParameters: parameters}:
 						return
 					default:
 						zlog.Error().Msg("[ExposedThing:EmitEvente] channel blocked (no reader?), can not write")

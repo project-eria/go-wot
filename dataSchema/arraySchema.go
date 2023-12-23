@@ -24,10 +24,14 @@ func NewArray[T SimpleType](defaultValue []T, minItems uint, maxItems uint) Data
 	}
 }
 
-func (b Array) Check(value interface{}) error {
+func (b Array) Validate(value interface{}) error {
 	typ := reflect.TypeOf(value)
 	if typ.Kind() != reflect.Slice {
 		return errors.New("incorrect array value type")
 	}
 	return nil
+}
+
+func (b Array) FromString(value string) (interface{}, error) {
+	return nil, errors.New("not implemented")
 }

@@ -153,8 +153,8 @@ func (s *WsServer) Stop() {
 // }
 
 type wsConnection struct {
-	mu      sync.RWMutex
-	options map[string]string
+	mu                 sync.RWMutex
+	listenerParameters map[string]interface{} // UriVariables passed during initial connection
 	*websocket.Conn
 }
 
@@ -191,7 +191,7 @@ func monitorPropertyObserver(c <-chan producer.PropertyChange) {
 			for _, wsConn := range observers {
 				var send bool = true
 				if propertyChange.Handler != nil {
-					send = propertyChange.Handler(propertyChange.Options, wsConn.options)
+					send = propertyChange.Handler(propertyChange.EmitParameters, wsConn.listenerParameters)
 				}
 				if send {
 					err := wsConn.jsonWSRenderer(propertyChange.Value)
@@ -216,7 +216,7 @@ func monitorEvent(c <-chan producer.Event) {
 			for _, wsConn := range subscribers {
 				var send bool = true
 				if event.Handler != nil {
-					send = event.Handler(event.Options, wsConn.options)
+					send = event.Handler(event.EmitParameters, wsConn.listenerParameters)
 				}
 				if send {
 					err := wsConn.jsonWSRenderer(event.Value)

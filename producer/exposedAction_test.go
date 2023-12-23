@@ -147,14 +147,14 @@ func (ts *ProducerTestSuite) Test_StringInputStringOutputActionInvoke() {
 
 }
 
-func handlerA(interface{}, map[string]string) (interface{}, error) {
+func handlerA(interface{}, map[string]interface{}) (interface{}, error) {
 	return nil, nil
 }
 
-func handlerB(interface{}, map[string]string) (interface{}, error) {
+func handlerB(interface{}, map[string]interface{}) (interface{}, error) {
 	return nil, nil
 }
 
-func handlerC(value interface{}, _ map[string]string) (interface{}, error) {
+func handlerC(value interface{}, _ map[string]interface{}) (interface{}, error) {
 	return value, nil
 }

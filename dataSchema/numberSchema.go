@@ -1,6 +1,9 @@
 package dataSchema
 
-import "errors"
+import (
+	"errors"
+	"strconv"
+)
 
 type Number struct {
 	Minimum          int    `json:"minimum,omitempty"`          // (optional) Specifies a minimum numeric value, representing an inclusive lower limit. Only applicable for associated number or integer types.
@@ -22,9 +25,13 @@ func NewNumber(defaultValue float64, unit string, minimum int, maximum int) Data
 	}
 }
 
-func (n Number) Check(value interface{}) error {
+func (n Number) Validate(value interface{}) error {
 	if _, ok := value.(float64); !ok {
 		return errors.New("incorrect number value type")
 	}
 	return nil
+}
+
+func (n Number) FromString(value string) (interface{}, error) {
+	return strconv.ParseFloat(value, 64)
 }

@@ -27,7 +27,7 @@ func TestPropertyPUT(t *testing.T) {
 
 	httpServer, exposedThing := getProducer(mything)
 
-	exposedThing.SetPropertyWriteHandler("boolRWO", func(t producer.ExposedThing, name string, value interface{}, options map[string]string) error {
+	exposedThing.SetPropertyWriteHandler("boolRWO", func(t producer.ExposedThing, name string, value interface{}, parameters map[string]interface{}) error {
 		return nil
 	})
 

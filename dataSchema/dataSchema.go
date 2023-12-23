@@ -7,7 +7,8 @@ type SimpleType interface {
 }
 
 type DataSchema interface {
-	Check(interface{}) error
+	FromString(string) (interface{}, error)
+	Validate(interface{}) error
 }
 
 type Data struct {
@@ -26,7 +27,7 @@ type Data struct {
 	DataSchema `json:"-"`
 }
 
-func (d *Data) Check(value interface{}) error {
+func (d *Data) Validate(value interface{}) error {
 	if value == nil {
 		return errors.New("missing value")
 	}
@@ -35,17 +36,17 @@ func (d *Data) Check(value interface{}) error {
 	var err error
 	switch d.DataSchema.(type) {
 	case Boolean:
-		err = d.DataSchema.(Boolean).Check(value)
+		err = d.DataSchema.(Boolean).Validate(value)
 	case Integer:
-		err = d.DataSchema.(Integer).Check(value)
+		err = d.DataSchema.(Integer).Validate(value)
 	case Number:
-		err = d.DataSchema.(Number).Check(value)
+		err = d.DataSchema.(Number).Validate(value)
 	case String:
-		err = d.DataSchema.(String).Check(value)
+		err = d.DataSchema.(String).Validate(value)
 	case Object:
-		err = d.DataSchema.(Object).Check(value)
+		err = d.DataSchema.(Object).Validate(value)
 	case Array:
-		err = d.DataSchema.(Array).Check(value)
+		err = d.DataSchema.(Array).Validate(value)
 	}
 	if err != nil {
 		return err
