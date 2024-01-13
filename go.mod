@@ -1,6 +1,6 @@
 module github.com/project-eria/go-wot
 
-go 1.20
+go 1.21
 
 require (
 	github.com/gavv/httpexpect/v2 v2.15.0

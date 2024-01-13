@@ -104,46 +104,6 @@ func (_m *ExposedProperty) GetObserverSelectorHandler() producer.ObserverSelecto
 	return r0
 }
 
-// GetReadHandler provides a mock function with given fields:
-func (_m *ExposedProperty) GetReadHandler() producer.PropertyReadHandler {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetReadHandler")
-	}
-
-	var r0 producer.PropertyReadHandler
-	if rf, ok := ret.Get(0).(func() producer.PropertyReadHandler); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(producer.PropertyReadHandler)
-		}
-	}
-
-	return r0
-}
-
-// GetWriteHandler provides a mock function with given fields:
-func (_m *ExposedProperty) GetWriteHandler() producer.PropertyWriteHandler {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetWriteHandler")
-	}
-
-	var r0 producer.PropertyWriteHandler
-	if rf, ok := ret.Get(0).(func() producer.PropertyWriteHandler); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(producer.PropertyWriteHandler)
-		}
-	}
-
-	return r0
-}
-
 // IsObservable provides a mock function with given fields:
 func (_m *ExposedProperty) IsObservable() bool {
 	ret := _m.Called()
@@ -160,6 +120,36 @@ func (_m *ExposedProperty) IsObservable() bool {
 	}
 
 	return r0
+}
+
+// Read provides a mock function with given fields: _a0, _a1, _a2
+func (_m *ExposedProperty) Read(_a0 producer.ExposedThing, _a1 string, _a2 map[string]string) (interface{}, error) {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Read")
+	}
+
+	var r0 interface{}
+	var r1 error
+	if rf, ok := ret.Get(0).(func(producer.ExposedThing, string, map[string]string) (interface{}, error)); ok {
+		return rf(_a0, _a1, _a2)
+	}
+	if rf, ok := ret.Get(0).(func(producer.ExposedThing, string, map[string]string) interface{}); ok {
+		r0 = rf(_a0, _a1, _a2)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(interface{})
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(producer.ExposedThing, string, map[string]string) error); ok {
+		r1 = rf(_a0, _a1, _a2)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // SetObserveHandler provides a mock function with given fields: _a0
@@ -201,6 +191,24 @@ func (_m *ExposedProperty) SetWriteHandler(_a0 producer.PropertyWriteHandler) er
 	var r0 error
 	if rf, ok := ret.Get(0).(func(producer.PropertyWriteHandler) error); ok {
 		r0 = rf(_a0)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Write provides a mock function with given fields: _a0, _a1, _a2, _a3
+func (_m *ExposedProperty) Write(_a0 producer.ExposedThing, _a1 string, _a2 interface{}, _a3 map[string]string) error {
+	ret := _m.Called(_a0, _a1, _a2, _a3)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Write")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(producer.ExposedThing, string, interface{}, map[string]string) error); ok {
+		r0 = rf(_a0, _a1, _a2, _a3)
 	} else {
 		r0 = ret.Error(0)
 	}

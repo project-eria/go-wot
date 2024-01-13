@@ -44,26 +44,6 @@ func (_m *ExposedAction) CheckUriVariables(_a0 map[string]string) (map[string]in
 	return r0, r1
 }
 
-// GetHandler provides a mock function with given fields:
-func (_m *ExposedAction) GetHandler() producer.ActionHandler {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetHandler")
-	}
-
-	var r0 producer.ActionHandler
-	if rf, ok := ret.Get(0).(func() producer.ActionHandler); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(producer.ActionHandler)
-		}
-	}
-
-	return r0
-}
-
 // Input provides a mock function with given fields:
 func (_m *ExposedAction) Input() *dataSchema.Data {
 	ret := _m.Called()
@@ -102,6 +82,36 @@ func (_m *ExposedAction) Output() *dataSchema.Data {
 	}
 
 	return r0
+}
+
+// Run provides a mock function with given fields: _a0, _a1, _a2, _a3
+func (_m *ExposedAction) Run(_a0 producer.ExposedThing, _a1 string, _a2 interface{}, _a3 map[string]string) (interface{}, error) {
+	ret := _m.Called(_a0, _a1, _a2, _a3)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Run")
+	}
+
+	var r0 interface{}
+	var r1 error
+	if rf, ok := ret.Get(0).(func(producer.ExposedThing, string, interface{}, map[string]string) (interface{}, error)); ok {
+		return rf(_a0, _a1, _a2, _a3)
+	}
+	if rf, ok := ret.Get(0).(func(producer.ExposedThing, string, interface{}, map[string]string) interface{}); ok {
+		r0 = rf(_a0, _a1, _a2, _a3)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(interface{})
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(producer.ExposedThing, string, interface{}, map[string]string) error); ok {
+		r1 = rf(_a0, _a1, _a2, _a3)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // SetHandler provides a mock function with given fields: _a0

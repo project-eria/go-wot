@@ -29,36 +29,31 @@ func propertyReadHandler(t producer.ExposedThing, tdProperty *interaction.Proper
 					"error": fmt.Sprintf("ExposedProperty `%s` not found", tdProperty.Key),
 					"type":  UnknownError.ErrorType,
 				})
-			} else {
-				handler := property.GetReadHandler()
-				if handler != nil {
-					// Check the options (uriVariables) data
-					options, err := property.CheckUriVariables(optionsStr)
-					if err != nil {
-						return c.Status(DataError.HttpStatus).JSON(fiber.Map{
-							"error": err.Error(),
-							"type":  DataError.ErrorType,
-						})
-					}
-					// Call the function that handle the property read
-					content, err := handler(t, tdProperty.Key, options)
-					if err != nil {
-						zlog.Error().Str("uri", c.Path()).Err(err).Msg("[protocolHttp:propertyReadHandler]")
-						return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
-							"error": err.Error(),
-							"type":  UnknownError.ErrorType,
-						})
-					}
-					zlog.Trace().Interface("response", content).Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Response to Thing property GET request")
-					return c.JSON(content)
-				} else {
-					zlog.Warn().Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Not Implemented")
+			}
+			output, err := property.Read(t, tdProperty.Key, optionsStr)
+			if err != nil {
+				zlog.Error().Err(err).Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler]")
+
+				if _, ok := err.(*producer.DataError); ok {
+					return c.Status(DataError.HttpStatus).JSON(fiber.Map{
+						"error": err.Error(),
+						"type":  DataError.ErrorType,
+					})
+				} else if _, ok := err.(*producer.NotImplementedError); ok {
 					return c.Status(NotSupportedError.HttpStatus).JSON(fiber.Map{
-						"error": "Not Implemented",
+						"error": err.Error(),
 						"type":  NotSupportedError.ErrorType,
+					})
+				} else {
+					return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
+						"error": err.Error(),
+						"type":  UnknownError.ErrorType,
 					})
 				}
 			}
+
+			zlog.Trace().Interface("response", output).Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Response to Thing property GET request")
+			return c.JSON(output)
 		}
 	}
 }

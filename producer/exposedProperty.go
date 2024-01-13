@@ -2,6 +2,7 @@ package producer
 
 import (
 	"errors"
+	"reflect"
 	"sync"
 
 	"github.com/project-eria/go-wot/dataSchema"
@@ -11,15 +12,15 @@ import (
 // https://w3c.github.io/wot-scripting-api/#the-exposedthing-interface
 type ExposedProperty interface {
 	SetReadHandler(PropertyReadHandler) error
-	GetReadHandler() PropertyReadHandler
 	SetObserveHandler(PropertyObserveHandler)
 	GetObserveHandler() PropertyObserveHandler
 	SetObserverSelectorHandler(ObserverSelectorHandler)
 	GetObserverSelectorHandler() ObserverSelectorHandler
 	SetWriteHandler(PropertyWriteHandler) error
-	GetWriteHandler() PropertyWriteHandler
 	Data() dataSchema.DataSchema
 	IsObservable() bool
+	Read(ExposedThing, string, map[string]string) (interface{}, error)
+	Write(ExposedThing, string, interface{}, map[string]string) error
 	// Interaction
 	CheckUriVariables(map[string]string) (map[string]interface{}, error)
 }
@@ -124,4 +125,93 @@ func (p *exposedProperty) Data() dataSchema.DataSchema {
 
 func (p *exposedProperty) IsObservable() bool {
 	return p.Property.Observable
+}
+
+func (p *exposedProperty) Read(t ExposedThing, key string, parameters map[string]string) (interface{}, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.propertyReadHandler != nil {
+		// Check the options (uriVariables) data
+		options, err := p.CheckUriVariables(parameters)
+		if err != nil {
+			return nil, &DataError{
+				Message: err.Error(),
+			}
+		}
+		// Call the function that handle the property read
+		content, err := p.propertyReadHandler(t, key, options)
+		if err != nil {
+			return nil, &UnknownError{
+				Message: err.Error(),
+			}
+		}
+		// TODO: check output??
+		return content, nil
+	}
+	return nil, &NotImplementedError{
+		Message: "No handler function for reading the property",
+	}
+}
+
+func (p *exposedProperty) Write(t ExposedThing, key string, data interface{}, parameters map[string]string) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.propertyWriteHandler != nil {
+		// Check the options (uriVariables) data
+		options, err := p.CheckUriVariables(parameters)
+		if err != nil {
+			return &DataError{
+				Message: err.Error(),
+			}
+		}
+
+		// Check if data has been provided
+		if data == nil {
+			return &DataError{
+				Message: "No data provided",
+			}
+		}
+
+		var input interface{}
+		if reflect.TypeOf(data).Kind() == reflect.String {
+			if input, err = p.Data().FromString(data.(string)); err != nil {
+				return &DataError{
+					Message: err.Error(),
+				}
+			}
+		} else {
+			input = data
+		}
+
+		// Check the input data
+		if p.Data() != nil { // TODO should not be nil
+			if err := p.Data().Validate(input); err != nil {
+				return &DataError{
+					Message: "incorrect input value: " + err.Error(),
+				}
+			}
+		}
+
+		// Call the function that handle the property write
+		err = p.propertyWriteHandler(t, key, input, options)
+		if err != nil {
+			return &UnknownError{
+				Message: err.Error(),
+			}
+		}
+
+		// Notify all listeners that the property changed
+		if err := t.EmitPropertyChange(key, input, options); err != nil {
+			return &UnknownError{
+				Message: err.Error(),
+			}
+		}
+
+		return nil
+	}
+	return &NotImplementedError{
+		Message: "No handler function for writing the property",
+	}
 }

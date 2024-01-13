@@ -178,25 +178,11 @@ func (t *exposedThing) SetPropertyUnobserveHandler(name string) error {
 func (t *exposedThing) EmitPropertyChange(name string, data interface{}, parameters map[string]interface{}) error {
 	if _, ok := t.td.Properties[name]; ok {
 		p := t.exposedProperties[name]
-		var value interface{}
-		var err error
-		if data != nil {
-			value = data
-		} else if handler := p.GetReadHandler(); handler != nil {
-			if value, err = handler(t, name, parameters); err != nil {
-				zlog.Error().Str("ThingRef", t.ref).Str("property", name).Err(err).Msg("[ExposedThing:EmitPropertyChange] read handler error for property")
-				return err
-			}
-		} else {
-			// No handler
-			zlog.Trace().Str("ThingRef", t.ref).Str("property", name).Msg("[ExposedThing:EmitPropertyChange] no handler available for property")
-			return fmt.Errorf("no handler available for property %s", name)
-		}
 		// Send the notification to all protocols, that requested a channel
 		for _, c := range t.propertyChangeChannels {
 			go func(c chan PropertyChange) {
 				select {
-				case c <- PropertyChange{ThingRef: t.ref, Name: name, Value: value, Handler: p.GetObserverSelectorHandler(), EmitParameters: parameters}:
+				case c <- PropertyChange{ThingRef: t.ref, Name: name, Value: data, Handler: p.GetObserverSelectorHandler(), EmitParameters: parameters}:
 					return
 				default:
 					zlog.Error().Msg("[ExposedThing:EmitPropertyChange] channel blocked (no reader?), can not write")
