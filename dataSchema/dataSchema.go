@@ -1,6 +1,9 @@
 package dataSchema
 
-import "errors"
+import (
+	"encoding/json"
+	"errors"
+)
 
 type SimpleType interface {
 	bool | string | int8 | int16 | int32 | int64 | float32 | float64
@@ -54,22 +57,25 @@ func (d *Data) Validate(value interface{}) error {
 	return nil
 }
 
+// TODO : UnmarshalJSON
+// TODO : json cache
 // Ref: https://stackoverflow.com/questions/47335352/converting-struct-with-embedded-interface-into-json
-// func (p *Property) MarshalJSON() ([]byte, error) {
-// 	type PropertyOrigin Property
+// https://boldlygo.tech/posts/2020-06-26-go-json-tricks-embedded-marshaler/
+func (d *Data) MarshalJSON() ([]byte, error) {
+	type DataOrigin Data
 
-// 	b1, err := json.Marshal((*PropertyOrigin)(p))
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	b2, err := json.Marshal(p.DataSchema)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	s1 := string(b1[:len(b1)-1])
-// 	s2 := string(b2[1:])
-
-// 	return []byte(s1 + ", " + s2), nil
-// }
+	b1, err := json.Marshal((*DataOrigin)(d))
+	if err != nil {
+		return nil, err
+	}
+	b2, err := json.Marshal(d.DataSchema)
+	if err != nil {
+		return nil, err
+	}
+	if len(b2) > 2 { // '{}' is the empty object
+		b3 := b1[:len(b1)-1] // remove last parenthesis
+		b2[0] = ','          // replace first parenthesis, with a comma
+		return append(b3, b2...), nil
+	}
+	return b1, nil // no DataSchema
+}
