@@ -84,6 +84,7 @@ func (t *Thing) AddSecurity(key string, definition securityScheme.SecurityScheme
 	t.SecurityDefinitions[key] = definition
 }
 
+// TODO : json cache
 // Ref: http://choly.ca/post/go-json-marshalling/
 func (t *Thing) MarshalJSON() ([]byte, error) {
 	type ThingOrigin Thing

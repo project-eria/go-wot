@@ -38,8 +38,8 @@ func TestActionTD(t *testing.T) {
 
 func TestActionInputOutputString(t *testing.T) {
 	mything := getThing()
-	stringInput := dataSchema.NewString("", 0, 0, "")
-	stringOutput := dataSchema.NewString("", 0, 0, "")
+	stringInput, _ := dataSchema.NewString("", nil, nil, "")
+	stringOutput, _ := dataSchema.NewString("", nil, nil, "")
 	aAction := interaction.NewAction(
 		"a",
 		"Action title",

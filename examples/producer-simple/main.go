@@ -46,7 +46,7 @@ func main() {
 	mything.AddSecurity("no_sec", noSecurityScheme)
 
 	// Properties
-	booleanData := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(false)
 	propertyRWO := interaction.NewProperty(
 		"boolRWO",
 		"RWO bool",

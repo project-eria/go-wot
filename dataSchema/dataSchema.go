@@ -57,8 +57,6 @@ func (d *Data) Validate(value interface{}) error {
 	return nil
 }
 
-// TODO : UnmarshalJSON
-// TODO : json cache
 // Ref: https://stackoverflow.com/questions/47335352/converting-struct-with-embedded-interface-into-json
 // https://boldlygo.tech/posts/2020-06-26-go-json-tricks-embedded-marshaler/
 func (d *Data) MarshalJSON() ([]byte, error) {
@@ -79,3 +77,28 @@ func (d *Data) MarshalJSON() ([]byte, error) {
 	}
 	return b1, nil // no DataSchema
 }
+
+// func (d *Data) UnmarshalJSON(data []byte) error {
+// 	type DataOrigin Data
+// 	do := &struct {
+// 		*DataOrigin
+// 	}{
+// 		DataOrigin: (*DataOrigin)(d),
+// 	}
+// 	if err := json.Unmarshal(data, &do); err != nil {
+// 		return err
+// 	}
+
+// 	// Supplement
+// 	fs := map[string]interface{}{}
+// 	d.Supplement = map[string]interface{}{}
+// 	if err := json.Unmarshal(data, &fs); err != nil {
+// 		return err
+// 	}
+// 	for key, value := range fs {
+// 		if strings.Contains(key, ":") {
+// 			d.Supplement[key] = value
+// 		}
+// 	}
+// 	return nil
+// }

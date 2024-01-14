@@ -5,12 +5,16 @@ import "errors"
 type Boolean struct {
 }
 
-func NewBoolean(defaultValue bool) Data {
-	return Data{
+func NewBoolean(defaultValue bool) (Data, error) {
+	d := Data{
 		Default:    defaultValue,
 		Type:       "boolean",
 		DataSchema: Boolean{},
 	}
+	if err := d.Validate(d.Default); err != nil {
+		return Data{}, errors.New("invalid default value: " + err.Error())
+	}
+	return d, nil
 }
 
 func (b Boolean) Validate(value interface{}) error {

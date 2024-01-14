@@ -9,7 +9,7 @@ import (
 )
 
 func (ts *ProducerTestSuite) Test_RWOBoolProperty() {
-	booleanData := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(false)
 	propertyRWO := interaction.NewProperty(
 		"boolRWO",
 		"RWO bool",
@@ -96,7 +96,7 @@ func (ts *ProducerTestSuite) Test_RWOBoolProperty() {
 }
 
 func (ts *ProducerTestSuite) Test_RWOBoolPropertyRead() {
-	booleanData := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(false)
 	propertyRWO := interaction.NewProperty(
 		"boolRWO",
 		"RWO bool",
@@ -119,7 +119,7 @@ func (ts *ProducerTestSuite) Test_RWOBoolPropertyRead() {
 }
 
 func (ts *ProducerTestSuite) Test_RWOBoolPropertyWrite() {
-	booleanData := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(false)
 	propertyRWO := interaction.NewProperty(
 		"boolRWO",
 		"RWO bool",
@@ -154,7 +154,7 @@ func (ts *ProducerTestSuite) Test_RWOBoolPropertyWrite() {
 }
 
 func (ts *ProducerTestSuite) Test_RWBoolProperty() {
-	booleanData := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(false)
 	propertyRW := interaction.NewProperty(
 		"boolRW",
 		"RW bool",
@@ -209,7 +209,7 @@ func (ts *ProducerTestSuite) Test_RWBoolProperty() {
 }
 
 func (ts *ProducerTestSuite) Test_RWBoolPropertyRead() {
-	booleanData := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(false)
 	propertyRW := interaction.NewProperty(
 		"boolRW",
 		"RW bool",
@@ -232,7 +232,7 @@ func (ts *ProducerTestSuite) Test_RWBoolPropertyRead() {
 }
 
 func (ts *ProducerTestSuite) Test_RWBoolPropertyWrite() {
-	booleanData := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(false)
 	propertyRW := interaction.NewProperty(
 		"boolRW",
 		"RW bool",
@@ -267,7 +267,7 @@ func (ts *ProducerTestSuite) Test_RWBoolPropertyWrite() {
 }
 
 func (ts *ProducerTestSuite) Test_RBoolProperty() {
-	booleanData := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(false)
 	propertyR := interaction.NewProperty(
 		"boolR",
 		"R bool",
@@ -322,7 +322,7 @@ func (ts *ProducerTestSuite) Test_RBoolProperty() {
 }
 
 func (ts *ProducerTestSuite) Test_RBoolPropertyRead() {
-	booleanData := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(false)
 	propertyR := interaction.NewProperty(
 		"boolR",
 		"R bool",
@@ -345,7 +345,7 @@ func (ts *ProducerTestSuite) Test_RBoolPropertyRead() {
 }
 
 func (ts *ProducerTestSuite) Test_RBoolPropertyWrite() {
-	booleanData := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(false)
 	propertyR := interaction.NewProperty(
 		"boolR",
 		"R bool",
@@ -365,7 +365,7 @@ func (ts *ProducerTestSuite) Test_RBoolPropertyWrite() {
 }
 
 func (ts *ProducerTestSuite) Test_WBoolProperty() {
-	booleanData := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(false)
 	propertyW := interaction.NewProperty(
 		"boolW",
 		"W bool",
@@ -405,6 +405,7 @@ func (ts *ProducerTestSuite) Test_WBoolProperty() {
 	// "properties": {
 	properties := obj.Value("properties").Object()
 	property := properties.Value("boolW").Object()
+
 	property.HasValue("title", "W bool")
 	property.HasValue("description", "Writable only/Not Observable boolean")
 	property.HasValue("readOnly", false)
@@ -420,7 +421,7 @@ func (ts *ProducerTestSuite) Test_WBoolProperty() {
 }
 
 func (ts *ProducerTestSuite) Test_WBoolPropertyRead() {
-	booleanData := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(false)
 	propertyW := interaction.NewProperty(
 		"boolW",
 		"W bool",
@@ -439,7 +440,7 @@ func (ts *ProducerTestSuite) Test_WBoolPropertyRead() {
 }
 
 func (ts *ProducerTestSuite) Test_WBoolPropertyWrite() {
-	booleanData := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(false)
 	propertyW := interaction.NewProperty(
 		"boolW",
 		"W bool",
@@ -469,7 +470,7 @@ func (ts *ProducerTestSuite) Test_WBoolPropertyWrite() {
 }
 
 func (ts *ProducerTestSuite) Test_URIVariablesProperty() {
-	booleanData := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(false)
 	propertyRWO := interaction.NewProperty(
 		"uriVars",
 		"URI Variables",
