@@ -120,7 +120,7 @@ func (p *exposedProperty) GetWriteHandler() PropertyWriteHandler {
 }
 
 func (p *exposedProperty) Data() dataSchema.DataSchema {
-	return p.DataSchema
+	return p.Property.Data.DataSchema
 }
 
 func (p *exposedProperty) IsObservable() bool {

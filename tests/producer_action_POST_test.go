@@ -28,7 +28,7 @@ func TestActionPOST(t *testing.T) {
 	e = JSONTester(t, httpServer)
 	e.POST("/a").WithHeader("Content-type", "application/json").Expect().
 		Status(http.StatusNotImplemented).JSON().Object().
-		HasValue("error", "Not Implemented").
+		HasValue("error", "No handler function for the action").
 		HasValue("type", "NotSupportedError")
 
 }

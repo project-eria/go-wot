@@ -66,7 +66,7 @@ func (ts *ProducerTestSuite) Test_NoInputNoOutputActionInvokeNoHandler() {
 
 	expect.POST("/i").WithHeader("Content-type", "application/json").
 		Expect().
-		Status(http.StatusNotImplemented).JSON().Object().HasValue("error", "Not Implemented").HasValue("type", "NotSupportedError")
+		Status(http.StatusNotImplemented).JSON().Object().HasValue("error", "No handler function for the action").HasValue("type", "NotSupportedError")
 }
 
 func (ts *ProducerTestSuite) Test_NoInputNoOutputActionInvoke() {
@@ -103,7 +103,7 @@ func (ts *ProducerTestSuite) Test_StringInputNoOutputActionInvokeNoData() {
 
 	expect.POST("/i").WithHeader("Content-type", "application/json").
 		Expect().
-		Status(http.StatusBadRequest).JSON().Object().HasValue("error", "incorrect input value: missing value").HasValue("type", "DataError")
+		Status(http.StatusBadRequest).JSON().Object().HasValue("error", "input value is required").HasValue("type", "DataError")
 }
 
 func (ts *ProducerTestSuite) Test_StringInputNoOutputActionInvoke() {

@@ -47,9 +47,9 @@ func (ts *ConsumerTestSuite) Test_GetThingDescription() {
 					Default: false,
 					Unit:    "",
 					// +    Enum: ([]interface {}) <nil>,
-					Format: "",
-					Type:   "boolean",
-					// +    DataSchema: (dataSchema.DataSchema) <nil>
+					Format:     "",
+					Type:       "boolean",
+					DataSchema: dataSchema.Boolean{},
 				},
 			},
 			"boolW": {
@@ -76,9 +76,9 @@ func (ts *ConsumerTestSuite) Test_GetThingDescription() {
 					Default: false,
 					Unit:    "",
 					// +    Enum: ([]interface {}) <nil>,
-					Format: "",
-					Type:   "boolean",
-					// +    DataSchema: (dataSchema.DataSchema) <nil>
+					Format:     "",
+					Type:       "boolean",
+					DataSchema: dataSchema.Boolean{},
 				},
 			},
 			"boolRW": {
@@ -104,9 +104,9 @@ func (ts *ConsumerTestSuite) Test_GetThingDescription() {
 					Default: false,
 					Unit:    "",
 					// +    Enum: ([]interface {}) <nil>,
-					Format: "",
-					Type:   "boolean",
-					// +    DataSchema: (dataSchema.DataSchema) <nil>
+					Format:     "",
+					Type:       "boolean",
+					DataSchema: dataSchema.Boolean{},
 				},
 			},
 			"uriVars": {
@@ -128,12 +128,14 @@ func (ts *ConsumerTestSuite) Test_GetThingDescription() {
 					},
 					UriVariables: map[string]dataSchema.Data{
 						"var1": {
-							Default: "",
-							Type:    "string",
+							Default:    "",
+							Type:       "string",
+							DataSchema: dataSchema.String{},
 						},
 						"var2": {
-							Default: "test",
-							Type:    "string",
+							Default:    "test",
+							Type:       "string",
+							DataSchema: dataSchema.String{},
 						},
 					},
 				},
@@ -142,9 +144,9 @@ func (ts *ConsumerTestSuite) Test_GetThingDescription() {
 					Default: false,
 					Unit:    "",
 					// +    Enum: ([]interface {}) <nil>,
-					Format: "",
-					Type:   "boolean",
-					// +    DataSchema: (dataSchema.DataSchema) <nil>
+					Format:     "",
+					Type:       "boolean",
+					DataSchema: dataSchema.Boolean{},
 				},
 			},
 		},
@@ -177,9 +179,9 @@ func (ts *ConsumerTestSuite) Test_GetThingDescription() {
 					Default: "",
 					Unit:    "",
 					// Enum: ([]interface {}) <nil>,
-					Format: "",
-					Type:   "string",
-					// DataSchema: (dataSchema.DataSchema) <nil>
+					Format:     "",
+					Type:       "string",
+					DataSchema: dataSchema.String{},
 				},
 				//    Output: (*dataSchema.Data)(<nil>),
 				Interaction: interaction.Interaction{
@@ -207,18 +209,18 @@ func (ts *ConsumerTestSuite) Test_GetThingDescription() {
 					Default: "",
 					Unit:    "",
 					// Enum: ([]interface {}) <nil>,
-					Format: "",
-					Type:   "string",
-					// DataSchema: (dataSchema.DataSchema) <nil>
+					Format:     "",
+					Type:       "string",
+					DataSchema: dataSchema.String{},
 				},
 				Output: &dataSchema.Data{
 					// Const: (interface {}) <nil>,
 					Default: "",
 					Unit:    "",
 					// Enum: ([]interface {}) <nil>,
-					Format: "",
-					Type:   "string",
-					// DataSchema: (dataSchema.DataSchema) <nil>
+					Format:     "",
+					Type:       "string",
+					DataSchema: dataSchema.String{},
 				},
 				Interaction: interaction.Interaction{
 					Key: "",

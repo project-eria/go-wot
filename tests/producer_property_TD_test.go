@@ -88,6 +88,7 @@ func TestPropertyRWO(t *testing.T) {
 	mything.AddProperty(propertyRWO)
 
 	httpServer, _ := getProducer(mything)
+
 	e := JSONTester(t, httpServer)
 
 	obj := e.GET("/").Expect().
@@ -111,13 +112,13 @@ func TestPropertyRWO(t *testing.T) {
 
 	e.GET("/boolRWO").Expect().
 		Status(http.StatusNotImplemented).JSON().Object().
-		HasValue("error", "Not Implemented").
+		HasValue("error", "No handler function for reading the property").
 		HasValue("type", "NotSupportedError")
 
 	e.PUT("/boolRWO").WithHeader("Content-type", "application/json").
 		Expect().Status(http.StatusNotImplemented).
 		JSON().Object().
-		HasValue("error", "Not Implemented").
+		HasValue("error", "No handler function for writing the property").
 		HasValue("type", "NotSupportedError")
 }
 
@@ -143,6 +144,7 @@ func TestPropertyReadOnly(t *testing.T) {
 	mything.AddProperty(propertyR)
 
 	httpServer, _ := getProducer(mything)
+
 	e := JSONTester(t, httpServer)
 
 	obj := e.GET("/").Expect().
@@ -161,7 +163,7 @@ func TestPropertyReadOnly(t *testing.T) {
 
 	e.GET("/boolR").Expect().
 		Status(http.StatusNotImplemented).JSON().Object().
-		HasValue("error", "Not Implemented").
+		HasValue("error", "No handler function for reading the property").
 		HasValue("type", "NotSupportedError")
 
 	e.PUT("/boolR").WithHeader("Content-type", "application/json").
@@ -193,6 +195,7 @@ func TestPropertyNotObservable(t *testing.T) {
 	mything.AddProperty(propertyRW)
 
 	httpServer, _ := getProducer(mything)
+
 	e := JSONTester(t, httpServer)
 
 	obj := e.GET("/").Expect().
@@ -212,13 +215,13 @@ func TestPropertyNotObservable(t *testing.T) {
 	// TODO Move to GET test
 	e.GET("/boolRW").Expect().
 		Status(http.StatusNotImplemented).JSON().Object().
-		HasValue("error", "Not Implemented").
+		HasValue("error", "No handler function for reading the property").
 		HasValue("type", "NotSupportedError")
 
 	e.PUT("/boolRW").WithHeader("Content-type", "application/json").
 		Expect().Status(http.StatusNotImplemented).
 		JSON().Object().
-		HasValue("error", "Not Implemented").
+		HasValue("error", "No handler function for writing the property").
 		HasValue("type", "NotSupportedError")
 }
 
@@ -244,6 +247,7 @@ func TestPropertyWriteOnly(t *testing.T) {
 	mything.AddProperty(propertyW)
 
 	httpServer, _ := getProducer(mything)
+
 	e := JSONTester(t, httpServer)
 
 	obj := e.GET("/").Expect().
@@ -270,6 +274,6 @@ func TestPropertyWriteOnly(t *testing.T) {
 	e.PUT("/boolW").WithHeader("Content-type", "application/json").
 		Expect().Status(http.StatusNotImplemented).
 		JSON().Object().
-		HasValue("error", "Not Implemented").
+		HasValue("error", "No handler function for writing the property").
 		HasValue("type", "NotSupportedError")
 }
