@@ -37,12 +37,11 @@ func (f *Form) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 
-		s1 := string(b1[:len(b1)-1])
-		s2 := string(b2[1:])
-		return []byte(s1 + ", " + s2), nil
-	} else {
-		return b1, nil
+		b3 := b1[:len(b1)-1] // remove last parenthesis
+		b2[0] = ','          // replace first parenthesis, with a comma
+		return append(b3, b2...), nil
 	}
+	return b1, nil // no supplement
 }
 
 func (f *Form) UnmarshalJSON(data []byte) error {
