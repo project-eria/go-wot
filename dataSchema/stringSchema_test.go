@@ -79,3 +79,15 @@ func (ts *StringSchemaTestSuite) Test_StringSchemaJson() {
 	ts.Nil(err)
 	ts.Equal(`{"default":"test","type":"string","minLength":2,"maxLength":9,"pattern":"^[A-Za-z]*$"}`, string(result))
 }
+
+func (ts *StringSchemaTestSuite) Test_StringSchemaJsonUnmarshal() {
+	j := []byte(`{"default":"test","type":"string","minLength":2,"maxLength":9,"pattern":"^[A-Za-z]*$"}`)
+	var result Data
+	err := json.Unmarshal(j, &result)
+	ts.Nil(err)
+	ts.Equal("test", result.Default)
+	ts.Equal("string", result.Type)
+	ts.Equal(uint16(2), *result.DataSchema.(String).MinLength)
+	ts.Equal(uint16(9), *result.DataSchema.(String).MaxLength)
+	ts.Equal(`^[A-Za-z]*$`, result.DataSchema.(String).Pattern)
+}

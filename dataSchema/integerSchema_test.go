@@ -67,11 +67,23 @@ func (ts *IntegerSchemaTestSuite) Test_IntegerSchemaValidate4() {
 	ts.EqualError(err, "value is less than minimum")
 }
 
-func (ts *IntegerSchemaTestSuite) Test_IntegerSchemaJson() {
+func (ts *IntegerSchemaTestSuite) Test_IntegerSchemaJsonMarshal() {
 	min := 0
 	max := 9
 	i, _ := NewInteger(5, "%", &min, &max)
 	result, err := json.Marshal(&i)
 	ts.Nil(err)
 	ts.Equal(`{"default":5,"unit":"%","type":"integer","minimum":0,"maximum":9}`, string(result))
+}
+
+func (ts *IntegerSchemaTestSuite) Test_IntegerSchemaJsonUnmarshal() {
+	j := []byte(`{"default":5,"unit":"%","type":"integer","minimum":0,"maximum":9}`)
+	var result Data
+	err := json.Unmarshal(j, &result)
+	ts.Nil(err)
+	ts.Equal(5, result.Default)
+	ts.Equal("%", result.Unit)
+	ts.Equal("integer", result.Type)
+	ts.Equal(0, *result.DataSchema.(Integer).Minimum)
+	ts.Equal(9, *result.DataSchema.(Integer).Maximum)
 }

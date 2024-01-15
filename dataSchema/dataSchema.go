@@ -66,6 +66,7 @@ func (d *Data) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	b2, err := json.Marshal(d.DataSchema)
 	if err != nil {
 		return nil, err
@@ -78,27 +79,56 @@ func (d *Data) MarshalJSON() ([]byte, error) {
 	return b1, nil // no DataSchema
 }
 
-// func (d *Data) UnmarshalJSON(data []byte) error {
-// 	type DataOrigin Data
-// 	do := &struct {
-// 		*DataOrigin
-// 	}{
-// 		DataOrigin: (*DataOrigin)(d),
-// 	}
-// 	if err := json.Unmarshal(data, &do); err != nil {
-// 		return err
-// 	}
+func (d *Data) UnmarshalJSON(data []byte) error {
+	type DataOrigin Data
+	do := &struct {
+		*DataOrigin
+	}{
+		DataOrigin: (*DataOrigin)(d),
+	}
+	if err := json.Unmarshal(data, do); err != nil {
+		return err
+	}
 
-// 	// Supplement
-// 	fs := map[string]interface{}{}
-// 	d.Supplement = map[string]interface{}{}
-// 	if err := json.Unmarshal(data, &fs); err != nil {
-// 		return err
-// 	}
-// 	for key, value := range fs {
-// 		if strings.Contains(key, ":") {
-// 			d.Supplement[key] = value
-// 		}
-// 	}
-// 	return nil
-// }
+	switch d.Type {
+	case "boolean":
+		var ds = Boolean{}
+		if err := json.Unmarshal(data, &ds); err != nil {
+			return err
+		}
+		d.DataSchema = ds
+	case "integer":
+		var ds = Integer{}
+		if err := json.Unmarshal(data, &ds); err != nil {
+			return err
+		}
+		d.Default = int(do.Default.(float64))
+		d.DataSchema = ds
+	case "number":
+		var ds = Number{}
+		if err := json.Unmarshal(data, &ds); err != nil {
+			return err
+		}
+		d.DataSchema = ds
+	case "string":
+		var ds = String{}
+		if err := json.Unmarshal(data, &ds); err != nil {
+			return err
+		}
+		d.DataSchema = ds
+	case "object":
+		var ds = Object{}
+		if err := json.Unmarshal(data, &ds); err != nil {
+			return err
+		}
+		d.DataSchema = ds
+	case "array":
+		var ds = Array{}
+		if err := json.Unmarshal(data, &ds); err != nil {
+			return err
+		}
+		d.DataSchema = ds
+	}
+
+	return nil
+}

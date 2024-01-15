@@ -67,8 +67,20 @@ func (ts *NumberSchemaTestSuite) Test_NumberSchemaValidate4() {
 	ts.EqualError(err, "value is less than minimum")
 }
 
-func (ts *NumberSchemaTestSuite) Test_NumberSchemaJson() {
+func (ts *NumberSchemaTestSuite) Test_NumberSchemaJsonMarshal() {
 	result, err := json.Marshal(&ts.schema)
 	ts.Nil(err)
 	ts.Equal(`{"default":5.5,"unit":"%","type":"number","minimum":1,"maximum":9}`, string(result))
+}
+
+func (ts *NumberSchemaTestSuite) Test_NumberSchemaJsonUnmarshal() {
+	j := []byte(`{"default":5.5,"unit":"%","type":"number","minimum":1,"maximum":9}`)
+	var result Data
+	err := json.Unmarshal(j, &result)
+	ts.Nil(err)
+	ts.Equal(5.5, result.Default)
+	ts.Equal("%", result.Unit)
+	ts.Equal("number", result.Type)
+	ts.Equal(1, *result.DataSchema.(Number).Minimum)
+	ts.Equal(9, *result.DataSchema.(Number).Maximum)
 }

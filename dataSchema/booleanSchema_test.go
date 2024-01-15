@@ -53,8 +53,17 @@ func (ts *BooleanSchemaTestSuite) Test_BooleanSchemaValidate2() {
 	ts.EqualError(err, "incorrect boolean value type")
 }
 
-func (ts *BooleanSchemaTestSuite) Test_BooleanSchemaJson() {
+func (ts *BooleanSchemaTestSuite) Test_BooleanSchemaJsonMarshal() {
 	result, err := json.Marshal(&ts.schema)
 	ts.Nil(err)
 	ts.Equal(`{"default":true,"type":"boolean"}`, string(result))
+}
+
+func (ts *BooleanSchemaTestSuite) Test_BooleanSchemaJsonUnmarshal() {
+	j := []byte(`{"default":true,"type":"boolean"}`)
+	var result Data
+	err := json.Unmarshal(j, &result)
+	ts.Nil(err)
+	ts.Equal(true, result.Default)
+	ts.Equal("boolean", result.Type)
 }
