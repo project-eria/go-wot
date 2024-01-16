@@ -48,16 +48,14 @@ func main() {
 		"boolRWO",
 		"RWO bool",
 		"Readable/Writable/Observable boolean",
-		false,
-		false,
-		true,
-		nil,
 		booleanData,
 	)
 	mything.AddProperty(propertyRWO)
 
 	stringEvent, _ := dataSchema.NewString()
-	dEvent := interaction.NewEvent("d", "d Event", "", &stringEvent)
+	dEvent := interaction.NewEvent("d", "d Event", "",
+		interaction.EventData(&stringEvent),
+	)
 	mything.AddEvent(dEvent)
 
 	// Run Server

@@ -15,16 +15,46 @@ type Event struct {
 	Interaction
 }
 
-func NewEvent(key string, title string, description string, data *dataSchema.Data) *Event {
+func NewEvent(key string, title string, description string, options ...EventOption) *Event {
+	opts := &EventOptions{}
+	for _, option := range options {
+		if option != nil {
+			option(opts)
+		}
+	}
+
 	interaction := Interaction{
-		Key:         key,
-		Title:       title,
-		Description: description,
-		Forms:       []*Form{},
+		Key:          key,
+		Title:        title,
+		Description:  description,
+		Forms:        []*Form{},
+		UriVariables: opts.UriVariables,
 	}
 
 	return &Event{
-		Data:        data,
+		Data:        opts.Data,
 		Interaction: interaction,
+	}
+}
+
+type EventOption func(*EventOptions)
+
+type EventOptions struct {
+	Data         *dataSchema.Data
+	UriVariables map[string]dataSchema.Data
+}
+
+func EventData(data *dataSchema.Data) EventOption {
+	return func(opts *EventOptions) {
+		opts.Data = data
+	}
+}
+
+func EventUriVariable(key string, data dataSchema.Data) EventOption {
+	return func(opts *EventOptions) {
+		if opts.UriVariables == nil {
+			opts.UriVariables = make(map[string]dataSchema.Data)
+		}
+		opts.UriVariables[key] = data
 	}
 }

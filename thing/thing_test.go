@@ -127,10 +127,6 @@ func TestAddProperty(t *testing.T) {
 		"x",
 		"y",
 		"z",
-		false,
-		false,
-		true,
-		map[string]dataSchema.Data{},
 		data,
 	)
 
@@ -159,8 +155,6 @@ func TestAddAction(t *testing.T) {
 		"a",
 		"No Input, No Output",
 		"",
-		nil,
-		nil,
 	)
 	mything.AddAction(aAction)
 	want := &Thing{

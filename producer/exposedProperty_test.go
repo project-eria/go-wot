@@ -14,10 +14,6 @@ func (ts *ProducerTestSuite) Test_RWOBoolProperty() {
 		"boolRWO",
 		"RWO bool",
 		"Readable/Writable/Observable boolean",
-		false,
-		false,
-		true,
-		map[string]dataSchema.Data{},
 		booleanData,
 	)
 	ts.myThing.AddProperty(propertyRWO)
@@ -100,10 +96,6 @@ func (ts *ProducerTestSuite) Test_RWOBoolPropertyRead() {
 		"boolRWO",
 		"RWO bool",
 		"Readable/Writable/Observable boolean",
-		false,
-		false,
-		true,
-		map[string]dataSchema.Data{},
 		booleanData,
 	)
 	ts.myThing.AddProperty(propertyRWO)
@@ -123,10 +115,6 @@ func (ts *ProducerTestSuite) Test_RWOBoolPropertyWrite() {
 		"boolRWO",
 		"RWO bool",
 		"Readable/Writable/Observable boolean",
-		false,
-		false,
-		true,
-		map[string]dataSchema.Data{},
 		booleanData,
 	)
 	ts.myThing.AddProperty(propertyRWO)
@@ -158,11 +146,8 @@ func (ts *ProducerTestSuite) Test_RWBoolProperty() {
 		"boolRW",
 		"RW bool",
 		"Readable/Writable/Not Observable boolean",
-		false,
-		false,
-		false,
-		map[string]dataSchema.Data{},
 		booleanData,
+		interaction.PropertyObservable(false),
 	)
 	ts.myThing.AddProperty(propertyRW)
 
@@ -212,11 +197,8 @@ func (ts *ProducerTestSuite) Test_RWBoolPropertyRead() {
 		"boolRW",
 		"RW bool",
 		"Readable/Writable/Not Observable boolean",
-		false,
-		false,
-		false,
-		map[string]dataSchema.Data{},
 		booleanData,
+		interaction.PropertyObservable(false),
 	)
 	ts.myThing.AddProperty(propertyRW)
 
@@ -235,11 +217,8 @@ func (ts *ProducerTestSuite) Test_RWBoolPropertyWrite() {
 		"boolRW",
 		"RW bool",
 		"Readable/Writable/Not Observable boolean",
-		false,
-		false,
-		false,
-		map[string]dataSchema.Data{},
 		booleanData,
+		interaction.PropertyObservable(false),
 	)
 	ts.myThing.AddProperty(propertyRW)
 
@@ -270,11 +249,9 @@ func (ts *ProducerTestSuite) Test_RBoolProperty() {
 		"boolR",
 		"R bool",
 		"Readable only/Not Observable boolean",
-		true,
-		false,
-		false,
-		map[string]dataSchema.Data{},
 		booleanData,
+		interaction.PropertyObservable(false),
+		interaction.PropertyReadOnly(true),
 	)
 	ts.myThing.AddProperty(propertyR)
 
@@ -324,11 +301,9 @@ func (ts *ProducerTestSuite) Test_RBoolPropertyRead() {
 		"boolR",
 		"R bool",
 		"Readable only/Not Observable boolean",
-		true,
-		false,
-		false,
-		map[string]dataSchema.Data{},
 		booleanData,
+		interaction.PropertyObservable(false),
+		interaction.PropertyReadOnly(true),
 	)
 	ts.myThing.AddProperty(propertyR)
 
@@ -347,11 +322,9 @@ func (ts *ProducerTestSuite) Test_RBoolPropertyWrite() {
 		"boolR",
 		"R bool",
 		"Readable only/Not Observable boolean",
-		true,
-		false,
-		false,
-		map[string]dataSchema.Data{},
 		booleanData,
+		interaction.PropertyObservable(false),
+		interaction.PropertyReadOnly(true),
 	)
 	ts.myThing.AddProperty(propertyR)
 
@@ -367,11 +340,9 @@ func (ts *ProducerTestSuite) Test_WBoolProperty() {
 		"boolW",
 		"W bool",
 		"Writable only/Not Observable boolean",
-		false,
-		true,
-		false,
-		map[string]dataSchema.Data{},
 		booleanData,
+		interaction.PropertyObservable(false),
+		interaction.PropertyWriteOnly(true),
 	)
 	ts.myThing.AddProperty(propertyW)
 
@@ -422,11 +393,9 @@ func (ts *ProducerTestSuite) Test_WBoolPropertyRead() {
 		"boolW",
 		"W bool",
 		"Writable only/Not Observable boolean",
-		false,
-		true,
-		false,
-		map[string]dataSchema.Data{},
 		booleanData,
+		interaction.PropertyObservable(false),
+		interaction.PropertyWriteOnly(true),
 	)
 	ts.myThing.AddProperty(propertyW)
 
@@ -441,11 +410,9 @@ func (ts *ProducerTestSuite) Test_WBoolPropertyWrite() {
 		"boolW",
 		"W bool",
 		"Writable only/Not Observable boolean",
-		false,
-		true,
-		false,
-		map[string]dataSchema.Data{},
 		booleanData,
+		interaction.PropertyObservable(false),
+		interaction.PropertyWriteOnly(true),
 	)
 	ts.myThing.AddProperty(propertyW)
 
@@ -467,20 +434,13 @@ func (ts *ProducerTestSuite) Test_WBoolPropertyWrite() {
 
 func (ts *ProducerTestSuite) Test_URIVariablesProperty() {
 	booleanData, _ := dataSchema.NewBoolean()
+	stringData, _ := dataSchema.NewString()
 	propertyRWO := interaction.NewProperty(
 		"uriVars",
 		"URI Variables",
 		"With URI Variables",
-		false,
-		false,
-		true,
-		map[string]dataSchema.Data{
-			"var1": {
-				Default: "",
-				Type:    "string",
-			},
-		},
 		booleanData,
+		interaction.PropertyUriVariable("var1", stringData),
 	)
 	ts.myThing.AddProperty(propertyRWO)
 
@@ -528,7 +488,6 @@ func (ts *ProducerTestSuite) Test_URIVariablesProperty() {
 	form2.Value("op").Array().IsEqualUnordered([]string{"observeproperty", "unobserveproperty"})
 	uriVariables := property.Value("uriVariables").Object()
 	uriVariables.HasValue("var1", map[string]interface{}{
-		"default": "",
-		"type":    "string",
+		"type": "string",
 	})
 }

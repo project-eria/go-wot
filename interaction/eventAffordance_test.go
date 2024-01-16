@@ -28,7 +28,9 @@ func (ts *EventAffordanceTestSuite) Test_EventAffordanceNew() {
 		dataSchema.IntegerMin(0),
 		dataSchema.IntegerMax(100),
 	)
-	result := NewEvent("A", "B", "C", &d)
+	result := NewEvent("A", "B", "C",
+		EventData(&d),
+	)
 	ts.Equal("A", result.Key)
 	ts.Equal("B", result.Title)
 	ts.Equal("C", result.Description)
@@ -42,7 +44,9 @@ func (ts *EventAffordanceTestSuite) Test_EventAffordanceJsonMarshal() {
 		dataSchema.IntegerMin(0),
 		dataSchema.IntegerMax(100),
 	)
-	e := NewEvent("A", "B", "C", &d)
+	e := NewEvent("A", "B", "C",
+		EventData(&d),
+	)
 	result, err := json.Marshal(e)
 	ts.Nil(err)
 	ts.Equal(`{"data":{"default":0,"unit":"%","type":"integer","minimum":0,"maximum":100},"title":"B","description":"C","forms":[]}`, string(result))

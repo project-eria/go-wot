@@ -18,10 +18,6 @@ func TestPropertyTD(t *testing.T) {
 		"boolRWO",
 		"RWO bool",
 		"Readable/Writable/Observable boolean",
-		false,
-		false,
-		true,
-		nil,
 		booleanData,
 	)
 	mything.AddProperty(propertyRWO)
@@ -45,10 +41,6 @@ func TestPropertyGeneral(t *testing.T) {
 		"boolRWO",
 		"RWO bool",
 		"Readable/Writable/Observable boolean",
-		false,
-		false,
-		true,
-		nil,
 		booleanData,
 	)
 	mything.AddProperty(propertyRWO)
@@ -81,10 +73,6 @@ func TestPropertyRWO(t *testing.T) {
 		"boolRWO",
 		"RWO bool",
 		"Readable/Writable/Observable boolean",
-		false,
-		false,
-		true,
-		nil,
 		booleanData,
 	)
 	mything.AddProperty(propertyRWO)
@@ -137,11 +125,9 @@ func TestPropertyReadOnly(t *testing.T) {
 		"boolR",
 		"R bool",
 		"Readable only/Not Observable boolean",
-		true,
-		false,
-		false,
-		nil,
 		booleanData,
+		interaction.PropertyReadOnly(true),
+		interaction.PropertyObservable(false),
 	)
 	mything.AddProperty(propertyR)
 
@@ -188,11 +174,8 @@ func TestPropertyNotObservable(t *testing.T) {
 		"boolRW",
 		"RW bool",
 		"Readable/Writable/Not Observable boolean",
-		false,
-		false,
-		false,
-		nil,
 		booleanData,
+		interaction.PropertyObservable(false),
 	)
 	mything.AddProperty(propertyRW)
 
@@ -240,11 +223,9 @@ func TestPropertyWriteOnly(t *testing.T) {
 		"boolW",
 		"W bool",
 		"Writable only/Not Observable boolean",
-		false,
-		true,
-		false,
-		nil,
 		booleanData,
+		interaction.PropertyWriteOnly(true),
+		interaction.PropertyObservable(false),
 	)
 	mything.AddProperty(propertyW)
 

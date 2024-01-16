@@ -29,7 +29,10 @@ func (ts *ActionAffordanceTestSuite) Test_ActionAffordanceNew() {
 		dataSchema.IntegerMax(100),
 	)
 	o, _ := dataSchema.NewString()
-	result := NewAction("A", "B", "C", &i, &o)
+	result := NewAction("A", "B", "C",
+		ActionInput(&i),
+		ActionOutput(&o),
+	)
 	ts.Equal("A", result.Key)
 	ts.Equal("B", result.Title)
 	ts.Equal("C", result.Description)
@@ -45,7 +48,10 @@ func (ts *ActionAffordanceTestSuite) Test_ActionAffordanceJsonMarshal() {
 		dataSchema.IntegerMax(100),
 	)
 	o, _ := dataSchema.NewString()
-	a := NewAction("A", "B", "C", &i, &o)
+	a := NewAction("A", "B", "C",
+		ActionInput(&i),
+		ActionOutput(&o),
+	)
 	result, err := json.Marshal(a)
 	ts.Nil(err)
 	ts.Equal(`{"input":{"default":0,"unit":"%","type":"integer","minimum":0,"maximum":100},"output":{"type":"string"},"title":"B","description":"C","forms":[]}`, string(result))

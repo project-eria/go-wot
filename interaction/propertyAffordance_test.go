@@ -25,7 +25,7 @@ func (ts *PropertyAffordanceTestSuite) Test_PropertyAffordanceNew() {
 	d, _ := dataSchema.NewBoolean(
 		dataSchema.BooleanDefault(false),
 	)
-	result := NewProperty("A", "B", "C", false, false, true, nil, d)
+	result := NewProperty("A", "B", "C", d)
 	ts.Equal("A", result.Key)
 	ts.Equal("B", result.Title)
 	ts.Equal("C", result.Description)
@@ -43,7 +43,7 @@ func (ts *PropertyAffordanceTestSuite) Test_PropertyAffordanceJsonMarshal() {
 		dataSchema.IntegerMin(1),
 		dataSchema.IntegerMax(9),
 	)
-	p := NewProperty("A", "B", "C", false, false, true, nil, d)
+	p := NewProperty("A", "B", "C", d)
 	result, err := json.Marshal(p)
 	ts.Nil(err)
 	ts.Equal(`{"title":"B","description":"C","forms":[],"default":5,"unit":"%","type":"integer","minimum":1,"maximum":9,"readOnly":false,"writeOnly":false,"observable":true}`, string(result))

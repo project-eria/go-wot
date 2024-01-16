@@ -12,8 +12,6 @@ func (ts *ProducerTestSuite) Test_NoInputNoOutputAction() {
 		"i",
 		"No Input, No Output",
 		"",
-		nil,
-		nil,
 	)
 	ts.myThing.AddAction(iAction)
 	expect, _ := getProducer(ts, ts.myThing)
@@ -58,8 +56,6 @@ func (ts *ProducerTestSuite) Test_NoInputNoOutputActionInvokeNoHandler() {
 		"i",
 		"No Input, No Output",
 		"",
-		nil,
-		nil,
 	)
 	ts.myThing.AddAction(iAction)
 	expect, _ := getProducer(ts, ts.myThing)
@@ -74,8 +70,6 @@ func (ts *ProducerTestSuite) Test_NoInputNoOutputActionInvoke() {
 		"i",
 		"No Input, No Output",
 		"",
-		nil,
-		nil,
 	)
 	ts.myThing.AddAction(iAction)
 	expect, exposedThing := getProducer(ts, ts.myThing)
@@ -93,8 +87,7 @@ func (ts *ProducerTestSuite) Test_StringInputNoOutputActionInvokeNoData() {
 		"i",
 		"String Input, No Output",
 		"",
-		&stringInput,
-		nil,
+		interaction.ActionInput(&stringInput),
 	)
 	ts.myThing.AddAction(iAction)
 	expect, exposedThing := getProducer(ts, ts.myThing)
@@ -112,8 +105,7 @@ func (ts *ProducerTestSuite) Test_StringInputNoOutputActionInvoke() {
 		"i",
 		"String Input, No Output",
 		"",
-		&stringInput,
-		nil,
+		interaction.ActionInput(&stringInput),
 	)
 	ts.myThing.AddAction(iAction)
 	expect, exposedThing := getProducer(ts, ts.myThing)
@@ -132,8 +124,8 @@ func (ts *ProducerTestSuite) Test_StringInputStringOutputActionInvoke() {
 		"i",
 		"String Input, No Output",
 		"",
-		&stringInput,
-		&stringOutput,
+		interaction.ActionInput(&stringInput),
+		interaction.ActionOutput(&stringOutput),
 	)
 	ts.myThing.AddAction(iAction)
 	expect, exposedThing := getProducer(ts, ts.myThing)

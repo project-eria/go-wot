@@ -22,20 +22,65 @@ type Property struct {
 	Interaction `json:"-"`
 }
 
-func NewProperty(key string, title string, description string, readOnly bool, writeOnly bool, observable bool, uriVariables map[string]dataSchema.Data, data dataSchema.Data) *Property {
+func NewProperty(key string, title string, description string, data dataSchema.Data, options ...PropertyOption) *Property {
 	// TODO readOnly, writeOnly can't be true at the same time
+	opts := &PropertyOptions{
+		Observable: true,
+	}
+	for _, option := range options {
+		if option != nil {
+			option(opts)
+		}
+	}
+
 	return &Property{
 		Interaction: Interaction{
 			Key:          key,
 			Title:        title,
 			Description:  description,
 			Forms:        []*Form{},
-			UriVariables: uriVariables,
+			UriVariables: opts.UriVariables,
 		},
 		Data:       data,
-		ReadOnly:   readOnly,
-		WriteOnly:  writeOnly,
-		Observable: observable,
+		ReadOnly:   opts.ReadOnly,
+		WriteOnly:  opts.WriteOnly,
+		Observable: opts.Observable,
+	}
+}
+
+type PropertyOption func(*PropertyOptions)
+
+type PropertyOptions struct {
+	ReadOnly     bool
+	WriteOnly    bool
+	Observable   bool
+	UriVariables map[string]dataSchema.Data
+}
+
+func PropertyReadOnly(readOnly bool) PropertyOption {
+	return func(opts *PropertyOptions) {
+		opts.ReadOnly = readOnly
+	}
+}
+
+func PropertyWriteOnly(writeOnly bool) PropertyOption {
+	return func(opts *PropertyOptions) {
+		opts.WriteOnly = writeOnly
+	}
+}
+
+func PropertyObservable(observable bool) PropertyOption {
+	return func(opts *PropertyOptions) {
+		opts.Observable = observable
+	}
+}
+
+func PropertyUriVariable(key string, data dataSchema.Data) PropertyOption {
+	return func(opts *PropertyOptions) {
+		if opts.UriVariables == nil {
+			opts.UriVariables = make(map[string]dataSchema.Data)
+		}
+		opts.UriVariables[key] = data
 	}
 }
 

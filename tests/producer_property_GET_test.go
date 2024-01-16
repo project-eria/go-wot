@@ -18,10 +18,6 @@ func TestPropertyGET(t *testing.T) {
 		"boolRWO",
 		"RWO bool",
 		"Readable/Writable/Observable boolean",
-		false,
-		false,
-		true,
-		nil,
 		booleanData,
 	)
 	mything.AddProperty(propertyRWO)

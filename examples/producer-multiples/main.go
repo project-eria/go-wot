@@ -52,10 +52,6 @@ func main() {
 		"boolRWO",
 		"RWO bool",
 		"Readable/Writable/Observable boolean",
-		false,
-		false,
-		true,
-		nil,
 		booleanData1,
 	)
 	mything1.AddProperty(propertyRWO1)
@@ -83,10 +79,6 @@ func main() {
 		"boolRWO",
 		"RWO bool",
 		"Readable/Writable/Observable boolean",
-		false,
-		false,
-		true,
-		nil,
 		booleanData2,
 	)
 	mything2.AddProperty(propertyRWO2)

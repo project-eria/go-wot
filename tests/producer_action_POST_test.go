@@ -14,8 +14,6 @@ func TestActionPOST(t *testing.T) {
 		"a",
 		"Action title",
 		"Action description",
-		nil,
-		nil,
 	)
 	mything.AddAction(aAction)
 

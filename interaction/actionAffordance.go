@@ -20,16 +20,52 @@ type Action struct {
 
 type ActionHandler func(interface{}) (interface{}, error)
 
-func NewAction(key string, title string, description string, input *dataSchema.Data, output *dataSchema.Data) *Action {
+func NewAction(key string, title string, description string, options ...ActionOption) *Action {
+	opts := &ActionOptions{}
+	for _, option := range options {
+		if option != nil {
+			option(opts)
+		}
+	}
 	interaction := Interaction{
-		Key:         key,
-		Title:       title,
-		Description: description,
-		Forms:       []*Form{},
+		Key:          key,
+		Title:        title,
+		Description:  description,
+		Forms:        []*Form{},
+		UriVariables: opts.UriVariables,
 	}
 	return &Action{
 		Interaction: interaction,
-		Input:       input,
-		Output:      output,
+		Input:       opts.Input,
+		Output:      opts.Output,
+	}
+}
+
+type ActionOption func(*ActionOptions)
+
+type ActionOptions struct {
+	Input        *dataSchema.Data
+	Output       *dataSchema.Data
+	UriVariables map[string]dataSchema.Data
+}
+
+func ActionInput(input *dataSchema.Data) ActionOption {
+	return func(opts *ActionOptions) {
+		opts.Input = input
+	}
+}
+
+func ActionOutput(output *dataSchema.Data) ActionOption {
+	return func(opts *ActionOptions) {
+		opts.Output = output
+	}
+}
+
+func ActionUriVariable(key string, data dataSchema.Data) ActionOption {
+	return func(opts *ActionOptions) {
+		if opts.UriVariables == nil {
+			opts.UriVariables = make(map[string]dataSchema.Data)
+		}
+		opts.UriVariables[key] = data
 	}
 }

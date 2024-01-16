@@ -14,8 +14,6 @@ func TestActionTD(t *testing.T) {
 		"a",
 		"Action title",
 		"Action description",
-		nil,
-		nil,
 	)
 	mything.AddAction(aAction)
 
@@ -44,8 +42,8 @@ func TestActionInputOutputString(t *testing.T) {
 		"a",
 		"Action title",
 		"Action description",
-		&stringInput,
-		&stringOutput,
+		interaction.ActionInput(&stringInput),
+		interaction.ActionOutput(&stringOutput),
 	)
 	mything.AddAction(aAction)
 
