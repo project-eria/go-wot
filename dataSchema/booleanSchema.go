@@ -10,7 +10,9 @@ func NewBoolean(options ...BooleanOption) (Data, error) {
 		Default: nil,
 	}
 	for _, option := range options {
-		option(opts)
+		if option != nil {
+			option(opts)
+		}
 	}
 	d := Data{
 		Default:    opts.Default,

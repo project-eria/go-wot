@@ -21,7 +21,9 @@ func NewString(options ...StringOption) (Data, error) {
 		Default: nil,
 	}
 	for _, option := range options {
-		option(opts)
+		if option != nil {
+			option(opts)
+		}
 	}
 	var regexpPattern *regexp.Regexp
 	var err error
