@@ -22,7 +22,9 @@ func (ts *PropertyAffordanceTestSuite) SetupSuite() {
 }
 
 func (ts *PropertyAffordanceTestSuite) Test_PropertyAffordanceNew() {
-	d, _ := dataSchema.NewBoolean(false)
+	d, _ := dataSchema.NewBoolean(
+		dataSchema.BooleanDefault(false),
+	)
 	result := NewProperty("A", "B", "C", false, false, true, nil, d)
 	ts.Equal("A", result.Key)
 	ts.Equal("B", result.Title)
@@ -35,9 +37,12 @@ func (ts *PropertyAffordanceTestSuite) Test_PropertyAffordanceNew() {
 }
 
 func (ts *PropertyAffordanceTestSuite) Test_PropertyAffordanceJsonMarshal() {
-	min := 1
-	max := 9
-	d, _ := dataSchema.NewInteger(5, "%", &min, &max)
+	d, _ := dataSchema.NewInteger(
+		dataSchema.IntegerDefault(5),
+		dataSchema.IntegerUnit("%"),
+		dataSchema.IntegerMin(1),
+		dataSchema.IntegerMax(9),
+	)
 	p := NewProperty("A", "B", "C", false, false, true, nil, d)
 	result, err := json.Marshal(p)
 	ts.Nil(err)

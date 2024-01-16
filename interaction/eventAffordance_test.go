@@ -22,9 +22,12 @@ func (ts *EventAffordanceTestSuite) SetupSuite() {
 }
 
 func (ts *EventAffordanceTestSuite) Test_EventAffordanceNew() {
-	min := int(0)
-	max := int(100)
-	d, _ := dataSchema.NewInteger(0, "%", &min, &max)
+	d, _ := dataSchema.NewInteger(
+		dataSchema.IntegerDefault(0),
+		dataSchema.IntegerUnit("%"),
+		dataSchema.IntegerMin(0),
+		dataSchema.IntegerMax(100),
+	)
 	result := NewEvent("A", "B", "C", &d)
 	ts.Equal("A", result.Key)
 	ts.Equal("B", result.Title)
@@ -33,9 +36,12 @@ func (ts *EventAffordanceTestSuite) Test_EventAffordanceNew() {
 }
 
 func (ts *EventAffordanceTestSuite) Test_EventAffordanceJsonMarshal() {
-	min := int(0)
-	max := int(100)
-	d, _ := dataSchema.NewInteger(0, "%", &min, &max)
+	d, _ := dataSchema.NewInteger(
+		dataSchema.IntegerDefault(0),
+		dataSchema.IntegerUnit("%"),
+		dataSchema.IntegerMin(0),
+		dataSchema.IntegerMax(100),
+	)
 	e := NewEvent("A", "B", "C", &d)
 	result, err := json.Marshal(e)
 	ts.Nil(err)

@@ -12,7 +12,7 @@ import (
 // TODO test all errors /Users/cedric/Documents/PROJETS/eria/v3/src/go-wot/protocolHttp/httpServerPut.go
 func TestPropertyPUT(t *testing.T) {
 	mything := getThing()
-	booleanData, _ := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean()
 	propertyRWO := interaction.NewProperty(
 		"boolRWO",
 		"RWO bool",

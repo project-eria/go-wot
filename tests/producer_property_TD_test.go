@@ -11,7 +11,9 @@ import (
 
 func TestPropertyTD(t *testing.T) {
 	mything := getThing()
-	booleanData, _ := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(
+		dataSchema.BooleanDefault(false),
+	)
 	propertyRWO := interaction.NewProperty(
 		"boolRWO",
 		"RWO bool",
@@ -38,7 +40,7 @@ func TestPropertyTD(t *testing.T) {
 
 func TestPropertyGeneral(t *testing.T) {
 	mything := getThing()
-	booleanData, _ := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean()
 	propertyRWO := interaction.NewProperty(
 		"boolRWO",
 		"RWO bool",
@@ -74,7 +76,7 @@ func TestPropertyGeneral(t *testing.T) {
 
 func TestPropertyRWO(t *testing.T) {
 	mything := getThing()
-	booleanData, _ := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean()
 	propertyRWO := interaction.NewProperty(
 		"boolRWO",
 		"RWO bool",
@@ -130,7 +132,7 @@ func TestPropertyReadOnly(t *testing.T) {
 		"An example",
 		[]string{},
 	)
-	booleanData, _ := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean()
 	propertyR := interaction.NewProperty(
 		"boolR",
 		"R bool",
@@ -181,7 +183,7 @@ func TestPropertyNotObservable(t *testing.T) {
 		"An example",
 		[]string{},
 	)
-	booleanData, _ := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean()
 	propertyRW := interaction.NewProperty(
 		"boolRW",
 		"RW bool",
@@ -233,7 +235,7 @@ func TestPropertyWriteOnly(t *testing.T) {
 		"An example",
 		[]string{},
 	)
-	booleanData, _ := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean()
 	propertyW := interaction.NewProperty(
 		"boolW",
 		"W bool",

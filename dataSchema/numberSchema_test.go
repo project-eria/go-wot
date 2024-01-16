@@ -19,9 +19,12 @@ func Test_NumberSchemaTestSuite(t *testing.T) {
 
 func (ts *NumberSchemaTestSuite) SetupSuite() {
 	zerolog.SetGlobalLevel(zerolog.Disabled)
-	min := 1
-	max := 9
-	ts.schema, _ = NewNumber(5.5, "%", &min, &max)
+	ts.schema, _ = NewNumber(
+		NumberDefault(5.5),
+		NumberUnit("%"),
+		NumberMin(1),
+		NumberMax(9),
+	)
 }
 
 func (ts *NumberSchemaTestSuite) Test_NumberSchemaNew() {

@@ -19,9 +19,12 @@ func Test_IntegerSchemaTestSuite(t *testing.T) {
 
 func (ts *IntegerSchemaTestSuite) SetupSuite() {
 	zerolog.SetGlobalLevel(zerolog.Disabled)
-	min := 1
-	max := 9
-	ts.schema, _ = NewInteger(5, "%", &min, &max)
+	ts.schema, _ = NewInteger(
+		IntegerDefault(5),
+		IntegerUnit("%"),
+		IntegerMin(1),
+		IntegerMax(9),
+	)
 }
 
 func (ts *IntegerSchemaTestSuite) Test_IntegerSchemaNew() {
@@ -68,9 +71,12 @@ func (ts *IntegerSchemaTestSuite) Test_IntegerSchemaValidate4() {
 }
 
 func (ts *IntegerSchemaTestSuite) Test_IntegerSchemaJsonMarshal() {
-	min := 0
-	max := 9
-	i, _ := NewInteger(5, "%", &min, &max)
+	i, _ := NewInteger(
+		IntegerDefault(5),
+		IntegerUnit("%"),
+		IntegerMin(0),
+		IntegerMax(9),
+	)
 	result, err := json.Marshal(&i)
 	ts.Nil(err)
 	ts.Equal(`{"default":5,"unit":"%","type":"integer","minimum":0,"maximum":9}`, string(result))

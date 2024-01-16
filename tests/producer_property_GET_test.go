@@ -13,7 +13,7 @@ import (
 
 func TestPropertyGET(t *testing.T) {
 	mything := getThing()
-	booleanData, _ := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean()
 	propertyRWO := interaction.NewProperty(
 		"boolRWO",
 		"RWO bool",

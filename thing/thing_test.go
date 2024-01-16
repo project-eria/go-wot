@@ -122,7 +122,7 @@ func TestAddSecurity(t *testing.T) {
 
 func TestAddProperty(t *testing.T) {
 	mything, err := New("dev:ops:my-actuator-1234", "", "ActuatorExample", "An actuator example", []string{})
-	data, _ := dataSchema.NewBoolean(false)
+	data, _ := dataSchema.NewBoolean()
 	property := interaction.NewProperty(
 		"x",
 		"y",

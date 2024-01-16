@@ -9,11 +9,43 @@ type Object struct {
 	*/
 }
 
-func NewObject(defaultValue map[string]interface{}) Data {
-	return Data{
-		Default:    defaultValue,
+func NewObject(options ...ObjectOption) (Data, error) {
+	opts := &ObjectOptions{
+		Default: nil,
+	}
+	for _, option := range options {
+		option(opts)
+	}
+	d := Data{
+		Default:    opts.Default,
+		Unit:       opts.Unit,
 		Type:       "object",
 		DataSchema: Object{},
+	}
+	if d.Default != nil {
+		if err := d.Validate(d.Default); err != nil {
+			return Data{}, errors.New("invalid default value: " + err.Error())
+		}
+	}
+	return d, nil
+}
+
+type ObjectOption func(*ObjectOptions)
+
+type ObjectOptions struct {
+	Default interface{}
+	Unit    string
+}
+
+func ObjectDefault(value map[string]interface{}) ObjectOption {
+	return func(opts *ObjectOptions) {
+		opts.Default = value
+	}
+}
+
+func ObjectUnit(unit string) ObjectOption {
+	return func(opts *ObjectOptions) {
+		opts.Unit = unit
 	}
 }
 

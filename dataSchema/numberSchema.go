@@ -13,20 +13,61 @@ type Number struct {
 	// TODO MultipleOf       *uint16 `json:"multipleOf,omitempty"`       // (optional) Specifies the multipleOf value number. The value must strictly greater than 0. Only applicable for associated number or integer types.
 }
 
-func NewNumber(defaultValue float64, unit string, minimum *int, maximum *int) (Data, error) {
+func NewNumber(options ...NumberOption) (Data, error) {
+	opts := &NumberOptions{
+		Default: nil,
+	}
+	for _, option := range options {
+		option(opts)
+	}
 	d := Data{
-		Default: defaultValue,
+		Default: opts.Default,
 		Type:    "number",
-		Unit:    unit,
+		Unit:    opts.Unit,
 		DataSchema: Number{
-			Minimum: minimum,
-			Maximum: maximum,
+			Minimum: opts.Minimum,
+			Maximum: opts.Maximum,
 		},
 	}
-	if err := d.Validate(d.Default); err != nil {
-		return Data{}, errors.New("invalid default value: " + err.Error())
+	if d.Default != nil {
+		if err := d.Validate(d.Default); err != nil {
+			return Data{}, errors.New("invalid default value: " + err.Error())
+		}
 	}
 	return d, nil
+}
+
+type NumberOption func(*NumberOptions)
+
+type NumberOptions struct {
+	Default interface{}
+	Unit    string
+	Minimum *int
+	Maximum *int
+}
+
+func NumberDefault(value float64) NumberOption {
+	return func(opts *NumberOptions) {
+		opts.Default = value
+	}
+}
+
+func NumberUnit(unit string) NumberOption {
+	return func(opts *NumberOptions) {
+		opts.Unit = unit
+	}
+}
+
+func NumberMin(min int) NumberOption {
+	return func(opts *NumberOptions) {
+		opts.Minimum = &min
+	}
+}
+
+func NumberMax(max int) NumberOption {
+	return func(opts *NumberOptions) {
+		opts.Maximum = &max
+	}
 }
 
 func (n Number) Validate(value interface{}) error {

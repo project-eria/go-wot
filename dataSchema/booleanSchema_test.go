@@ -19,7 +19,9 @@ func Test_BooleanSchemaTestSuite(t *testing.T) {
 
 func (ts *BooleanSchemaTestSuite) SetupSuite() {
 	zerolog.SetGlobalLevel(zerolog.Disabled)
-	ts.schema, _ = NewBoolean(true)
+	ts.schema, _ = NewBoolean(
+		BooleanDefault(true),
+	)
 }
 
 func (ts *BooleanSchemaTestSuite) Test_BooleanSchemaNew() {

@@ -41,7 +41,9 @@ func main() {
 	noSecurityScheme := securityScheme.NewNoSecurity()
 	mything.AddSecurity("no_sec", noSecurityScheme)
 
-	booleanData, _ := dataSchema.NewBoolean(false)
+	booleanData, _ := dataSchema.NewBoolean(
+		dataSchema.BooleanDefault(false),
+	)
 	propertyRWO := interaction.NewProperty(
 		"boolRWO",
 		"RWO bool",
@@ -54,7 +56,7 @@ func main() {
 	)
 	mything.AddProperty(propertyRWO)
 
-	stringEvent, _ := dataSchema.NewString("", nil, nil, "")
+	stringEvent, _ := dataSchema.NewString()
 	dEvent := interaction.NewEvent("d", "d Event", "", &stringEvent)
 	mything.AddEvent(dEvent)
 

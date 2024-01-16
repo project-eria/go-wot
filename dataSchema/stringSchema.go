@@ -16,36 +16,87 @@ type String struct {
 	regexpPattern *regexp.Regexp `json:"-"`
 }
 
-func NewString(defaultValue string, minLength *uint16, maxLength *uint16, pattern string) (Data, error) {
+func NewString(options ...StringOption) (Data, error) {
+	opts := &StringOptions{
+		Default: nil,
+	}
+	for _, option := range options {
+		option(opts)
+	}
 	var regexpPattern *regexp.Regexp
 	var err error
-	if pattern != "" {
+
+	if opts.Pattern != "" {
 		// Add "^" and "$" to the pattern, for global matching
-		if pattern[0] != '^' {
-			pattern = "^" + pattern
+		if opts.Pattern[0] != '^' {
+			opts.Pattern = "^" + opts.Pattern
 		}
-		if pattern[len(pattern)-1] != '$' {
-			pattern = pattern + "$"
+		if opts.Pattern[len(opts.Pattern)-1] != '$' {
+			opts.Pattern = opts.Pattern + "$"
 		}
-		if regexpPattern, err = regexp.Compile(pattern); err != nil {
+		if regexpPattern, err = regexp.Compile(opts.Pattern); err != nil {
 			zlog.Error().Err(err).Msg("invalid pattern")
 			return Data{}, errors.New("invalid pattern")
 		}
 	}
+
 	d := Data{
-		Default: defaultValue,
+		Default: opts.Default,
+		Unit:    opts.Unit,
 		Type:    "string",
 		DataSchema: String{
-			MinLength:     minLength,
-			MaxLength:     maxLength,
-			Pattern:       pattern,
+			MinLength:     opts.MinLength,
+			MaxLength:     opts.MaxLength,
+			Pattern:       opts.Pattern,
 			regexpPattern: regexpPattern,
 		},
 	}
-	if err := d.Validate(d.Default); err != nil {
-		return Data{}, errors.New("invalid default value: " + err.Error())
+	if d.Default != nil {
+		if err := d.Validate(d.Default); err != nil {
+			return Data{}, errors.New("invalid default value: " + err.Error())
+		}
 	}
 	return d, nil
+}
+
+type StringOption func(*StringOptions)
+
+type StringOptions struct {
+	Default   interface{}
+	Unit      string
+	MinLength *uint16
+	MaxLength *uint16
+	Pattern   string
+}
+
+func StringDefault(value string) StringOption {
+	return func(opts *StringOptions) {
+		opts.Default = value
+	}
+}
+
+func StringUnit(unit string) StringOption {
+	return func(opts *StringOptions) {
+		opts.Unit = unit
+	}
+}
+
+func StringMinLength(minLen uint16) StringOption {
+	return func(opts *StringOptions) {
+		opts.MinLength = &minLen
+	}
+}
+
+func StringMaxLength(maxLen uint16) StringOption {
+	return func(opts *StringOptions) {
+		opts.MaxLength = &maxLen
+	}
+}
+
+func StringPattern(pattern string) StringOption {
+	return func(opts *StringOptions) {
+		opts.Pattern = pattern
+	}
 }
 
 func (s String) Validate(value interface{}) error {

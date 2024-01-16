@@ -38,8 +38,8 @@ func TestActionTD(t *testing.T) {
 
 func TestActionInputOutputString(t *testing.T) {
 	mything := getThing()
-	stringInput, _ := dataSchema.NewString("", nil, nil, "")
-	stringOutput, _ := dataSchema.NewString("", nil, nil, "")
+	stringInput, _ := dataSchema.NewString()
+	stringOutput, _ := dataSchema.NewString()
 	aAction := interaction.NewAction(
 		"a",
 		"Action title",
@@ -56,9 +56,7 @@ func TestActionInputOutputString(t *testing.T) {
 		Status(http.StatusOK).JSON().Object()
 	action := obj.Value("actions").Object().Value("a").Object()
 	action.Value("input").Object().
-		HasValue("default", "").
 		HasValue("type", "string")
 	action.Value("output").Object().
-		HasValue("default", "").
 		HasValue("type", "string")
 }

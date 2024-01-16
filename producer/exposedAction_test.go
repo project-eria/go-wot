@@ -88,7 +88,7 @@ func (ts *ProducerTestSuite) Test_NoInputNoOutputActionInvoke() {
 }
 
 func (ts *ProducerTestSuite) Test_StringInputNoOutputActionInvokeNoData() {
-	stringInput, _ := dataSchema.NewString("", nil, nil, "")
+	stringInput, _ := dataSchema.NewString()
 	iAction := interaction.NewAction(
 		"i",
 		"String Input, No Output",
@@ -107,7 +107,7 @@ func (ts *ProducerTestSuite) Test_StringInputNoOutputActionInvokeNoData() {
 }
 
 func (ts *ProducerTestSuite) Test_StringInputNoOutputActionInvoke() {
-	stringInput, _ := dataSchema.NewString("", nil, nil, "")
+	stringInput, _ := dataSchema.NewString()
 	iAction := interaction.NewAction(
 		"i",
 		"String Input, No Output",
@@ -126,8 +126,8 @@ func (ts *ProducerTestSuite) Test_StringInputNoOutputActionInvoke() {
 }
 
 func (ts *ProducerTestSuite) Test_StringInputStringOutputActionInvoke() {
-	stringInput, _ := dataSchema.NewString("", nil, nil, "")
-	stringOutput, _ := dataSchema.NewString("", nil, nil, "")
+	stringInput, _ := dataSchema.NewString()
+	stringOutput, _ := dataSchema.NewString()
 	iAction := interaction.NewAction(
 		"i",
 		"String Input, No Output",

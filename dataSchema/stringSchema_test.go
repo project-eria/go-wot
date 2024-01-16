@@ -19,9 +19,12 @@ func Test_StringSchemaTestSuite(t *testing.T) {
 
 func (ts *StringSchemaTestSuite) SetupSuite() {
 	zerolog.SetGlobalLevel(zerolog.Disabled)
-	min := uint16(2)
-	max := uint16(9)
-	ts.schema, _ = NewString("test", &min, &max, `[A-Za-z]*`)
+	ts.schema, _ = NewString(
+		StringDefault("test"),
+		StringMinLength(2),
+		StringMaxLength(9),
+		StringPattern(`^[A-Za-z]*$`),
+	)
 }
 
 func (ts *StringSchemaTestSuite) Test_StringSchemaNew() {
@@ -34,9 +37,12 @@ func (ts *StringSchemaTestSuite) Test_StringSchemaNew() {
 	ts.Equal(`^[A-Za-z]*$`, ds.Pattern)
 }
 func (ts *StringSchemaTestSuite) Test_StringSchemaNewError1() {
-	min := uint16(2)
-	max := uint16(9)
-	result, err := NewString("test", &min, &max, `\o`)
+	result, err := NewString(
+		StringDefault("test"),
+		StringMinLength(2),
+		StringMaxLength(9),
+		StringPattern(`\o`),
+	)
 	ts.Equal(Data{}, result)
 	ts.EqualError(err, "invalid pattern")
 }
