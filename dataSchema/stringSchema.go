@@ -46,6 +46,7 @@ func NewString(options ...StringOption) (Data, error) {
 		Default: opts.Default,
 		Unit:    opts.Unit,
 		Type:    "string",
+		Enum:    opts.Enum,
 		DataSchema: String{
 			MinLength:     opts.MinLength,
 			MaxLength:     opts.MaxLength,
@@ -66,6 +67,7 @@ type StringOption func(*StringOptions)
 type StringOptions struct {
 	Default   interface{}
 	Unit      string
+	Enum      []interface{}
 	MinLength *uint16
 	MaxLength *uint16
 	Pattern   string
@@ -98,6 +100,15 @@ func StringMaxLength(maxLen uint16) StringOption {
 func StringPattern(pattern string) StringOption {
 	return func(opts *StringOptions) {
 		opts.Pattern = pattern
+	}
+}
+
+func StringEnum(enum []string) StringOption {
+	return func(opts *StringOptions) {
+		opts.Enum = []interface{}{}
+		for _, e := range enum {
+			opts.Enum = append(opts.Enum, e)
+		}
 	}
 }
 

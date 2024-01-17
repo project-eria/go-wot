@@ -13,7 +13,7 @@ type Array struct {
 	MaxItems *uint `json:"maxItems,omitempty"` // (optional) Defines the maximum number of items that have to be in the array.
 }
 
-func NewArray[T SimpleType](options ...ArrayOption) (Data, error) {
+func NewArray(options ...ArrayOption) (Data, error) {
 	opts := &ArrayOptions{
 		Default: nil,
 	}

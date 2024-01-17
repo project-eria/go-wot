@@ -26,6 +26,7 @@ func NewNumber(options ...NumberOption) (Data, error) {
 		Default: opts.Default,
 		Type:    "number",
 		Unit:    opts.Unit,
+		Enum:    opts.Enum,
 		DataSchema: Number{
 			Minimum: opts.Minimum,
 			Maximum: opts.Maximum,
@@ -44,6 +45,7 @@ type NumberOption func(*NumberOptions)
 type NumberOptions struct {
 	Default interface{}
 	Unit    string
+	Enum    []interface{}
 	Minimum *int
 	Maximum *int
 }
@@ -72,6 +74,16 @@ func NumberMax(max int) NumberOption {
 	}
 }
 
+func NumberEnum(enum []float64) NumberOption {
+	return func(opts *NumberOptions) {
+		opts.Enum = []interface{}{}
+		for _, e := range enum {
+			opts.Enum = append(opts.Enum, e)
+		}
+	}
+}
+
+// TODO Validate Enum
 func (n Number) Validate(value interface{}) error {
 	if _, ok := value.(float64); !ok {
 		return errors.New("incorrect number value type")

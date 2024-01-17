@@ -24,9 +24,9 @@ type Data struct {
 	Default interface{} `json:"default,omitempty"` // (optional) Supply a default value. The value should validate against the data schema in which it resides.
 	Unit    string      `json:"unit,omitempty"`    // (optional) Provides unit information that is used, e.g., in international science, engineering, and business.
 	// oneOf	Used to ensure that the data is valid against one of the specified schemas in the array.	optional	Array of DataSchema
-	Enum       []interface{} `json:"enum,omitempty"`   // (optional) Restricted set of values provided as an array.
-	Format     string        `json:"format,omitempty"` // (optional) Allows validation based on a format pattern such as "date-time", "email", "uri", etc.
-	Type       string        `json:"type,omitempty"`   // (optional) Assignment of JSON-based data types compatible with JSON Schema (one of boolean, integer, number, string, object, array, or null)
+	Enum []interface{} `json:"enum,omitempty"` // (optional) Restricted set of values provided as an array.
+	// TODO Format     string        `json:"format,omitempty"` // (optional) Allows validation based on a format pattern such as "date-time", "email", "uri", etc.
+	Type       string `json:"type,omitempty"` // (optional) Assignment of JSON-based data types compatible with JSON Schema (one of boolean, integer, number, string, object, array, or null)
 	DataSchema `json:"-"`
 }
 

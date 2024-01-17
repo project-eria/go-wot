@@ -29,6 +29,7 @@ func NewInteger(options ...IntegerOption) (Data, error) {
 		Default: opts.Default,
 		Type:    "integer",
 		Unit:    opts.Unit,
+		Enum:    opts.Enum,
 		DataSchema: Integer{
 			Minimum: opts.Minimum,
 			Maximum: opts.Maximum,
@@ -47,6 +48,7 @@ type IntegerOption func(*IntegerOptions)
 type IntegerOptions struct {
 	Default interface{}
 	Unit    string
+	Enum    []interface{}
 	Minimum *int
 	Maximum *int
 }
@@ -72,6 +74,15 @@ func IntegerMin(min int) IntegerOption {
 func IntegerMax(max int) IntegerOption {
 	return func(opts *IntegerOptions) {
 		opts.Maximum = &max
+	}
+}
+
+func IntegerEnum(enum []int) IntegerOption {
+	return func(opts *IntegerOptions) {
+		opts.Enum = []interface{}{}
+		for _, e := range enum {
+			opts.Enum = append(opts.Enum, e)
+		}
 	}
 }
 
