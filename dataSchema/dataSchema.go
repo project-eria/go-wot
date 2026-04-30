@@ -102,7 +102,9 @@ func (d *Data) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(data, &ds); err != nil {
 			return err
 		}
-		d.Default = int(do.Default.(float64))
+		if f, ok := do.Default.(float64); ok {
+			d.Default = int(f)
+		}
 		d.DataSchema = ds
 	case "number":
 		var ds = Number{}
