@@ -175,8 +175,7 @@ func (c *wsConnection) Close() error {
 	if err := c.WriteControl(websocket.CloseMessage, closeNormalClosure, time.Now().Add(time.Second)); err != nil {
 		return err
 	}
-	c.Close()
-	return nil
+	return c.Conn.Close()
 }
 
 func monitorPropertyObserver(c <-chan producer.PropertyChange) {
