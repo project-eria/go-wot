@@ -1,0 +1,26 @@
+package consumer
+
+import "github.com/project-eria/go-wot/interaction"
+
+/**
+ * Represents a subscription to Property change and Event interactions.
+ *
+ * https://w3c.github.io/wot-scripting-api/#the-subscription-interface
+ */
+type Subscription struct {
+	Type        string                   // Indicates what WoT Interaction the Subscription refers to. The value can be either "property" or "event" or null.
+	Name        string                   // The Property or Event name.
+	Interaction *interaction.Interaction // The Thing Description fragment that describes the WoT interaction.
+	Form        *interaction.Form        // The Form associated with the subscription.
+	Thing       *consumedThing           // The ConsumedThing associated with the subscription.
+	client      ProtocolClient
+}
+
+/**
+ * Stops delivering notifications for the subscription
+ *
+ * https://w3c.github.io/wot-scripting-api/#the-stop-method
+ */
+func (s *Subscription) Stop() {
+
+}
