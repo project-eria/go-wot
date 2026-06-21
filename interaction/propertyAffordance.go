@@ -91,26 +91,21 @@ func (p *Property) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	final := b1[:len(b1)-1] // remove last parenthesis
 
 	b2, err := p.Data.MarshalJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	b2 = b2[:len(b2)-1] // remove last parenthesis
-	b2[0] = ','         // replace first parenthesis, with a comma
-	final = append(final, b2...)
-
 	b3, err := json.Marshal((*PropertyOrigin)(p))
 	if err != nil {
 		return nil, err
 	}
 
-	b3[0] = ',' // replace first parenthesis, with a comma
-	final = append(final, b3...)
-
-	return final, nil
+	// Merge the interaction, the data schema and the property-specific fields.
+	// MergeJSONObjects tolerates an empty Data (`{}`), which the previous
+	// splice-based approach turned into invalid JSON (a stray `,,`).
+	return dataSchema.MergeJSONObjects(b1, b2, b3)
 }
 
 func (p *Property) UnmarshalJSON(data []byte) error {

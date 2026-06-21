@@ -49,6 +49,16 @@ func (ts *PropertyAffordanceTestSuite) Test_PropertyAffordanceJsonMarshal() {
 	ts.Equal(`{"title":"B","description":"C","forms":[],"default":5,"unit":"%","type":"integer","minimum":1,"maximum":9,"readOnly":false,"writeOnly":false,"observable":true}`, string(result))
 }
 
+// Regression: a property whose Data marshals to an empty object `{}` (no type
+// and no DataSchema) used to produce invalid JSON (a stray `,,`), surfacing as
+// "invalid character ',' looking for beginning of object key string".
+func (ts *PropertyAffordanceTestSuite) Test_PropertyAffordanceJsonMarshalEmptyData() {
+	p := NewProperty("A", "B", "C", dataSchema.Data{})
+	result, err := json.Marshal(p)
+	ts.Nil(err)
+	ts.Equal(`{"title":"B","description":"C","forms":[],"readOnly":false,"writeOnly":false,"observable":true}`, string(result))
+}
+
 func (ts *PropertyAffordanceTestSuite) Test_PropertyAffordanceJsonUnmarshal() {
 	j := []byte(`{"title":"B","description":"C","forms":[],"default":5,"unit":"%","type":"integer","minimum":1,"maximum":9,"readOnly":false,"writeOnly":false,"observable":true}`)
 	var result Property
