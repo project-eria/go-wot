@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/grandcat/zeroconf"
@@ -15,12 +16,17 @@ import (
 // as a `_wot._tcp` mDNS service. It does NOT serve the Thing Description —
 // it only advertises the location of an HTTP server that does. The user is
 // expected to add an HttpServer alongside this Advertiser on the same Producer.
+//
+// Instance-name conflicts are NOT resolved (RFC 6762 §9): zeroconf registers
+// the name as given, so two producers advertising the same TD id will clash
+// on the network. Pick unique Thing ids per deployment.
 type Advertiser struct {
 	port      int
 	scheme    string // "http" or "https"
 	domain    string // typically "local."
 	tdPathFor func(ref string) string
 	skip      func(ref string) bool
+	mu        sync.Mutex // guards entries and servers
 	entries   []advertEntry
 	servers   []*zeroconf.Server
 }
@@ -92,6 +98,8 @@ func (a *Advertiser) Expose(ref string, t producer.ExposedThing) {
 		instance = "wot"
 	}
 	tdPath := a.tdPathFor(ref)
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	for _, e := range a.entries {
 		if e.instance == instance && e.tdPath == tdPath {
 			return
@@ -172,6 +180,8 @@ func hostnameForIP(ip net.IP) string {
 
 // Start opens one mDNS registration per exposed Thing.
 func (a *Advertiser) Start() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	if len(a.entries) == 0 {
 		zlog.Warn().Msg("[protocolDnssd:Start] no Things to advertise")
 		return
@@ -220,8 +230,10 @@ func (a *Advertiser) Start() {
 // Goodbye to leave the host and for the kernel to flush, short enough to
 // never freeze the process.
 func (a *Advertiser) Stop() {
+	a.mu.Lock()
 	servers := a.servers
 	a.servers = nil
+	a.mu.Unlock()
 	zlog.Info().Int("count", len(servers)).Msg("[protocolDnssd:Stop] sending Goodbye")
 	done := make(chan struct{})
 	go func() {

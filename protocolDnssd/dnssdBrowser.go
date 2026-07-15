@@ -37,6 +37,10 @@ type BrowseOptions struct {
 // Browse runs an mDNS browse for `_wot._tcp` until ctx is cancelled,
 // emitting validated Entry values on the returned channel. The channel
 // is closed when ctx is done.
+//
+// A process that both advertises (Advertiser) and browses will discover
+// its own announcements: mDNS has no notion of "self". Filter by instance
+// name on the caller side if self-discovery is unwanted.
 func Browse(ctx context.Context, opts BrowseOptions) (<-chan Entry, error) {
 	if opts.Domain == "" {
 		opts.Domain = "local."

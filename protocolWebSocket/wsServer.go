@@ -83,6 +83,8 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t p
 	g.Use("/"+property.Key+handlerVars, propertyObserverHandler(t, property))
 
 	property.Forms = append(property.Forms, form)
+	mu.Lock()
+	defer mu.Unlock()
 	if _, in := propertiesObservers[t.Ref()]; !in {
 		propertiesObservers[t.Ref()] = map[string]map[string]*wsConnection{}
 	}
@@ -118,6 +120,8 @@ func addEventEndPoints(g fiber.Router, exposedAddr string, prefix string, t prod
 	g.Get("/"+event.Key+handlerVars, eventHandler(t, event))
 
 	event.Forms = append(event.Forms, form)
+	mu.Lock()
+	defer mu.Unlock()
 	if _, in := eventSubscriptions[t.Ref()]; !in {
 		eventSubscriptions[t.Ref()] = map[string]map[string]*wsConnection{}
 	}
@@ -185,9 +189,18 @@ func monitorPropertyObserver(c <-chan producer.PropertyChange) {
 			zlog.Trace().Str("ThingRef", propertyChange.ThingRef).Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver] channel closed")
 			break
 		}
-		if observers, ok := propertiesObservers[propertyChange.ThingRef][propertyChange.Name]; ok {
+		// Snapshot the connections under lock; the send itself is serialized
+		// per connection by wsConnection.mu.
+		mu.RLock()
+		observers, ok := propertiesObservers[propertyChange.ThingRef][propertyChange.Name]
+		conns := make([]*wsConnection, 0, len(observers))
+		for _, wsConn := range observers {
+			conns = append(conns, wsConn)
+		}
+		mu.RUnlock()
+		if ok {
 			zlog.Trace().Str("ThingRef", propertyChange.ThingRef).Str("property", propertyChange.Name).Msg("[protocolWebSocket:monitorPropertyObserver] Sending property change")
-			for _, wsConn := range observers {
+			for _, wsConn := range conns {
 				var send bool = true
 				if propertyChange.Handler != nil {
 					send = propertyChange.Handler(propertyChange.EmitParameters, wsConn.listenerParameters)
@@ -210,9 +223,16 @@ func monitorEvent(c <-chan producer.Event) {
 			zlog.Trace().Str("ThingRef", event.ThingRef).Str("property", event.Name).Msg("[protocolWebSocket:monitorEvent] channel closed")
 			break
 		}
-		if subscribers, ok := eventSubscriptions[event.ThingRef][event.Name]; ok {
+		mu.RLock()
+		subscribers, ok := eventSubscriptions[event.ThingRef][event.Name]
+		conns := make([]*wsConnection, 0, len(subscribers))
+		for _, wsConn := range subscribers {
+			conns = append(conns, wsConn)
+		}
+		mu.RUnlock()
+		if ok {
 			zlog.Trace().Str("ThingRef", event.ThingRef).Str("event", event.Name).Msg("[protocolWebSocket:monitorEvent] Sending event")
-			for _, wsConn := range subscribers {
+			for _, wsConn := range conns {
 				var send bool = true
 				if event.Handler != nil {
 					send = event.Handler(event.EmitParameters, wsConn.listenerParameters)

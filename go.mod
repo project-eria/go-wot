@@ -6,6 +6,7 @@ require (
 	github.com/gavv/httpexpect/v2 v2.16.0
 	github.com/gofiber/fiber/v2 v2.52.0
 	github.com/gofiber/websocket/v2 v2.2.1
+	github.com/grandcat/zeroconf v1.0.0
 	github.com/rs/zerolog v1.31.0
 )
 
@@ -21,7 +22,6 @@ require (
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.5.0 // indirect
-	github.com/grandcat/zeroconf v1.0.0 // indirect
 	github.com/hpcloud/tail v1.0.0 // indirect
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/klauspost/compress v1.17.4 // indirect
