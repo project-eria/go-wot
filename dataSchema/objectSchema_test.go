@@ -1,6 +1,7 @@
 package dataSchema
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/rs/zerolog"
@@ -18,47 +19,78 @@ func Test_ObjectSchemaTestSuite(t *testing.T) {
 
 func (ts *ObjectSchemaTestSuite) SetupSuite() {
 	zerolog.SetGlobalLevel(zerolog.Disabled)
-	stringType, _ := NewString(
-		StringMinLength(16),
-	)
+	// Object has no nested `properties`/`required` yet (see the TODO in
+	// objectSchema.go), so only the generic Data options apply here
 	ts.schema, _ = NewObject(
-		ObjectProperty("mystring", &stringType),
-		ObjectRequired([]string{"mystring"}),
+		ObjectDefault(map[string]interface{}{
+			"mystring": "A",
+		}),
 	)
 }
 
 func (ts *ObjectSchemaTestSuite) Test_ObjectSchemaNew() {
-	//ts.Equal("test", ts.schema.Default)
+	ts.Equal(map[string]interface{}{"mystring": "A"}, ts.schema.Default)
 	ts.Equal("object", ts.schema.Type)
 	ds := ts.schema.DataSchema.(Object)
-	ts.Equal([]string{"mystring"}, ds.Required)
-	ts.Len(ds.Properties, 1, "Properties map should have 1 element")
-	ts.Contains(ds.Properties, "mystring", "Properties should contain 'mystring'")
-	ts.Equal("string", ds.Properties["mystring"].Type, "mystring should have Type 'string'")
+	ts.NotNil(ds)
 }
 
-func (ts *ObjectSchemaTestSuite) Test_ObjectSchemaIsNullOrEmpty1() {
+func (ts *ObjectSchemaTestSuite) Test_ObjectSchemaNewUnit() {
+	schema, err := NewObject(
+		ObjectUnit("celsius"),
+	)
+	ts.Nil(err)
+	ts.Equal("celsius", schema.Unit)
+	ts.Nil(schema.Default)
+}
+
+func (ts *ObjectSchemaTestSuite) Test_ObjectSchemaFromString() {
+	result, err := ts.schema.FromString(`{"mystring":"A"}`)
+	ts.Nil(result)
+	ts.EqualError(err, "not implemented")
+}
+
+func (ts *ObjectSchemaTestSuite) Test_ObjectSchemaValidate1() {
+	var d interface{} = map[string]interface{}{
+		"a": "b",
+	}
+	err := ts.schema.Validate(d)
+	ts.Nil(err)
+}
+
+func (ts *ObjectSchemaTestSuite) Test_ObjectSchemaValidate2() {
+	// Only map[string]interface{} is accepted, a typed map is not
 	var d interface{} = map[string]string{
 		"a": "b",
 	}
-	res := ts.schema.IsNullOrEmpty(d)
-	ts.False(res)
-}
-func (ts *ObjectSchemaTestSuite) Test_ObjectSchemaIsNullOrEmpty2() {
-	var d interface{} = map[string]string{
-		"a": "",
-	}
-	res := ts.schema.IsNullOrEmpty(d)
-	ts.False(res)
-}
-func (ts *ObjectSchemaTestSuite) Test_ObjectSchemaIsNullOrEmpty3() {
-	var d interface{} = ""
-	res := ts.schema.IsNullOrEmpty(d)
-	ts.True(res)
+	err := ts.schema.Validate(d)
+	ts.EqualError(err, "incorrect object value type")
 }
 
-func (ts *ObjectSchemaTestSuite) Test_ObjectSchemaIsNullOrEmpty4() {
-	var d interface{} = map[string]string{}
-	res := ts.schema.IsNullOrEmpty(d)
-	ts.True(res)
+func (ts *ObjectSchemaTestSuite) Test_ObjectSchemaValidate3() {
+	var d interface{} = ""
+	err := ts.schema.Validate(d)
+	ts.EqualError(err, "incorrect object value type")
+}
+
+func (ts *ObjectSchemaTestSuite) Test_ObjectSchemaValidate4() {
+	var d interface{}
+	err := ts.schema.Validate(d)
+	ts.EqualError(err, "missing value")
+}
+
+func (ts *ObjectSchemaTestSuite) Test_ObjectSchemaJsonMarshal() {
+	result, err := json.Marshal(&ts.schema)
+	ts.Nil(err)
+	ts.Equal(`{"default":{"mystring":"A"},"type":"object"}`, string(result))
+}
+
+func (ts *ObjectSchemaTestSuite) Test_ObjectSchemaJsonUnmarshal() {
+	j := []byte(`{"default":{"mystring":"A"},"type":"object"}`)
+	var result Data
+	err := json.Unmarshal(j, &result)
+	ts.Nil(err)
+	ts.Equal(map[string]interface{}{"mystring": "A"}, result.Default)
+	ts.Equal("object", result.Type)
+	ts.Equal(Object{}, result.DataSchema)
 }
