@@ -71,12 +71,11 @@ func (d *Data) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(b2) > 2 { // '{}' is the empty object
-		b3 := b1[:len(b1)-1] // remove last parenthesis
-		b2[0] = ','          // replace first parenthesis, with a comma
-		return append(b3, b2...), nil
-	}
-	return b1, nil // no DataSchema
+
+	// b2 is `{}` when there is no DataSchema, or `null` when DataSchema is nil:
+	// MergeJSONObjects skips both, so an empty Data marshals to `{}` instead of
+	// producing invalid JSON.
+	return MergeJSONObjects(b1, b2)
 }
 
 func (d *Data) UnmarshalJSON(data []byte) error {

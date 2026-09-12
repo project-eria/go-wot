@@ -3,6 +3,8 @@ package interaction
 import (
 	"encoding/json"
 	"strings"
+
+	"github.com/project-eria/go-wot/dataSchema"
 )
 
 type Form struct {
@@ -37,9 +39,7 @@ func (f *Form) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 
-		b3 := b1[:len(b1)-1] // remove last parenthesis
-		b2[0] = ','          // replace first parenthesis, with a comma
-		return append(b3, b2...), nil
+		return dataSchema.MergeJSONObjects(b1, b2)
 	}
 	return b1, nil // no supplement
 }

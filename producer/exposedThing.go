@@ -38,11 +38,16 @@ type ExposedThing interface {
 }
 
 type exposedThing struct {
-	td                     *thing.Thing
-	ref                    string
-	exposedProperties      map[string]ExposedProperty
-	exposedActions         map[string]ExposedAction
-	exposedEvents          map[string]ExposedEvent
+	td  *thing.Thing
+	ref string
+	// The exposed maps are fully built in NewExposedThing and never mutated
+	// afterwards: read access without lock is safe.
+	exposedProperties map[string]ExposedProperty
+	exposedActions    map[string]ExposedAction
+	exposedEvents     map[string]ExposedEvent
+	// mu guards the channel slices: protocol servers (and automations) request
+	// channels at runtime while Emit* iterates them.
+	mu                     sync.RWMutex
 	propertyChangeChannels []chan PropertyChange
 	eventChannels          []chan Event
 	_wait                  *sync.WaitGroup
@@ -179,7 +184,11 @@ func (t *exposedThing) EmitPropertyChange(name string, data interface{}, paramet
 	if _, ok := t.td.Properties[name]; ok {
 		p := t.exposedProperties[name]
 		// Send the notification to all protocols, that requested a channel
-		for _, c := range t.propertyChangeChannels {
+		t.mu.RLock()
+		channels := make([]chan PropertyChange, len(t.propertyChangeChannels))
+		copy(channels, t.propertyChangeChannels)
+		t.mu.RUnlock()
+		for _, c := range channels {
 			go func(c chan PropertyChange) {
 				select {
 				case c <- PropertyChange{ThingRef: t.ref, Name: name, Value: data, Handler: p.GetObserverSelectorHandler(), EmitParameters: parameters}:
@@ -264,7 +273,11 @@ func (t *exposedThing) EmitEvent(name string, parameters map[string]interface{})
 				return err
 			}
 			// Send the notification to all protocols, that requested a channel
-			for _, c := range t.eventChannels {
+			t.mu.RLock()
+			channels := make([]chan Event, len(t.eventChannels))
+			copy(channels, t.eventChannels)
+			t.mu.RUnlock()
+			for _, c := range channels {
 				go func(c chan Event) {
 					select {
 					case c <- Event{ThingRef: t.ref, Name: name, Value: value, Handler: e.GetListenerSelectorHandler(), EmitParameters: parameters}:
@@ -290,7 +303,9 @@ func (t *exposedThing) GetPropertyChangeChannel() <-chan PropertyChange {
 	// Limit channel size to the number of property
 	size := len(t.exposedProperties)
 	c := make(chan PropertyChange, size)
+	t.mu.Lock()
 	t.propertyChangeChannels = append(t.propertyChangeChannels, c)
+	t.mu.Unlock()
 	return c
 }
 
@@ -298,6 +313,8 @@ func (t *exposedThing) GetEventChannel() <-chan Event {
 	// Limit channel size to the number of property
 	size := len(t.exposedEvents)
 	c := make(chan Event, size)
+	t.mu.Lock()
 	t.eventChannels = append(t.eventChannels, c)
+	t.mu.Unlock()
 	return c
 }
