@@ -30,10 +30,15 @@ const (
 //
 // Per the spec, all three fields have defaults: `type` defaults to "Thing",
 // `scheme` defaults to "http", and `td` is mandatory.
+//
+// Extra holds the non-standard keys (e.g. the `status` announced by ERIA
+// ESP32 devices), so orchestration layers can react to re-announcements
+// without polling the device over HTTP.
 type TXT struct {
 	TD     string
 	Type   string
 	Scheme string
+	Extra  map[string]string
 }
 
 func validScheme(s string) bool {
@@ -109,6 +114,12 @@ func ParseTXT(records []string) (TXT, error) {
 			t.Type = val
 		case "scheme":
 			t.Scheme = val
+		default:
+			// Keep unknown keys (forward compatibility, ERIA `status`...)
+			if t.Extra == nil {
+				t.Extra = map[string]string{}
+			}
+			t.Extra[key] = val
 		}
 	}
 	if t.TD == "" {
