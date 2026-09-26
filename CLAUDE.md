@@ -85,6 +85,6 @@ Producer uses `sync.RWMutex` for thread-safe access to exposed things, propertie
 
 - **HTTP server**: `gofiber/fiber/v2`
 - **WebSocket**: `gofiber/websocket/v2` (server) + `gorilla/websocket` (client)
-- **mDNS/DNS-SD**: `grandcat/zeroconf`
+- **mDNS/DNS-SD**: `brutella/dnssd` (responder answers host A queries and probes for name conflicts; Browse runs in 10 s rounds, see `dnssdBrowser.go`)
 - **Logging**: `rs/zerolog`
 - **Testing**: `stretchr/testify` + `gavv/httpexpect/v2`
