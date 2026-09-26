@@ -1,13 +1,14 @@
 package protocolDnssd
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/grandcat/zeroconf"
+	"github.com/brutella/dnssd"
 	"github.com/project-eria/go-wot/producer"
 	zlog "github.com/rs/zerolog/log"
 )
@@ -17,18 +18,20 @@ import (
 // it only advertises the location of an HTTP server that does. The user is
 // expected to add an HttpServer alongside this Advertiser on the same Producer.
 //
-// Instance-name conflicts are NOT resolved (RFC 6762 §9): zeroconf registers
-// the name as given, so two producers advertising the same TD id will clash
-// on the network. Pick unique Thing ids per deployment.
+// The responder (brutella/dnssd) answers queries for the service AND for
+// the host name, and probes before announcing (RFC 6762 §8-9): an instance
+// name already taken on the network is renamed ("name (2)"), so two
+// producers advertising the same TD id no longer clash silently.
 type Advertiser struct {
 	port      int
 	scheme    string // "http" or "https"
 	domain    string // typically "local."
 	tdPathFor func(ref string) string
 	skip      func(ref string) bool
-	mu        sync.Mutex // guards entries and servers
+	mu        sync.Mutex // guards entries, cancel and done
 	entries   []advertEntry
-	servers   []*zeroconf.Server
+	cancel    context.CancelFunc // stops the responder (sends Goodbye)
+	done      chan struct{}      // closed when the responder has returned
 }
 
 type advertEntry struct {
@@ -111,32 +114,6 @@ func (a *Advertiser) Expose(ref string, t producer.ExposedThing) {
 	})
 }
 
-// pickInterfaces returns the single interface used to reach the public
-// internet (i.e. the default-route interface). Limiting to one interface
-// avoids duplicate mDNS announcements on hosts connected to several LANs
-// (Wi-Fi + Ethernet, bridge, etc.). Falls back to all multicast-capable
-// non-loopback interfaces if the primary one cannot be detected.
-func pickInterfaces() []net.Interface {
-	if iface, _ := primary(); iface != nil {
-		return []net.Interface{*iface}
-	}
-	all, err := net.Interfaces()
-	if err != nil {
-		return nil
-	}
-	var out []net.Interface
-	for _, i := range all {
-		if i.Flags&net.FlagUp == 0 ||
-			i.Flags&net.FlagMulticast == 0 ||
-			i.Flags&net.FlagLoopback != 0 ||
-			i.Flags&net.FlagPointToPoint != 0 {
-			continue
-		}
-		out = append(out, i)
-	}
-	return out
-}
-
 // primary returns the interface that owns the source IP the kernel would
 // pick to reach the public internet, plus that IP. No packet is actually
 // sent — UDP Dial only resolves the route.
@@ -167,10 +144,11 @@ func primary() (*net.Interface, net.IP) {
 }
 
 // hostnameForIP turns a primary IPv4 address into a DNS-safe hostname
-// label, e.g. 192.168.1.42 -> "192-168-1-42". The mDNS server then
-// publishes an A record mapping <label>.local. -> <ip>, so the SRV
-// Target shown by `dns-sd -L` and resolved by consumers maps directly
-// to the IP without going through the host's .local name.
+// label, e.g. 192.168.1.42 -> "192-168-1-42". The responder answers A
+// queries for <label>.local. with the IP, so the SRV Target resolves to the
+// primary IP only (never a Docker bridge or a second NIC). Every process on
+// a host publishes the same label with the same address: identical records,
+// hence no probing conflict between them.
 func hostnameForIP(ip net.IP) string {
 	if v4 := ip.To4(); v4 != nil {
 		return strings.ReplaceAll(v4.String(), ".", "-")
@@ -178,7 +156,8 @@ func hostnameForIP(ip net.IP) string {
 	return strings.ReplaceAll(ip.String(), ":", "-")
 }
 
-// Start opens one mDNS registration per exposed Thing.
+// Start registers every exposed Thing on one mDNS responder and runs it in
+// the background until Stop.
 func (a *Advertiser) Start() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -191,61 +170,76 @@ func (a *Advertiser) Start() {
 		zlog.Error().Msg("[protocolDnssd:Start] cannot determine primary IP")
 		return
 	}
-	var ifaces []net.Interface
+	var ifaces []string
 	if iface != nil {
-		ifaces = []net.Interface{*iface}
+		ifaces = []string{iface.Name}
+	}
+	rp, err := dnssd.NewResponder()
+	if err != nil {
+		zlog.Error().Err(err).Msg("[protocolDnssd:Start] cannot create the mDNS responder")
+		return
 	}
 	host := hostnameForIP(ip)
 	for _, e := range a.entries {
-		txt, err := BuildTXT(e.tdPath, EntityThing, a.scheme)
+		records, err := BuildTXT(e.tdPath, EntityThing, a.scheme)
 		if err != nil {
 			zlog.Error().Err(err).Str("ref", e.instance).Msg("[protocolDnssd:Start] BuildTXT")
 			continue
 		}
-		srv, err := zeroconf.RegisterProxy(
-			e.instance,
-			ServiceWoTTCP,
-			a.domain,
-			a.port,
-			host,
-			[]string{ip.String()},
-			txt,
-			ifaces,
-		)
+		txt := map[string]string{}
+		for _, kv := range records {
+			k, v, _ := strings.Cut(kv, "=")
+			txt[k] = v
+		}
+		srv, err := dnssd.NewService(dnssd.Config{
+			Name:   e.instance,
+			Type:   ServiceWoTTCP,
+			Domain: strings.TrimSuffix(a.domain, "."),
+			Host:   host,
+			Text:   txt,
+			IPs:    []net.IP{ip}, // only the primary IP in the A record
+			Port:   a.port,
+			Ifaces: ifaces,
+		})
 		if err != nil {
+			zlog.Error().Err(err).Str("ref", e.instance).Msg("[protocolDnssd:Start] service")
+			continue
+		}
+		if _, err := rp.Add(srv); err != nil {
 			zlog.Error().Err(err).Str("ref", e.instance).Msg("[protocolDnssd:Start] register failed")
 			continue
 		}
-		a.servers = append(a.servers, srv)
 		zlog.Info().Str("instance", e.instance).Str("td", e.tdPath).Str("host", host).
 			Str("ip", ip.String()).Int("port", a.port).Msg("[protocolDnssd:Start] advertising")
 	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	a.cancel = cancel
+	a.done = make(chan struct{})
+	go func(done chan struct{}) {
+		defer close(done)
+		// Probes, announces, answers queries; on cancel sends Goodbye
+		if err := rp.Respond(ctx); err != nil && ctx.Err() == nil {
+			zlog.Error().Err(err).Msg("[protocolDnssd] responder stopped")
+		}
+	}(a.done)
 }
 
-// Stop tears down all active mDNS registrations. zeroconf v1.0.0's Shutdown
-// can hang indefinitely on macOS because its recv goroutines do not always
-// unblock when the UDP socket is closed (upstream issue). The Goodbye packet
-// is multicasted at the start of Shutdown — well before the blocking Wait —
-// so we run Shutdown in a goroutine and cap our wait at 1s: enough for the
-// Goodbye to leave the host and for the kernel to flush, short enough to
-// never freeze the process.
+// Stop cancels the responder, which multicasts Goodbye packets, and waits
+// for it (bounded: a process exit must never hang on mDNS).
 func (a *Advertiser) Stop() {
 	a.mu.Lock()
-	servers := a.servers
-	a.servers = nil
+	cancel, done := a.cancel, a.done
+	a.cancel, a.done = nil, nil
 	a.mu.Unlock()
-	zlog.Info().Int("count", len(servers)).Msg("[protocolDnssd:Stop] sending Goodbye")
-	done := make(chan struct{})
-	go func() {
-		for _, s := range servers {
-			s.Shutdown()
-		}
-		close(done)
-	}()
+	if cancel == nil {
+		return
+	}
+	zlog.Info().Msg("[protocolDnssd:Stop] sending Goodbye")
+	cancel()
 	select {
 	case <-done:
-		zlog.Debug().Msg("[protocolDnssd:Stop] zeroconf Shutdown completed cleanly")
-	case <-time.After(1 * time.Second):
-		zlog.Debug().Msg("[protocolDnssd:Stop] zeroconf Shutdown still running after 1s, abandoning wait")
+	case <-time.After(2 * time.Second):
+		zlog.Debug().Msg("[protocolDnssd:Stop] responder still running after 2s, abandoning wait")
 	}
 }

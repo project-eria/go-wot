@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strings"
+	"time"
 
-	"github.com/grandcat/zeroconf"
+	"github.com/brutella/dnssd"
 	zlog "github.com/rs/zerolog/log"
 )
 
@@ -41,47 +43,65 @@ type BrowseOptions struct {
 // A process that both advertises (Advertiser) and browses will discover
 // its own announcements: mDNS has no notion of "self". Filter by instance
 // name on the caller side if self-discovery is unwanted.
+// browseRound bounds one lookup: each round starts from a fresh cache and
+// sends a new PTR query. brutella/dnssd reports an instance only once per
+// lookup, and the first sighting of a newly starting service is often its
+// probe (SRV without TXT) — unusable and never reported again. Restarting
+// the lookup makes such a service visible at the next round at the latest,
+// with the complete records a direct query returns.
+const browseRound = 10 * time.Second
+
+// Browse emits every `_wot._tcp` instance, once per round (consumers must
+// accept repeats), until ctx is done; the channel is then closed.
 func Browse(ctx context.Context, opts BrowseOptions) (<-chan Entry, error) {
 	if opts.Domain == "" {
 		opts.Domain = "local."
 	}
-	resolver, err := zeroconf.NewResolver(nil)
-	if err != nil {
-		return nil, fmt.Errorf("zeroconf resolver: %w", err)
-	}
-	rawCh := make(chan *zeroconf.ServiceEntry, 16)
+	service := ServiceWoTTCP + "." + strings.TrimSuffix(opts.Domain, ".") + "."
 	out := make(chan Entry, 16)
 
 	go func() {
 		defer close(out)
-		for raw := range rawCh {
+		add := func(raw dnssd.BrowseEntry) {
 			entry, err := convert(raw, opts)
 			if err != nil {
-				zlog.Debug().Err(err).Str("instance", raw.Instance).
+				zlog.Debug().Err(err).Str("instance", raw.Name).
 					Msg("[protocolDnssd:Browse] dropping entry")
-				continue
+				return
 			}
 			select {
 			case <-ctx.Done():
-				return
 			case out <- entry:
 			}
 		}
+		rmv := func(dnssd.BrowseEntry) {} // consumers track liveness themselves
+		for ctx.Err() == nil {
+			round, cancel := context.WithTimeout(ctx, browseRound)
+			err := dnssd.LookupType(round, service, add, rmv)
+			cancel()
+			if err != nil && round.Err() == nil {
+				// Failed before its time (no network...): do not spin
+				zlog.Warn().Err(err).Msg("[protocolDnssd:Browse] lookup failed, retrying")
+				select {
+				case <-ctx.Done():
+				case <-time.After(5 * time.Second):
+				}
+			}
+		}
 	}()
-
-	if err := resolver.Browse(ctx, ServiceWoTTCP, opts.Domain, rawCh); err != nil {
-		return nil, fmt.Errorf("browse: %w", err)
-	}
 	return out, nil
 }
 
-func convert(raw *zeroconf.ServiceEntry, opts BrowseOptions) (Entry, error) {
-	txt, err := ParseTXT(raw.Text)
+func convert(raw dnssd.BrowseEntry, opts BrowseOptions) (Entry, error) {
+	records := make([]string, 0, len(raw.Text))
+	for k, v := range raw.Text {
+		records = append(records, k+"="+v)
+	}
+	txt, err := ParseTXT(records)
 	if err != nil {
 		return Entry{}, err
 	}
-	addrs := append([]net.IP{}, raw.AddrIPv4...)
-	addrs = append(addrs, raw.AddrIPv6...)
+	addrs := append([]net.IP{}, raw.IPs...)
 	if len(addrs) == 0 {
 		return Entry{}, fmt.Errorf("no addresses")
 	}
@@ -99,8 +119,8 @@ func convert(raw *zeroconf.ServiceEntry, opts BrowseOptions) (Entry, error) {
 		Path:   txt.TD,
 	}
 	return Entry{
-		Instance: raw.Instance,
-		Host:     raw.HostName,
+		Instance: raw.Name,
+		Host:     raw.Host,
 		Port:     raw.Port,
 		Addrs:    addrs,
 		TXT:      txt,
