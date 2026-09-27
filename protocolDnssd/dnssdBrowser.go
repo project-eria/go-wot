@@ -49,7 +49,7 @@ type BrowseOptions struct {
 // probe (SRV without TXT) — unusable and never reported again. Restarting
 // the lookup makes such a service visible at the next round at the latest,
 // with the complete records a direct query returns.
-const browseRound = 10 * time.Second
+var browseRound = 10 * time.Second // var: shortened by tests
 
 // Browse emits every `_wot._tcp` instance, once per round (consumers must
 // accept repeats), until ctx is done; the channel is then closed.
@@ -76,10 +76,19 @@ func Browse(ctx context.Context, opts BrowseOptions) (<-chan Entry, error) {
 		}
 		rmv := func(dnssd.BrowseEntry) {} // consumers track liveness themselves
 		for ctx.Err() == nil {
-			round, cancel := context.WithTimeout(ctx, browseRound)
+			// brutella/dnssd stops its socket readers only on context.Canceled:
+			// a round ending on a deadline (its own, or the caller's) leaves
+			// them spinning forever on a closed socket. So each round runs on
+			// a context detached from the caller's error, always ended by cancel.
+			round, cancel := context.WithCancel(context.Background())
+			stopParent := context.AfterFunc(ctx, cancel)
+			timer := time.AfterFunc(browseRound, cancel)
 			err := dnssd.LookupType(round, service, add, rmv)
+			early := round.Err() == nil
+			timer.Stop()
+			stopParent()
 			cancel()
-			if err != nil && round.Err() == nil {
+			if err != nil && early {
 				// Failed before its time (no network...): do not spin
 				zlog.Warn().Err(err).Msg("[protocolDnssd:Browse] lookup failed, retrying")
 				select {
