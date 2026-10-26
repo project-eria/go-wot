@@ -20,14 +20,20 @@ type Data struct {
 	// (Redondency, with affordance title) Description string `json:"description,omitempty"` // (optional)	Provides additional (human-readable) information based on a default language.
 	// // descriptions 	Can be used to support (human-readable) information in different languages. Also see MultiLanguage. 	optional 	Map of MultiLanguage
 
-	Const   interface{} `json:"const,omitempty"`   // (optional) Provides a constant value.
-	Default interface{} `json:"default,omitempty"` // (optional) Supply a default value. The value should validate against the data schema in which it resides.
-	Unit    string      `json:"unit,omitempty"`    // (optional) Provides unit information that is used, e.g., in international science, engineering, and business.
-	// oneOf	Used to ensure that the data is valid against one of the specified schemas in the array.	optional	Array of DataSchema
-	Enum []interface{} `json:"enum,omitempty"` // (optional) Restricted set of values provided as an array.
+	Const   interface{}   `json:"const,omitempty"`   // (optional) Provides a constant value.
+	Default interface{}   `json:"default,omitempty"` // (optional) Supply a default value. The value should validate against the data schema in which it resides.
+	Unit    string        `json:"unit,omitempty"`    // (optional) Provides unit information that is used, e.g., in international science, engineering, and business.
+	OneOf   []ConstSchema `json:"oneOf,omitempty"`   // (optional) Values allowed, each with its human-readable title (subset of DataSchema: const + title only).
+	Enum    []interface{} `json:"enum,omitempty"`    // (optional) Restricted set of values provided as an array.
 	// TODO Format     string        `json:"format,omitempty"` // (optional) Allows validation based on a format pattern such as "date-time", "email", "uri", etc.
 	Type       string `json:"type,omitempty"` // (optional) Assignment of JSON-based data types compatible with JSON Schema (one of boolean, integer, number, string, object, array, or null)
 	DataSchema `json:"-"`
+}
+
+// ConstSchema is one allowed value of a oneOf list, with its human-readable title.
+type ConstSchema struct {
+	Const interface{} `json:"const"`
+	Title string      `json:"title,omitempty"`
 }
 
 func (d *Data) Validate(value interface{}) error {

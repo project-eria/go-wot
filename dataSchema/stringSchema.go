@@ -47,6 +47,7 @@ func NewString(options ...StringOption) (Data, error) {
 		Unit:    opts.Unit,
 		Type:    "string",
 		Enum:    opts.Enum,
+		OneOf:   opts.OneOf,
 		DataSchema: String{
 			MinLength:     opts.MinLength,
 			MaxLength:     opts.MaxLength,
@@ -68,6 +69,7 @@ type StringOptions struct {
 	Default   interface{}
 	Unit      string
 	Enum      []interface{}
+	OneOf     []ConstSchema
 	MinLength *uint16
 	MaxLength *uint16
 	Pattern   string
@@ -109,6 +111,13 @@ func StringEnum(enum []string) StringOption {
 		for _, e := range enum {
 			opts.Enum = append(opts.Enum, e)
 		}
+	}
+}
+
+// StringOneOf restricts the values to the given ones, each with a title.
+func StringOneOf(values ...ConstSchema) StringOption {
+	return func(opts *StringOptions) {
+		opts.OneOf = values
 	}
 }
 

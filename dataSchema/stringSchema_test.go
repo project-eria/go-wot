@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -96,4 +97,16 @@ func (ts *StringSchemaTestSuite) Test_StringSchemaJsonUnmarshal() {
 	ts.Equal(uint16(2), *result.DataSchema.(String).MinLength)
 	ts.Equal(uint16(9), *result.DataSchema.(String).MaxLength)
 	ts.Equal(`^[A-Za-z]*$`, result.DataSchema.(String).Pattern)
+}
+
+func TestArrayItemsOneOf(t *testing.T) {
+	items, _ := NewString(StringOneOf(ConstSchema{Const: "away", Title: "Absent"}))
+	d, _ := NewArray(ArrayItems(items))
+	b, err := json.Marshal(&d)
+	assert.NoError(t, err)
+	assert.JSONEq(t, `{"type":"array","items":{"type":"string","oneOf":[{"const":"away","title":"Absent"}]}}`, string(b))
+
+	var back Data
+	assert.NoError(t, json.Unmarshal(b, &back))
+	assert.Equal(t, "Absent", back.DataSchema.(Array).Items.OneOf[0].Title)
 }

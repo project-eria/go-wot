@@ -8,7 +8,7 @@ import (
 type Array struct {
 	/* TODO https://www.w3.org/TR/wot-thing-description11/#arrayschema*/
 
-	// Items    DataSchema `json:"items,omitempty"`    // Array of DataSchema // (optional) Used to define the characteristics of an array.
+	Items    *Data `json:"items,omitempty"`    // (optional) Used to define the characteristics of an array (single schema for all items).
 	MinItems *uint `json:"minItems,omitempty"` // (optional) Defines the minimum number of items that have to be in the array.
 	MaxItems *uint `json:"maxItems,omitempty"` // (optional) Defines the maximum number of items that have to be in the array.
 }
@@ -28,6 +28,7 @@ func NewArray(options ...ArrayOption) (Data, error) {
 		Unit:    opts.Unit,
 		Type:    "array",
 		DataSchema: Array{
+			Items:    opts.Items,
 			MinItems: opts.MinItems,
 			MaxItems: opts.MaxItems,
 		},
@@ -45,6 +46,7 @@ type ArrayOption func(*ArrayOptions)
 type ArrayOptions struct {
 	Default  interface{}
 	Unit     string
+	Items    *Data
 	MinItems *uint
 	MaxItems *uint
 }
@@ -58,6 +60,12 @@ func ArrayDefault[T SimpleType](value []T) ArrayOption {
 func ArrayUnit(unit string) ArrayOption {
 	return func(opts *ArrayOptions) {
 		opts.Unit = unit
+	}
+}
+
+func ArrayItems(items Data) ArrayOption {
+	return func(opts *ArrayOptions) {
+		opts.Items = &items
 	}
 }
 
