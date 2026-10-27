@@ -98,3 +98,32 @@ func TestRoundTrip(t *testing.T) {
 		t.Errorf("round-trip mismatch: %+v", parsed)
 	}
 }
+
+func TestServiceType(t *testing.T) {
+	valid := map[string]string{
+		"":            "_wot._tcp",
+		"dummy":       "_wot-dummy._tcp",
+		"banc-2":      "_wot-banc-2._tcp",
+		"abcdefghijk": "_wot-abcdefghijk._tcp", // 11 characters: "wot-" + 11 = 15
+	}
+	for network, want := range valid {
+		got, err := ServiceType(network)
+		if err != nil || got != want {
+			t.Errorf("ServiceType(%q) = %q, %v; want %q", network, got, err, want)
+		}
+	}
+	for _, network := range []string{"abcdefghijkl", "Dummy", "-dummy", "dummy-", "du--mmy", "du_mmy", "dü"} {
+		if _, err := ServiceType(network); err == nil {
+			t.Errorf("ServiceType(%q): expected an error", network)
+		}
+	}
+}
+
+func TestInvalidNetworkRejected(t *testing.T) {
+	if _, err := NewAdvertiser(Options{Port: 80, Network: "Bad"}); err == nil {
+		t.Error("NewAdvertiser: expected an error")
+	}
+	if _, err := Browse(t.Context(), BrowseOptions{Network: "Bad"}); err == nil {
+		t.Error("Browse: expected an error")
+	}
+}

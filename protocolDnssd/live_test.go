@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"runtime"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -82,4 +83,48 @@ func checkSystemResolution(t *testing.T, ip net.IP) {
 		}
 	}
 	t.Fatalf("host %s resolved to %v, want %s", host, addrs, ip)
+}
+
+// TestNetworksIsolated runs on the real network (Linux only: on macOS
+// mDNSResponder keeps the multicast replies from an in-process Browse). A
+// Thing advertised on a named network is found there, never on the default
+// network.
+func TestNetworksIsolated(t *testing.T) {
+	if testing.Short() || runtime.GOOS != "linux" {
+		t.Skip("needs multicast on the real network, Linux")
+	}
+	network := "t" + strconv.FormatInt(int64(os.Getpid()), 36)
+	ref := "dnssd-net-" + network
+
+	a, err := NewAdvertiser(Options{Port: 18081, Network: network})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.Expose(ref, nil)
+	a.Start()
+	defer a.Stop()
+
+	if !browseFinds(t, network, ref) {
+		t.Fatal("not found on its own network")
+	}
+	if browseFinds(t, "", ref) {
+		t.Fatal("seen on the default network")
+	}
+}
+
+// browseFinds browses a network for 2 rounds, looking for one instance
+func browseFinds(t *testing.T, network, instance string) bool {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*browseRound)
+	defer cancel()
+	entries, err := Browse(ctx, BrowseOptions{Network: network, PreferIPv4: true, AllowPrivate: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for e := range entries {
+		if e.Instance == instance {
+			return true
+		}
+	}
+	return false
 }

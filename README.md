@@ -33,6 +33,19 @@ for entry := range entries {
 }
 ```
 
+### Networks
+
+Several independent houses can share a LAN: `Options.Network` and
+`BrowseOptions.Network` name the network, which selects the service type
+(`ServiceType`). The default network (`""`) is the standard `_wot._tcp`;
+a named one uses `_wot-<network>._tcp` (1 to 11 characters among
+`[a-z0-9-]`). Advertisers and browsers of different networks never see each
+other.
+
+```go
+protocolDnssd.NewAdvertiser(protocolDnssd.Options{Port: 8888, Network: "dummy"}) // _wot-dummy._tcp
+```
+
 Notes:
 - A process that both announces and browses sees its own announcements —
   filter by instance name.
@@ -46,6 +59,7 @@ Notes:
 # macOS
 dns-sd -B _wot._tcp local.
 dns-sd -L "<instance>" _wot._tcp local.
+dns-sd -B _wot-dummy._tcp local.   # a named network
 
 # Linux (Avahi)
 avahi-browse -r _wot._tcp

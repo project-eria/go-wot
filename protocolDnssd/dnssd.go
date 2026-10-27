@@ -1,5 +1,6 @@
 // Package protocolDnssd implements DNS-Based Service Discovery (DNS-SD)
-// for the W3C Web of Things, scoped to the `_wot._tcp` service type.
+// for the W3C Web of Things, scoped to the `_wot._tcp` service type, or to
+// `_wot-<network>._tcp` for a named network (see ServiceType).
 //
 // Reference: https://www.w3.org/TR/wot-discovery/#introduction-dns-sd-sec
 package protocolDnssd
@@ -55,6 +56,35 @@ func validEntityType(s string) bool {
 		return true
 	}
 	return false
+}
+
+// maxNetworkLen keeps "wot-<network>" within the 15-character limit of a
+// DNS-SD service name (RFC 6335 §5.1)
+const maxNetworkLen = 11
+
+// ServiceType returns the DNS-SD service type of a network: the standard
+// `_wot._tcp` for the default network (""), `_wot-<network>._tcp` for a
+// named one. Advertisers and browsers of different networks never see each
+// other, so several ERIA houses can share a LAN.
+//
+// A network name is 1 to 11 characters among [a-z0-9-], with no hyphen at
+// either end and no two in a row.
+func ServiceType(network string) (string, error) {
+	if network == "" {
+		return ServiceWoTTCP, nil
+	}
+	if len(network) > maxNetworkLen {
+		return "", fmt.Errorf("network %q: at most %d characters", network, maxNetworkLen)
+	}
+	if network[0] == '-' || network[len(network)-1] == '-' || strings.Contains(network, "--") {
+		return "", fmt.Errorf("network %q: no hyphen at either end or twice in a row", network)
+	}
+	for _, c := range network {
+		if (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '-' {
+			return "", fmt.Errorf("network %q: only lowercase letters, digits and hyphens", network)
+		}
+	}
+	return "_wot-" + network + "._tcp", nil
 }
 
 // BuildTXT serializes a TXT record for the `_wot._tcp` service type.

@@ -39,7 +39,8 @@ securityScheme/     Security definitions (currently only NoSecurity)
 ├── consumer/       Client-side: consume Things, read/write/observe
 ├── protocolHttp/   HTTP protocol binding (Fiber v2)
 ├── protocolWebSocket/  WebSocket binding (extends HTTP, for observe/events)
-└── protocolDnssd/  DNS-SD discovery binding (_wot._tcp): Advertiser (a
+└── protocolDnssd/  DNS-SD discovery binding (_wot._tcp, or _wot-<network>._tcp
+                    for a named network, see ServiceType): Advertiser (a
                     ProtocolServer announcing exposed Things via mDNS) +
                     Browse (consumer-side discovery). TXT records td/type/
                     scheme validated per W3C WoT Discovery. Browse rejects

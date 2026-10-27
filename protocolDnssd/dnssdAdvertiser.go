@@ -14,9 +14,10 @@ import (
 )
 
 // Advertiser is a producer.ProtocolServer that registers each exposed Thing
-// as a `_wot._tcp` mDNS service. It does NOT serve the Thing Description —
-// it only advertises the location of an HTTP server that does. The user is
-// expected to add an HttpServer alongside this Advertiser on the same Producer.
+// as a `_wot._tcp` mDNS service (`_wot-<network>._tcp` on a named network).
+// It does NOT serve the Thing Description — it only advertises the location
+// of an HTTP server that does. The user is expected to add an HttpServer
+// alongside this Advertiser on the same Producer.
 //
 // The responder (brutella/dnssd) answers queries for the service AND for
 // the host name, and probes before announcing (RFC 6762 §8-9): an instance
@@ -26,6 +27,7 @@ type Advertiser struct {
 	port      int
 	scheme    string // "http" or "https"
 	domain    string // typically "local."
+	service   string // DNS-SD service type, from Options.Network
 	tdPathFor func(ref string) string
 	skip      func(ref string) bool
 	mu        sync.Mutex // guards entries, cancel and done
@@ -47,6 +49,9 @@ type Options struct {
 	Scheme string
 	// Domain for mDNS, defaults to "local."
 	Domain string
+	// Network names the ERIA network to advertise on; "" is the default
+	// network (`_wot._tcp`). See ServiceType.
+	Network string
 	// TDPathFor maps a Thing ref to an absolute TD path. Defaults to "/<ref>",
 	// matching the route registered by HttpServer.Expose.
 	TDPathFor func(ref string) string
@@ -68,6 +73,10 @@ func NewAdvertiser(opts Options) (*Advertiser, error) {
 	if opts.Domain == "" {
 		opts.Domain = "local."
 	}
+	service, err := ServiceType(opts.Network)
+	if err != nil {
+		return nil, err
+	}
 	if opts.TDPathFor == nil {
 		opts.TDPathFor = func(ref string) string { return "/" + ref }
 	}
@@ -75,6 +84,7 @@ func NewAdvertiser(opts Options) (*Advertiser, error) {
 		port:      opts.Port,
 		scheme:    opts.Scheme,
 		domain:    opts.Domain,
+		service:   service,
 		tdPathFor: opts.TDPathFor,
 		skip:      opts.Skip,
 	}, nil
@@ -193,7 +203,7 @@ func (a *Advertiser) Start() {
 		}
 		srv, err := dnssd.NewService(dnssd.Config{
 			Name:   e.instance,
-			Type:   ServiceWoTTCP,
+			Type:   a.service,
 			Domain: strings.TrimSuffix(a.domain, "."),
 			Host:   host,
 			Text:   txt,
@@ -209,7 +219,7 @@ func (a *Advertiser) Start() {
 			zlog.Error().Err(err).Str("ref", e.instance).Msg("[protocolDnssd:Start] register failed")
 			continue
 		}
-		zlog.Info().Str("instance", e.instance).Str("td", e.tdPath).Str("host", host).
+		zlog.Info().Str("instance", e.instance).Str("service", a.service).Str("td", e.tdPath).Str("host", host).
 			Str("ip", ip.String()).Int("port", a.port).Msg("[protocolDnssd:Start] advertising")
 	}
 
