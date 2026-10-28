@@ -27,6 +27,10 @@ const (
 	maxTXTValueLen = 255
 )
 
+// TXTNode is the TXT key holding the name of the announcing machine (its
+// hostname), found in TXT.Extra on the consumer side.
+const TXTNode = "node"
+
 // TXT represents the parsed contents of a `_wot._tcp` TXT record.
 //
 // Per the spec, all three fields have defaults: `type` defaults to "Thing",

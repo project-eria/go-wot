@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -190,6 +191,10 @@ func (a *Advertiser) Start() {
 		return
 	}
 	host := hostnameForIP(ip)
+	// The SRV host is built from the IP: the machine's own name goes in the
+	// TXT record, for consumers that group Things by machine
+	node, _ := os.Hostname()
+	node, _, _ = strings.Cut(node, ".")
 	for _, e := range a.entries {
 		records, err := BuildTXT(e.tdPath, EntityThing, a.scheme)
 		if err != nil {
@@ -200,6 +205,9 @@ func (a *Advertiser) Start() {
 		for _, kv := range records {
 			k, v, _ := strings.Cut(kv, "=")
 			txt[k] = v
+		}
+		if node != "" {
+			txt[TXTNode] = node
 		}
 		srv, err := dnssd.NewService(dnssd.Config{
 			Name:   e.instance,
