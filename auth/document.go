@@ -2,7 +2,9 @@ package auth
 
 import (
 	"crypto/ed25519"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 )
 
@@ -88,4 +90,46 @@ func (ks Keyset) Lookup() (KeyLookup, error) {
 		e, ok := keys[kid]
 		return e.key, e.legacy, ok
 	}, nil
+}
+
+// DeploymentKeys returns the Ed25519 keys of the deployment root
+// certificates (eria-manager tls-root): they sign the auth keyset.
+func DeploymentKeys(rootsPEM []byte) ([]PublicKey, error) {
+	var keys []PublicKey
+	for rest := rootsPEM; ; {
+		var block *pem.Block
+		if block, rest = pem.Decode(rest); block == nil {
+			break
+		}
+		c, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		if k, ok := c.PublicKey.(ed25519.PublicKey); ok {
+			pub, err := ParsePublicKey(Ed25519, k)
+			if err != nil {
+				return nil, err
+			}
+			keys = append(keys, pub)
+		}
+	}
+	if len(keys) == 0 {
+		return nil, errors.New("no deployment root")
+	}
+	return keys, nil
+}
+
+// OpenKeyset checks a keyset signed by a deployment key (JSON of Signed) and
+// returns it with its KeyLookup.
+func OpenKeyset(signed []byte, deploy []PublicKey) (Keyset, KeyLookup, error) {
+	var d Signed
+	var ks Keyset
+	if err := json.Unmarshal(signed, &d); err != nil {
+		return ks, nil, err
+	}
+	if err := d.Open(KeysetPrefix, deploy, &ks); err != nil {
+		return ks, nil, err
+	}
+	keys, err := ks.Lookup()
+	return ks, keys, err
 }

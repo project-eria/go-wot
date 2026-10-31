@@ -16,12 +16,17 @@ type HttpServer struct {
 	*fiber.App
 }
 
-func NewServer(addr string, exposedAddr string, header string, appName string) *HttpServer {
+// NewServer makes the HTTP server; guards run first, before the content
+// type check (the auth guard, AUTH-DESIGN §2.7).
+func NewServer(addr string, exposedAddr string, header string, appName string, guards ...fiber.Handler) *HttpServer {
 	router := fiber.New(fiber.Config{
 		ServerHeader: header,
 		AppName:      appName,
 	})
 
+	for _, g := range guards {
+		router.Use(g)
+	}
 	router.Use(checkContentType())
 	router.Use(corsHeader())
 
