@@ -124,10 +124,10 @@ func Decide(k Check) Decision {
 		return deny(5, "room only, from "+loc.String())
 	}
 	// 6. Requirement.
-	r := k.Table.rule(k.Function, k.Mode == Minimal)
+	r := rule(k.Table, k.Function, k.Mode == Minimal)
 	e := r.Levels[loc]
 	command := k.Function.Op == Write || k.Function.Op == Invoke
-	confirmable := command && r.confirmable()
+	confirmable := command && confirmable(r)
 	// 7. Level, after grant.
 	lvl := *c.Lvl
 	granted := false
@@ -145,7 +145,7 @@ func Decide(k Check) Decision {
 	if confirmable && d.Profile == auth.ProfileService && (!granted || c.Exp-c.Iat > 300) {
 		return deny(8, "service on a confirmable command: exact grant and 5 min token")
 	}
-	if command && r.needsConfirm(loc) {
+	if command && needsConfirm(r, loc) {
 		if d.Profile == auth.ProfileService {
 			if r.Confirm == Always {
 				return deny(8, "no service on an always confirmed command")

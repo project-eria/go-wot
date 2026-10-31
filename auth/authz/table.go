@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"slices"
 	"strings"
+
+	"github.com/project-eria/go-wot/auth"
 )
 
 // Op is the operation of a function, derived from the WoT forms (§2.4):
@@ -44,34 +46,28 @@ const (
 
 func (l Locality) String() string { return [...]string{"local", "remote", "outside"}[l] }
 
-// None forbids a function to everyone. Requirements go None < 1 < … < 9
-// (§2.1): 0 is never a level presented to a Thing, so it stands for None.
-const None = 0
-
-// Confirm is confirm_when (§2.4), for write and invoke only.
-type Confirm string
-
-const (
-	Never       Confirm = "never"
-	OutsideHome Confirm = "outside"
-	OutsideRoom Confirm = "remote"
-	Always      Confirm = "always"
+// The table types live in package auth, which signs and parses the table
+// documents.
+type (
+	Rule    = auth.Rule
+	Table   = auth.Table
+	Confirm = auth.Confirm
 )
 
-// Rule is a table entry: the level required per locality (local, remote,
-// outside) and when a write or invoke needs a confirmation. An empty
-// Confirm is never.
-type Rule struct {
-	Levels  [3]int  `json:"l"`
-	Confirm Confirm `json:"c,omitempty"`
-}
+const (
+	None        = auth.None
+	Never       = auth.Never
+	OutsideHome = auth.OutsideHome
+	OutsideRoom = auth.OutsideRoom
+	Always      = auth.Always
+)
 
 // confirmable tells whether the rule asks a confirmation in some locality.
-func (r Rule) confirmable() bool { return r.Confirm != "" && r.Confirm != Never }
+func confirmable(r Rule) bool { return r.Confirm != "" && r.Confirm != Never }
 
 // needsConfirm tells whether a write or invoke from locality l needs a
 // confirmation (step 8).
-func (r Rule) needsConfirm(l Locality) bool {
+func needsConfirm(r Rule, l Locality) bool {
 	switch r.Confirm {
 	case Always:
 		return true
@@ -83,14 +79,10 @@ func (r Rule) needsConfirm(l Locality) bool {
 	return false
 }
 
-// Table is the effective table of a Thing, keyed by Function.Key. A
-// function absent from it is None.
-type Table map[string]Rule
-
 // rule returns the requirement of f, from the minimal table derived from t
 // in minimal mode (§4.4): 9 locally when f needs no confirmation and its
 // local requirement is 9, None otherwise.
-func (t Table) rule(f Function, minimal bool) Rule {
+func rule(t Table, f Function, minimal bool) Rule {
 	if f.Kind == "td" {
 		return Rule{Levels: [3]int{9, 9, 9}}
 	}
@@ -99,7 +91,7 @@ func (t Table) rule(f Function, minimal bool) Rule {
 		return Rule{}
 	}
 	if minimal {
-		if r.confirmable() || r.Levels[Local] != 9 {
+		if confirmable(r) || r.Levels[Local] != 9 {
 			return Rule{}
 		}
 		return Rule{Levels: [3]int{9, None, None}}

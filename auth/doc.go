@@ -25,7 +25,35 @@ type Doc struct {
 	Version int64        `json:"version"`
 	Issued  int64        `json:"issued"`
 	Revoked []Revocation `json:"revoked,omitempty"`
+	Table   Table        `json:"table,omitempty"` // doc table: the effective table
+	Zones   []string     `json:"zones,omitempty"` // doc table: the Thing's rooms
 }
+
+// None forbids a function to everyone. Requirements go None < 1 < … < 9
+// (§2.1): 0 is never a level presented to a Thing, so it stands for None.
+const None = 0
+
+// Confirm is confirm_when (§2.4), for write and invoke only.
+type Confirm string
+
+const (
+	Never       Confirm = "never"
+	OutsideHome Confirm = "outside"
+	OutsideRoom Confirm = "remote"
+	Always      Confirm = "always"
+)
+
+// Rule is a table entry: the level required per locality (local, remote,
+// outside) and when a write or invoke needs a confirmation. An empty
+// Confirm is never.
+type Rule struct {
+	Levels  [3]int  `json:"l"`
+	Confirm Confirm `json:"c,omitempty"`
+}
+
+// Table is the effective table of a Thing, keyed by "<kind>/<name>/<op>"
+// (authz.Function.Key). A function absent from it is None.
+type Table map[string]Rule
 
 // Revocation makes the tokens of subject (term:<id>, sub:<profile>,
 // service:<kid>) issued before Before (unix seconds) fall.
@@ -44,7 +72,7 @@ func SignDoc(priv ed25519.PrivateKey, kid string, d Doc) (string, error) {
 // A document for another recipient, or signed by a legacy key, is refused.
 func ParseDoc(token string, keys KeyLookup, aud, doc, thing string) (Doc, error) {
 	var d Doc
-	legacy, err := parseJWS(token, keys, MaxDocSize, 3, &d)
+	legacy, err := parseJWS(token, keys, MaxDocSize, 4, &d)
 	if err != nil {
 		return d, err
 	}

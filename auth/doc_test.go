@@ -52,3 +52,15 @@ func TestRevocationDoc(t *testing.T) {
 	_, err = ParseDoc(tok, s.lookup(false), "eria-maison", DocRevocation, "x")
 	assert.Error(t, err)
 }
+
+func TestTableDoc(t *testing.T) {
+	s := newSigner(t)
+	d := Doc{Iss: "auth", Aud: "eria-maison", Doc: DocTable, Thing: "urn:eria:garage", Version: 1, Zones: []string{"garage"},
+		Table: Table{"action/open/invoke": {Levels: [3]int{1, 1, None}, Confirm: OutsideRoom}}}
+	tok, err := SignDoc(s.priv, s.pub.KID(), d)
+	require.NoError(t, err)
+	got, err := ParseDoc(tok, s.lookup(false), "eria-maison", DocTable, "urn:eria:garage")
+	require.NoError(t, err)
+	assert.Equal(t, d.Table, got.Table)
+	assert.Equal(t, []string{"garage"}, got.Zones)
+}
