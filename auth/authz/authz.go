@@ -59,6 +59,9 @@ type Decision struct {
 	Reason  string
 	Claims  auth.Claims
 	Profile auth.Profile
+	// Confirm: refused at step 8 for want of a confirmation that this user
+	// could give (§2.8); the interfaces offer it instead of greying out.
+	Confirm bool
 }
 
 func deny(step int, reason string) Decision { return Decision{Step: step, Reason: reason} }
@@ -151,7 +154,9 @@ func Decide(k Check) Decision {
 				return deny(8, "no service on an always confirmed command")
 			}
 		} else if reason := k.confirmed(c); reason != "" {
-			return deny(8, reason)
+			d := deny(8, reason)
+			d.Confirm = k.Confirm == ""
+			return d
 		}
 	}
 	// 9. Allow.
