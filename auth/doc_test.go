@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,6 +30,22 @@ func TestRevocationDoc(t *testing.T) {
 	tok, _ = SignDoc(s.priv, s.pub.KID(), d)
 	_, err = ParseDoc(tok, s.lookup(false), "eria-maison", DocRevocation, "urn:eria:portail")
 	assert.Error(t, err, "document for another recipient")
+
+	// A document may exceed a token's size, up to MaxDocSize: a revocation
+	// per terminal after « revoke every terminal ».
+	d.Thing = "*"
+	d.Revoked = nil
+	for i := 0; i < 30; i++ {
+		d.Revoked = append(d.Revoked, Revocation{Subject: fmt.Sprintf("term:%022d", i), Before: 100})
+	}
+	tok, _ = SignDoc(s.priv, s.pub.KID(), d)
+	require.Greater(t, len(tok), MaxTokenSize)
+	require.LessOrEqual(t, len(tok), MaxDocSize)
+	got, err = ParseDoc(tok, s.lookup(false), "eria-maison", DocRevocation, "x")
+	require.NoError(t, err)
+	assert.Len(t, got.Revoked, 30)
+	_, _, err = Parse(tok, s.lookup(false))
+	assert.Error(t, err, "a token stays within MaxTokenSize")
 
 	// A token is not a document.
 	tok, _ = Sign(s.priv, s.pub.KID(), person())

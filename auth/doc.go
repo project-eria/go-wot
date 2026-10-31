@@ -44,7 +44,7 @@ func SignDoc(priv ed25519.PrivateKey, kid string, d Doc) (string, error) {
 // A document for another recipient, or signed by a legacy key, is refused.
 func ParseDoc(token string, keys KeyLookup, aud, doc, thing string) (Doc, error) {
 	var d Doc
-	legacy, err := parseJWS(token, keys, 3, &d)
+	legacy, err := parseJWS(token, keys, MaxDocSize, 3, &d)
 	if err != nil {
 		return d, err
 	}

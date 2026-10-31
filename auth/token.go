@@ -14,6 +14,10 @@ import (
 // MaxTokenSize bounds a token, as the ESP32 do (AUTH-DESIGN §2.7).
 const MaxTokenSize = 2048
 
+// MaxDocSize bounds a document signed by auth (revocation list, table): one
+// NVS entry on an ESP32 (storage.rs MAX_VALUE_BYTES), ≈ 44 revocations.
+const MaxDocSize = 4000
+
 // Kind is one of the three token kinds (AUTH-DESIGN §2.7).
 type Kind string
 
@@ -91,14 +95,14 @@ type KeyLookup func(kid string) (key PublicKey, legacy bool, ok bool)
 // Parse checks the structure (step 1) and the signature (step 2) of a token,
 // then returns its claims, still to be checked (step 3, see Claims.Check).
 func Parse(token string, keys KeyLookup) (c Claims, legacy bool, err error) {
-	legacy, err = parseJWS(token, keys, 2, &c)
+	legacy, err = parseJWS(token, keys, MaxTokenSize, 2, &c)
 	return c, legacy, err
 }
 
 // parseJWS checks a compact JWS signed by auth and decodes its payload
 // strictly into v, nested at most maxDepth.
-func parseJWS(token string, keys KeyLookup, maxDepth int, v any) (legacy bool, err error) {
-	if token == "" || len(token) > MaxTokenSize {
+func parseJWS(token string, keys KeyLookup, maxSize, maxDepth int, v any) (legacy bool, err error) {
+	if token == "" || len(token) > maxSize {
 		return false, structureErr("missing or oversized token")
 	}
 	parts := strings.Split(token, ".")
