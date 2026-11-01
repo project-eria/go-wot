@@ -144,9 +144,9 @@ func generate(t *testing.T) {
 	parentGarage := sign(auth.Claims{Kind: auth.KindUser, Sub: "profil:paul", Term: "ecran-garage", Zone: "garage", Lvl: lvl(1)})
 	parentOut := sign(auth.Claims{Kind: auth.KindUser, Sub: "profil:paul", Term: "tel-paul", Lvl: lvl(1), Out: yes()})
 	parentPhone := sign(auth.Claims{Kind: auth.KindUser, Sub: "profil:paul", Term: "tel-paul", Lvl: lvl(1)})
-	service := sign(auth.Claims{Kind: auth.KindService, Lvl: lvl(9), Grants: []string{"thing:" + thing + ":invoke"}, Iat: now.Unix() - 10, Exp: now.Unix() + 4*3600 - 10})
-	serviceShort := sign(auth.Claims{Kind: auth.KindService, Lvl: lvl(9), Grants: []string{"thing:" + thing + ":invoke"}, Iat: now.Unix() - 10, Exp: now.Unix() + 290})
-	serviceRoom := sign(auth.Claims{Kind: auth.KindService, Lvl: lvl(9), Grants: []string{"room:garage:*"}})
+	service := sign(auth.Claims{Kind: auth.KindService, Sub: "app:a1", Lvl: lvl(9), Grants: []string{"thing:" + thing + ":invoke"}, Iat: now.Unix() - 10, Exp: now.Unix() + 4*3600 - 10})
+	serviceShort := sign(auth.Claims{Kind: auth.KindService, Sub: "app:a1", Lvl: lvl(9), Grants: []string{"thing:" + thing + ":invoke"}, Iat: now.Unix() - 10, Exp: now.Unix() + 290})
+	serviceRoom := sign(auth.Claims{Kind: auth.KindService, Sub: "app:a1", Lvl: lvl(9), Grants: []string{"room:garage:*"}})
 
 	open := vectorFunction{Kind: "action", Name: "open", Op: Invoke}
 	disarm := vectorFunction{Kind: "action", Name: "disarm", Op: Invoke}

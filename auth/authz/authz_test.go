@@ -32,7 +32,7 @@ func TestAuthenticate(t *testing.T) {
 	terminal := token(auth.Claims{Kind: auth.KindUser, Term: "salon", Lvl: lvl(9)})
 	person := token(auth.Claims{Kind: auth.KindUser, Sub: "profil:lea", Term: "salon", Lvl: lvl(2)})
 	admin := token(auth.Claims{Kind: auth.KindUser, Sub: "profil:admin", Term: "pc", Lvl: lvl(0)})
-	service := token(auth.Claims{Kind: auth.KindService, Lvl: lvl(9)})
+	service := token(auth.Claims{Kind: auth.KindService, Sub: "app:a1", Lvl: lvl(9)})
 	confirm := token(auth.Claims{Kind: auth.KindConfirm, Sub: "profil:lea", Term: "salon", Act: "a"})
 
 	run := func(v Verifier, m Mode, tok string) Decision {

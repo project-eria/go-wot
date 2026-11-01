@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -55,7 +56,8 @@ func (c Claims) Profile() (Profile, error) {
 			return ProfileAdmin, nil
 		}
 	case KindService:
-		if c.Sub == "" && c.Term == "" && lvl == 9 && c.Act == "" {
+		// sub = app:<id>, the app's identity in auth: revocable (§1.3).
+		if strings.HasPrefix(c.Sub, AppSubject) && len(c.Sub) > len(AppSubject) && c.Term == "" && lvl == 9 && c.Act == "" {
 			return ProfileService, nil
 		}
 	case KindConfirm:

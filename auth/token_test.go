@@ -138,9 +138,13 @@ func TestClaimsCheck(t *testing.T) {
 	c.Lvl, c.Grants = lvl(0), nil
 	assert.Equal(t, ProfileAdmin, ok(c))
 
-	c = Claims{Iss: "auth", Aud: "eria-maison", Kind: KindService, Lvl: lvl(9),
+	c = Claims{Iss: "auth", Aud: "eria-maison", Kind: KindService, Sub: "app:a1", Lvl: lvl(9),
 		Iat: now.Unix(), Exp: now.Add(4 * time.Hour).Unix(), Jti: "j"}
 	assert.Equal(t, ProfileService, ok(c))
+	for _, sub := range []string{"", "app:", "a1"} {
+		c.Sub = sub
+		refused(c, "a service token names its app: "+sub)
+	}
 
 	c = Claims{Iss: "auth", Aud: "eria-maison", Kind: KindConfirm, Sub: "s", Term: "t", Act: "a",
 		Iat: now.Unix(), Exp: now.Add(time.Minute).Unix(), Jti: "j"}
