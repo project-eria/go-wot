@@ -1,5 +1,13 @@
 package auth
 
+import (
+	"crypto/ed25519"
+	"encoding/hex"
+	"errors"
+	"os"
+	"strings"
+)
+
 // App keys and service proofs (AUTH-DESIGN §1.3, step 3a): shared by auth,
 // the master that registers the keys and the apps that prove theirs.
 
@@ -30,4 +38,65 @@ const ServiceProofDomain = "eria-service-proof-v1"
 // proof to this auth.
 func ServiceProof(challenge, authKid string) []byte {
 	return []byte(challenge + ServiceProofDomain + authKid)
+}
+
+// AppKeyEnv names the file of the app's key, set by the agent (step 3b):
+// the hex seed of an Ed25519 key, in the app's data folder.
+const AppKeyEnv = "ERIA_APP_KEY"
+
+// LoadAppKey reads the key named by ERIA_APP_KEY; nil when it is unset (an
+// app the agent did not install, or a test).
+func LoadAppKey() (ed25519.PrivateKey, error) {
+	path := os.Getenv(AppKeyEnv)
+	if path == "" {
+		return nil, nil
+	}
+	return ReadAppKey(path)
+}
+
+// ReadAppKey reads an app key file.
+func ReadAppKey(path string) (ed25519.PrivateKey, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	seed, err := hex.DecodeString(strings.TrimSpace(string(data)))
+	if err != nil || len(seed) != ed25519.SeedSize {
+		return nil, errors.New("app key: expected a hex Ed25519 seed")
+	}
+	return ed25519.NewKeyFromSeed(seed), nil
+}
+
+// AppKID is the kid of an app key.
+func AppKID(priv ed25519.PrivateKey) string {
+	pub, _ := ParsePublicKey(Ed25519, priv.Public().(ed25519.PublicKey))
+	return pub.KID()
+}
+
+// SignedBy is what an app sends auth on the Things channel (step 3d): a
+// document signed by its key, with the kid auth finds the key by.
+type SignedBy struct {
+	Kid string `json:"kid"`
+	Signed
+}
+
+// SignBy signs v with the app key priv.
+func SignBy(priv ed25519.PrivateKey, prefix string, v any) (SignedBy, error) {
+	d, err := SignDocument(priv, prefix, v)
+	return SignedBy{Kid: AppKID(priv), Signed: d}, err
+}
+
+// TDPrefix is the domain of a TD a Thing sends auth: the Thing belongs to
+// the app that signs it.
+const TDPrefix = "eria-td-v1"
+
+// StatesPrefix is the domain of the house states, published by
+// manager-contexts.
+const StatesPrefix = "eria-states-v1"
+
+// States are the active states of the house. Version is the time in ms:
+// auth keeps only a higher one, so an old list replayed changes nothing.
+type States struct {
+	States  []string `json:"states"`
+	Version int64    `json:"version"`
 }

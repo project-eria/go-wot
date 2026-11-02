@@ -16,8 +16,10 @@ package guard
 import (
 	"bytes"
 	"context"
+	"crypto/ed25519"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -40,6 +42,9 @@ type Config struct {
 	Deployment string // aud of the tokens
 	Keyset     string // auth keyset signed by the deployment key (eria-manager auth-keyset)
 	Roots      string // deployment roots, PEM (eria-manager tls-root)
+	// AppKey signs the TDs sent to auth (auth.LoadAppKey); nil sends them
+	// unsigned, until the agent gives the app a key.
+	AppKey ed25519.PrivateKey
 }
 
 // ControllerRef is the ref of the app controller, whose reads are the
@@ -271,7 +276,7 @@ func (g *Guard) pullAll(ctx context.Context) {
 		held, ok := g.tables[td.ID]
 		g.mu.RUnlock()
 		if !ok {
-			g.sendTD(ctx, td)
+			g.sendTD(ctx, td.ID, td)
 		}
 		if d, err := g.pull(ctx, "/v1/things/"+url.PathEscape(td.ID)+"/table", auth.DocTable, td.ID, held.Version); err == nil && d != nil {
 			g.mu.Lock()
@@ -291,8 +296,16 @@ func (g *Guard) pullAll(ctx context.Context) {
 	}
 }
 
-func (g *Guard) sendTD(ctx context.Context, td any) {
-	body, err := json.Marshal(td)
+func (g *Guard) sendTD(ctx context.Context, id string, td any) {
+	var v any = td
+	if g.cfg.AppKey != nil {
+		signed, err := auth.SignBy(g.cfg.AppKey, auth.TDPrefix, td)
+		if err != nil {
+			return
+		}
+		v = signed
+	}
+	body, err := json.Marshal(v)
 	if err != nil {
 		return
 	}
@@ -303,7 +316,11 @@ func (g *Guard) sendTD(ctx context.Context, td any) {
 		zlog.Warn().Err(err).Msg("[guard] auth unreachable")
 		return
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		why, _ := io.ReadAll(io.LimitReader(resp.Body, 256))
+		zlog.Warn().Str("thing", id).Int("status", resp.StatusCode).Bytes("reason", why).Msg("[guard] TD refused by auth")
+	}
 }
 
 // pull fetches a document newer than held; nil when there is none. A

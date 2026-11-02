@@ -28,18 +28,28 @@ func SignDocument(priv ed25519.PrivateKey, prefix string, v any) (Signed, error)
 
 // Open verifies d with any of keys for prefix, then decodes it strictly into v.
 func (d Signed) Open(prefix string, keys []PublicKey, v any) error {
+	payload, err := d.Verify(prefix, keys)
+	if err != nil {
+		return err
+	}
+	return strictDecode(payload, 3, v)
+}
+
+// Verify checks d with any of keys for prefix and returns its payload, for
+// a document too deep for Open (a TD).
+func (d Signed) Verify(prefix string, keys []PublicKey) ([]byte, error) {
 	payload, err1 := b64.DecodeString(d.Payload)
 	sig, err2 := b64.DecodeString(d.Sig)
 	if err1 != nil || err2 != nil {
-		return errors.New("bad base64url")
+		return nil, errors.New("bad base64url")
 	}
 	msg := append([]byte(prefix), payload...)
 	for _, k := range keys {
 		if k.Verify(msg, sig) {
-			return strictDecode(payload, 3, v)
+			return payload, nil
 		}
 	}
-	return errors.New("bad signature")
+	return nil, errors.New("bad signature")
 }
 
 // KeysetPrefix is the domain of the auth keyset, signed by a deployment key.

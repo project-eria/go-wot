@@ -51,7 +51,9 @@ func TestGuard(t *testing.T) {
 	data, _ := json.Marshal(signed)
 	require.NoError(t, os.WriteFile(keyset, data, 0o600))
 
-	// A fake auth channel: it takes the TD and serves the table.
+	// A fake auth channel: it takes the TD signed by the app and serves the table.
+	_, appPriv, _ := ed25519.GenerateKey(rand.Reader)
+	appPub, _ := auth.ParsePublicKey(auth.Ed25519, appPriv.Public().(ed25519.PublicKey))
 	const id = "urn:eria:garage:1"
 	var mu sync.Mutex
 	gotTD := map[string]bool{}
@@ -65,9 +67,12 @@ func TestGuard(t *testing.T) {
 		switch {
 		case r.URL.Path == "/v1/things/td":
 			mu.Lock()
+			var in auth.SignedBy
+			json.NewDecoder(r.Body).Decode(&in)
+			payload, err := in.Verify(auth.TDPrefix, []auth.PublicKey{appPub})
 			var td struct{ ID string }
-			json.NewDecoder(r.Body).Decode(&td)
-			gotTD[td.ID] = true
+			json.Unmarshal(payload, &td)
+			gotTD[td.ID] = err == nil && in.Kid == appPub.KID()
 			mu.Unlock()
 		case strings.HasSuffix(r.URL.Path, "/table"):
 			if r.Header.Get("If-None-Match") == `"2"` {
@@ -82,7 +87,7 @@ func TestGuard(t *testing.T) {
 	}))
 	t.Cleanup(channel.Close)
 
-	g, err := New(Config{Channel: channel.URL, Deployment: "eria-maison", Keyset: keyset, Roots: roots})
+	g, err := New(Config{Channel: channel.URL, Deployment: "eria-maison", Keyset: keyset, Roots: roots, AppKey: appPriv})
 	require.NoError(t, err)
 	require.True(t, g.Active())
 
@@ -131,7 +136,7 @@ func TestGuard(t *testing.T) {
 
 	g.pullAll(context.Background())
 	mu.Lock()
-	assert.True(t, gotTD[id], "the TD was sent to auth")
+	assert.True(t, gotTD[id], "the TD was sent to auth, signed by the app")
 	mu.Unlock()
 
 	assert.Equal(t, 200, status("GET", "/open", garage), "local 9")
