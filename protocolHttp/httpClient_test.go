@@ -69,3 +69,12 @@ func (ts *HttpClientTestSuite) Test_ReadResource_WithURIVars() {
 	ts.Equal(result.(bool), true, "they should be equal")
 	ts.httpClientProcessor.AssertExpectations(ts.T())
 }
+
+func (ts *HttpClientTestSuite) Test_ReadResource_Token() {
+	ts.client.Token = func() string { return "tok" }
+	ts.httpClientProcessor.On("Do", mock.MatchedBy(func(r *http.Request) bool {
+		return r.Header.Get("Authorization") == "Bearer tok"
+	})).Return(&http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewBufferString(`1`))}, nil)
+	_, _, err := ts.client.ReadResource(&interaction.Form{Href: "http://127.0.0.1:8888/test"}, nil)
+	ts.NoError(err, "the service token is sent")
+}

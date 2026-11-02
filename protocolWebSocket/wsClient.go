@@ -14,6 +14,9 @@ import (
 )
 
 type WsClient struct {
+	// Token is sent as Authorization: Bearer in the handshake when not
+	// empty, read again at each reconnection; nil sends none.
+	Token   func() string
 	schemes []string
 	wait    sync.WaitGroup
 	ctx     context.Context
@@ -38,6 +41,7 @@ type wsConn struct {
 	connWait    connWait
 	sub         *consumer.Subscription
 	listener    consumer.Listener
+	token       func() string
 	*websocket.Conn
 }
 
@@ -85,6 +89,7 @@ func (c *WsClient) connectWebSocket(wsURL string, sub *consumer.Subscription, li
 		connWait: newConnWait(),
 		sub:      sub,
 		listener: listener,
+		token:    c.Token,
 	}
 	for {
 		select {
@@ -124,7 +129,13 @@ func (c *wsConn) connect() <-chan bool {
 	go func() {
 		for {
 			ws := websocket.DefaultDialer
-			wsConn, _, err := ws.Dial(c.wsURL, http.Header{"Sec-WebSocket-Protocol": []string{"webthing"}})
+			header := http.Header{"Sec-WebSocket-Protocol": []string{"webthing"}}
+			if c.token != nil {
+				if token := c.token(); token != "" {
+					header.Set("Authorization", "Bearer "+token)
+				}
+			}
+			wsConn, _, err := ws.Dial(c.wsURL, header)
 
 			c.mu.Lock()
 			c.Conn = wsConn
