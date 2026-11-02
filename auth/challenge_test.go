@@ -48,3 +48,22 @@ func TestChallengesExpireAndAreBounded(t *testing.T) {
 	_, err = c.Issue(pub.KID())
 	assert.NoError(t, err, "expired challenges are purged")
 }
+
+func TestChallengesPerKey(t *testing.T) {
+	priv, pub := newP256(t)
+	_, other := newP256(t)
+	now := time.Unix(1_800_000_000, 0)
+	c := NewChallenges(time.Minute, MaxPerKey+1)
+	c.now = func() time.Time { return now }
+
+	first, _ := c.Issue(pub.KID())
+	for range MaxPerKey {
+		now = now.Add(time.Second)
+		_, err := c.Issue(pub.KID())
+		require.NoError(t, err, "a flood on one key evicts its own oldest")
+	}
+	msg := []byte(first + "x")
+	assert.False(t, c.Redeem(first, pub, msg, signP256(t, priv, msg, anyR)), "evicted")
+	_, err := c.Issue(other.KID())
+	assert.NoError(t, err, "the other keys keep their room")
+}

@@ -30,6 +30,10 @@ func NewChallenges(ttl time.Duration, max int) *Challenges {
 	return &Challenges{ttl: ttl, max: max, now: time.Now, open: map[string]pending{}}
 }
 
+// MaxPerKey is the number of open challenges one key may hold: a further
+// one evicts its oldest, so a flood on one key never fills the list.
+const MaxPerKey = 4
+
 // ErrTooManyChallenges is returned when the bounded list is full.
 var ErrTooManyChallenges = errors.New("too many open challenges")
 
@@ -41,10 +45,20 @@ func (c *Challenges) Issue(kid string) (string, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	now := c.now()
+	held, oldest := 0, ""
 	for k, p := range c.open {
-		if !now.Before(p.exp) {
+		switch {
+		case !now.Before(p.exp):
 			delete(c.open, k)
+		case p.kid == kid:
+			held++
+			if oldest == "" || p.exp.Before(c.open[oldest].exp) {
+				oldest = k
+			}
 		}
+	}
+	if held >= MaxPerKey {
+		delete(c.open, oldest)
 	}
 	if len(c.open) >= c.max {
 		return "", ErrTooManyChallenges
