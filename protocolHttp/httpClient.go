@@ -15,9 +15,9 @@ import (
 type HttpClient struct {
 	Client  HttpClientProcessor
 	Schemes []string
-	// Token is sent as Authorization: Bearer when not empty (AUTH-DESIGN
-	// §1.3: the app's service token); nil sends none.
-	Token func() string
+	// Token gives the Authorization: Bearer sent to url, none when empty
+	// (AUTH-DESIGN §1.3: the app's service token); nil sends none.
+	Token func(url string) string
 }
 
 func NewClient() *HttpClient {
@@ -89,7 +89,7 @@ func (c *HttpClient) sendJSON(url string, method string, payload interface{}) (i
 	}
 	req.Header.Set("Content-type", "application/json")
 	if c.Token != nil {
-		if token := c.Token(); token != "" {
+		if token := c.Token(url); token != "" {
 			req.Header.Set("Authorization", "Bearer "+token)
 		}
 	}

@@ -38,7 +38,7 @@ var accepted = map[Verifier]map[auth.Profile]bool{
 	Thing:       {auth.ProfileTerminal: true, auth.ProfilePerson: true, auth.ProfileService: true},
 	Relay:       {auth.ProfileTerminal: true, auth.ProfilePerson: true, auth.ProfileService: true},
 	AuthService: {auth.ProfileAdmin: true, auth.ProfileService: true},
-	Master:      {auth.ProfileAdmin: true},
+	Master:      {auth.ProfileAdmin: true, auth.ProfileService: true}, // service: the inventory only (F037)
 }
 
 // Request holds what the token steps need.

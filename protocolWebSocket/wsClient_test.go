@@ -26,7 +26,7 @@ func TestSubscribeSendsToken(t *testing.T) {
 	defer srv.Close()
 
 	c := NewClient()
-	c.Token = func() string { return "tok" }
+	c.Token = func(string) string { return "tok" }
 	form := &interaction.Form{Href: "ws" + strings.TrimPrefix(srv.URL, "http")}
 	c.SubscribeResource(form, nil, &consumer.Subscription{}, func(any, error) {})
 	select {

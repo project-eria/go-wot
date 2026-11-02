@@ -71,7 +71,7 @@ func (ts *HttpClientTestSuite) Test_ReadResource_WithURIVars() {
 }
 
 func (ts *HttpClientTestSuite) Test_ReadResource_Token() {
-	ts.client.Token = func() string { return "tok" }
+	ts.client.Token = func(string) string { return "tok" }
 	ts.httpClientProcessor.On("Do", mock.MatchedBy(func(r *http.Request) bool {
 		return r.Header.Get("Authorization") == "Bearer tok"
 	})).Return(&http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewBufferString(`1`))}, nil)
