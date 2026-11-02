@@ -144,7 +144,7 @@ func generate(t *testing.T) {
 	parentGarage := sign(auth.Claims{Kind: auth.KindUser, Sub: "profil:paul", Term: "ecran-garage", Zone: "garage", Lvl: lvl(1)})
 	parentOut := sign(auth.Claims{Kind: auth.KindUser, Sub: "profil:paul", Term: "tel-paul", Lvl: lvl(1), Out: yes()})
 	parentPhone := sign(auth.Claims{Kind: auth.KindUser, Sub: "profil:paul", Term: "tel-paul", Lvl: lvl(1)})
-	service := sign(auth.Claims{Kind: auth.KindService, Sub: "app:a1", Lvl: lvl(9), Grants: []string{"thing:" + thing + ":invoke"}, Iat: now.Unix() - 10, Exp: now.Unix() + 4*3600 - 10})
+	service := sign(auth.Claims{Kind: auth.KindService, Sub: "app:a1", Lvl: lvl(9), Grants: []string{"thing:" + thing + ":invoke"}, Iat: now.Unix() - 10, Exp: now.Unix() + 15*60 - 10})
 	serviceShort := sign(auth.Claims{Kind: auth.KindService, Sub: "app:a1", Lvl: lvl(9), Grants: []string{"thing:" + thing + ":invoke"}, Iat: now.Unix() - 10, Exp: now.Unix() + 290})
 	serviceRoom := sign(auth.Claims{Kind: auth.KindService, Sub: "app:a1", Lvl: lvl(9), Grants: []string{"room:garage:*"}})
 
@@ -188,11 +188,11 @@ func generate(t *testing.T) {
 		{Name: "open, exact grant, remote, confirm", Function: open, Token: leaExact, Confirm: confirm("profil:lea", "tel-lea", open, ""), Allow: true},
 		{Name: "disarm, parent local still needs confirm", Function: disarm, Token: parentGarage, Step: 8},
 		{Name: "disarm, service never", Function: disarm, Token: serviceShort, Step: 8},
-		{Name: "open, service 4 h token", Function: open, Token: service, Step: 8},
+		{Name: "open, service 15 min token", Function: open, Token: service, Step: 8},
 		{Name: "open, service room grant", Function: open, Token: serviceRoom, Step: 7},
 		{Name: "open, service exact grant 5 min", Function: open, Token: serviceShort, Allow: true},
 		// The confirm_when = outside vectors of §2.7.
-		{Name: "unsetContext, service 4 h, remote", Function: unset, Token: service, Step: 8},
+		{Name: "unsetContext, service 15 min, remote", Function: unset, Token: service, Step: 8},
 		{Name: "unsetContext, PIN level 1 at the entrance", Function: unset, Token: parentEntrance, Allow: true},
 		{Name: "unsetContext, level 1 outside without confirm", Function: unset, Token: parentOut, Step: 8},
 		{Name: "unsetContext, level 1 outside with confirm", Function: unset, Token: parentOut, Confirm: confirm("profil:paul", "tel-paul", unset, ""), Allow: true},
