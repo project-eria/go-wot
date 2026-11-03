@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -57,6 +58,7 @@ func TestGuard(t *testing.T) {
 	const id = "urn:eria:garage:1"
 	var mu sync.Mutex
 	gotTD := map[string]bool{}
+	beat := now.UnixMilli() // the time of the heartbeats
 	doc := func(d auth.Doc) string {
 		d.Iss, d.Aud, d.Issued = "auth", "eria-maison", now.Unix()
 		tok, err := auth.SignDoc(authPriv, pub.KID(), d)
@@ -81,13 +83,18 @@ func TestGuard(t *testing.T) {
 			}
 			w.Write([]byte(doc(auth.Doc{Doc: auth.DocTable, Thing: id, Version: 2, Zones: []string{"garage"},
 				Table: auth.Table{"property/open/read": {Levels: [3]int{9, 1, 1}}, "action/open/invoke": {Levels: [3]int{1, 1, 1}, Confirm: auth.OutsideRoom}}})))
+		case r.URL.Path == "/v1/heartbeat":
+			mu.Lock()
+			w.Write([]byte(doc(auth.Doc{Doc: auth.DocHeartbeat, Thing: "*", Version: beat, Nonce: r.URL.Query().Get("nonce")})))
+			mu.Unlock()
 		case r.URL.Path == "/v1/revocation":
 			w.Write([]byte(doc(auth.Doc{Doc: auth.DocRevocation, Thing: "*", Version: 1})))
 		}
 	}))
 	t.Cleanup(channel.Close)
 
-	g, err := New(Config{Channel: channel.URL, Deployment: "eria-maison", Keyset: keyset, Roots: roots, AppKey: appPriv})
+	floor := filepath.Join(dir, "time-floor")
+	g, err := New(Config{Channel: channel.URL, Deployment: "eria-maison", Keyset: keyset, Roots: roots, AppKey: appPriv, Floor: floor})
 	require.NoError(t, err)
 	require.True(t, g.Active())
 
@@ -164,6 +171,32 @@ func TestGuard(t *testing.T) {
 	// 304: the held table stays.
 	g.pullAll(context.Background())
 	assert.Equal(t, 200, status("GET", "/open", garage))
+
+	// Signed time (§4.3): the floor was written; the guard decides with the
+	// heartbeat's time, not the system's.
+	written, _ := os.ReadFile(floor)
+	assert.Equal(t, strconv.FormatInt(now.Unix(), 10), string(written))
+	mu.Lock()
+	beat = now.Add(50 * time.Minute).UnixMilli()
+	mu.Unlock()
+	g.pullAll(context.Background())
+	assert.Equal(t, 401, status("GET", "/open", garage), "4 min tokens: expired at the signed time")
+	mu.Lock()
+	beat = now.Add(-time.Minute).UnixMilli()
+	mu.Unlock()
+	g.pullAll(context.Background())
+	at, _ := g.clock.now()
+	assert.WithinDuration(t, now.Add(50*time.Minute), at, 5*time.Second, "an older heartbeat is refused")
+	mu.Lock()
+	beat = now.Add(3 * time.Hour).UnixMilli()
+	mu.Unlock()
+	g.pullAll(context.Background())
+	at, _ = g.clock.now()
+	assert.WithinDuration(t, now.Add(50*time.Minute), at, 5*time.Second, "too far from the clock")
+	// After a restart, a heartbeat before the floor is refused.
+	c := newClock(floor)
+	assert.Error(t, c.accept(now.Add(-time.Minute).UnixMilli()))
+	assert.NoError(t, c.accept(now.Add(time.Minute).UnixMilli()))
 }
 
 // confirmToken is a confirm token (no lvl), 60 s.

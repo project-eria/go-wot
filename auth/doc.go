@@ -27,6 +27,17 @@ type Doc struct {
 	Revoked []Revocation `json:"revoked,omitempty"`
 	Table   Table        `json:"table,omitempty"` // doc table: the effective table
 	Zones   []string     `json:"zones,omitempty"` // doc table: the Thing's rooms
+	// doc heartbeat (§4.3): the Thing's nonce, and the versions auth holds
+	// for it (the Thing pulls those it lacks).
+	Nonce    string    `json:"nonce,omitempty"`
+	Versions *Versions `json:"versions,omitempty"`
+}
+
+// Versions are the versions a heartbeat announces: the table of each Thing
+// asked for (0: none, not adopted) and the revocation list.
+type Versions struct {
+	Tables     map[string]int64 `json:"tables"`
+	Revocation int64            `json:"revocation"`
 }
 
 // None forbids a function to everyone. Requirements go None < 1 < … < 9

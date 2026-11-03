@@ -8,21 +8,27 @@
 // path) and the CORS preflights. The Thing sends its TD to auth's Things
 // channel, then pulls its signed table and the revocation list.
 //
-// ponytail: mode always normal until the heartbeat (§4.4, §4.7 step 5); the
-// keyset is a file put by the deployment until the master delivers it;
-// observations are checked at the handshake only, not closed at exp.
+// It decides with the signed time of auth's heartbeats (clock.go, §4.3).
+//
+// ponytail: mode always normal, and the system time until the first
+// heartbeat, until the minimal mode (§4.4, step 5b); the keyset is a file
+// put by the deployment until the master delivers it; observations are
+// checked at the handshake only, not closed at exp.
 package guard
 
 import (
 	"bytes"
 	"context"
 	"crypto/ed25519"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -45,6 +51,9 @@ type Config struct {
 	// AppKey signs the TDs sent to auth (auth.LoadAppKey); nil sends them
 	// unsigned, until the agent gives the app a key.
 	AppKey ed25519.PrivateKey
+	// Floor is the file keeping the time floor across restarts (§4.3); ""
+	// keeps none.
+	Floor string
 }
 
 // ControllerRef is the ref of the app controller, whose reads are the
@@ -60,7 +69,8 @@ type Guard struct {
 	cfg    Config
 	keys   auth.KeyLookup // nil: generation 0
 	client *http.Client
-	now    func() time.Time
+	now    func() time.Time // before the first heartbeat
+	clock  *clock
 
 	mu      sync.RWMutex
 	things  map[string]producer.ExposedThing // by lowercase ref
@@ -71,7 +81,7 @@ type Guard struct {
 
 // New loads the keyset. No keyset file: generation 0, nosec.
 func New(cfg Config) (*Guard, error) {
-	g := &Guard{cfg: cfg, client: &http.Client{Timeout: 10 * time.Second}, now: time.Now,
+	g := &Guard{cfg: cfg, client: &http.Client{Timeout: 10 * time.Second}, now: time.Now, clock: newClock(cfg.Floor),
 		things: map[string]producer.ExposedThing{}, tables: map[string]auth.Doc{}, seen: map[string]int64{}}
 	data, err := os.ReadFile(cfg.Keyset)
 	if errors.Is(err, os.ErrNotExist) || cfg.Keyset == "" {
@@ -138,7 +148,7 @@ func (g *Guard) Handler(c *fiber.Ctx) error {
 		input = c.Body()
 	}
 	d := authz.Decide(authz.Check{
-		Request: authz.Request{Mode: authz.Normal, Verifier: authz.Thing, Keys: g.keys, Aud: g.cfg.Deployment, Now: g.now(),
+		Request: authz.Request{Mode: authz.Normal, Verifier: authz.Thing, Keys: g.keys, Aud: g.cfg.Deployment, Now: g.time(),
 			Token: strings.TrimPrefix(c.Get(fiber.HeaderAuthorization), "Bearer ")},
 		Thing:    id,
 		Zones:    table.Zones,
@@ -232,7 +242,7 @@ func keys[V any](m map[string]V) []string {
 func (g *Guard) seenJti(jti string, exp int64) bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	now := g.now().Unix()
+	now := g.time().Unix()
 	for k, e := range g.seen {
 		if e < now-int64(auth.ClockSkew.Seconds()) {
 			delete(g.seen, k)
@@ -266,10 +276,13 @@ func (g *Guard) Run(ctx context.Context) {
 func (g *Guard) pullAll(ctx context.Context) {
 	g.mu.RLock()
 	things := make([]producer.ExposedThing, 0, len(g.things))
+	ids := make([]string, 0, len(g.things))
 	for _, t := range g.things {
 		things = append(things, t)
+		ids = append(ids, t.GetThingDescription().ID)
 	}
 	g.mu.RUnlock()
+	g.heartbeat(ctx, ids)
 	for _, t := range things {
 		td := t.GetThingDescription()
 		g.mu.RLock()
@@ -294,6 +307,46 @@ func (g *Guard) pullAll(ctx context.Context) {
 		g.revoked = *d
 		g.mu.Unlock()
 	}
+}
+
+// heartbeat asks auth the signed time for a fresh nonce (§4.3); the
+// versions it announces are for the minimal mode (step 5b).
+//
+// ponytail: the first 16 Things of the app (auth's bound on a heartbeat);
+// rotate them when the minimal mode reads the versions.
+func (g *Guard) heartbeat(ctx context.Context, ids []string) {
+	slices.Sort(ids)
+	ids = ids[:min(len(ids), 16)]
+	var b [16]byte
+	rand.Read(b[:])
+	nonce := base64.RawURLEncoding.EncodeToString(b[:])
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, g.cfg.Channel+"/v1/heartbeat?"+url.Values{"nonce": {nonce}, "thing": ids}.Encode(), nil)
+	resp, err := g.client.Do(req)
+	if err != nil {
+		zlog.Warn().Err(err).Msg("[guard] auth unreachable")
+		return
+	}
+	defer resp.Body.Close()
+	var body bytes.Buffer
+	body.ReadFrom(http.MaxBytesReader(nil, resp.Body, auth.MaxDocSize+1))
+	d, err := auth.ParseDoc(body.String(), g.keys, g.cfg.Deployment, auth.DocHeartbeat, "*")
+	if err == nil && d.Nonce != nonce {
+		err = errors.New("not our nonce")
+	}
+	if err == nil {
+		err = g.clock.accept(d.Version)
+	}
+	if err != nil {
+		zlog.Warn().Err(err).Int("status", resp.StatusCode).Msg("[guard] Heartbeat refused")
+	}
+}
+
+// time is the time to decide with: the signed one once a heartbeat came.
+func (g *Guard) time() time.Time {
+	if t, ok := g.clock.now(); ok {
+		return t
+	}
+	return g.now()
 }
 
 func (g *Guard) sendTD(ctx context.Context, id string, td any) {
