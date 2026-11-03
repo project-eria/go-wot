@@ -8,12 +8,17 @@
 // path) and the CORS preflights. The Thing sends its TD to auth's Things
 // channel, then pulls its signed table and the revocation list.
 //
-// It decides with the signed time of auth's heartbeats (clock.go, §4.3).
+// It decides with the signed time of auth's heartbeats (clock.go, §4.3), in
+// the mode they allow (§4.4): normal; minimal (terminal tokens, local 9
+// functions without confirmation) from the start until a heartbeat, after
+// missedBeats pulls without one, or while a version a heartbeat announced
+// is not received after versionWait; offline (every token refused) once
+// isolated for more than isolatedMax.
 //
-// ponytail: mode always normal, and the system time until the first
-// heartbeat, until the minimal mode (§4.4, step 5b); the keyset is a file
-// put by the deployment until the master delivers it; observations are
-// checked at the handshake only, not closed at exp.
+// ponytail: the system time when there is neither floor nor heartbeat; the
+// keyset is a file put by the deployment until the master delivers it;
+// observations are checked at the handshake only, not closed at exp nor at
+// a switch to the minimal mode.
 package guard
 
 import (
@@ -60,8 +65,18 @@ type Config struct {
 // deploy path (/eria/*): open without token.
 const ControllerRef = "eria"
 
-// Pull is how often a Thing asks auth for new versions.
+// Pull is how often a Thing asks auth for a heartbeat and new versions.
 var Pull = 30 * time.Second
+
+// Thresholds of the modes (§4.4).
+const (
+	missedBeats = 3
+	versionWait = time.Minute
+	isolatedMax = 72 * time.Hour
+	beatThings  = 16 // auth's bound on the tables a heartbeat announces
+)
+
+var errRefused = errors.New("document refused")
 
 const maxSeen = 1024
 
@@ -77,12 +92,19 @@ type Guard struct {
 	tables  map[string]auth.Doc              // by TD id
 	revoked auth.Doc
 	seen    map[string]int64 // confirm jti → exp
+	// Versions announced and not held, since when ("table:<id>",
+	// "revocation"); a document refused is no isolation: kept out.
+	pending  map[string]time.Time
+	refused  map[string]bool
+	mode     authz.Mode // the last one logged
+	beatFrom int        // rotation over the Things, beatThings per heartbeat
 }
 
 // New loads the keyset. No keyset file: generation 0, nosec.
 func New(cfg Config) (*Guard, error) {
 	g := &Guard{cfg: cfg, client: &http.Client{Timeout: 10 * time.Second}, now: time.Now, clock: newClock(cfg.Floor),
-		things: map[string]producer.ExposedThing{}, tables: map[string]auth.Doc{}, seen: map[string]int64{}}
+		things: map[string]producer.ExposedThing{}, tables: map[string]auth.Doc{}, seen: map[string]int64{},
+		pending: map[string]time.Time{}, refused: map[string]bool{}, mode: authz.Normal}
 	data, err := os.ReadFile(cfg.Keyset)
 	if errors.Is(err, os.ErrNotExist) || cfg.Keyset == "" {
 		zlog.Warn().Msg("[guard] No auth keyset: generation 0, every request accepted without token")
@@ -148,7 +170,7 @@ func (g *Guard) Handler(c *fiber.Ctx) error {
 		input = c.Body()
 	}
 	d := authz.Decide(authz.Check{
-		Request: authz.Request{Mode: authz.Normal, Verifier: authz.Thing, Keys: g.keys, Aud: g.cfg.Deployment, Now: g.time(),
+		Request: authz.Request{Mode: g.Mode(), Verifier: authz.Thing, Keys: g.keys, Aud: g.cfg.Deployment, Now: g.time(),
 			Token: strings.TrimPrefix(c.Get(fiber.HeaderAuthorization), "Bearer ")},
 		Thing:    id,
 		Zones:    table.Zones,
@@ -282,7 +304,7 @@ func (g *Guard) pullAll(ctx context.Context) {
 		ids = append(ids, t.GetThingDescription().ID)
 	}
 	g.mu.RUnlock()
-	g.heartbeat(ctx, ids)
+	v := g.heartbeat(ctx, g.rotate(ids))
 	for _, t := range things {
 		td := t.GetThingDescription()
 		g.mu.RLock()
@@ -291,32 +313,93 @@ func (g *Guard) pullAll(ctx context.Context) {
 		if !ok {
 			g.sendTD(ctx, td.ID, td)
 		}
-		if d, err := g.pull(ctx, "/v1/things/"+url.PathEscape(td.ID)+"/table", auth.DocTable, td.ID, held.Version); err == nil && d != nil {
-			g.mu.Lock()
+		d, err := g.pull(ctx, "/v1/things/"+url.PathEscape(td.ID)+"/table", auth.DocTable, td.ID, held.Version)
+		g.mu.Lock()
+		g.refused["table:"+td.ID] = errors.Is(err, errRefused)
+		if err == nil && d != nil {
 			g.tables[td.ID] = *d
 			g.seen = map[string]int64{} // F027: a new table, a fresh start
-			g.mu.Unlock()
 			zlog.Info().Str("thing", td.ID).Int64("version", d.Version).Msg("[guard] New table")
 		}
+		g.mu.Unlock()
 	}
 	g.mu.RLock()
 	held := g.revoked.Version
 	g.mu.RUnlock()
-	if d, err := g.pull(ctx, "/v1/revocation", auth.DocRevocation, "*", held); err == nil && d != nil {
-		g.mu.Lock()
+	d, err := g.pull(ctx, "/v1/revocation", auth.DocRevocation, "*", held)
+	g.mu.Lock()
+	g.refused["revocation"] = errors.Is(err, errRefused)
+	if err == nil && d != nil {
 		g.revoked = *d
-		g.mu.Unlock()
+	}
+	if v != nil {
+		g.announced("revocation", v.Revocation, g.revoked.Version)
+		for id, version := range v.Tables {
+			g.announced("table:"+id, version, g.tables[id].Version)
+		}
+	}
+	g.mu.Unlock()
+	g.switchMode()
+}
+
+// rotate picks the Things of this heartbeat: beatThings at most, in turn.
+func (g *Guard) rotate(ids []string) []string {
+	slices.Sort(ids)
+	if len(ids) <= beatThings {
+		return ids
+	}
+	g.beatFrom %= len(ids)
+	chunk := append(ids[g.beatFrom:], ids[:g.beatFrom]...)[:beatThings]
+	g.beatFrom += beatThings
+	return chunk
+}
+
+// announced records a version a heartbeat announced against the held one;
+// g.mu held.
+func (g *Guard) announced(key string, version, held int64) {
+	switch {
+	case version <= held || g.refused[key]:
+		delete(g.pending, key)
+	case g.pending[key].IsZero():
+		g.pending[key] = time.Now()
 	}
 }
 
-// heartbeat asks auth the signed time for a fresh nonce (§4.3); the
-// versions it announces are for the minimal mode (step 5b).
-//
-// ponytail: the first 16 Things of the app (auth's bound on a heartbeat);
-// rotate them when the minimal mode reads the versions.
-func (g *Guard) heartbeat(ctx context.Context, ids []string) {
-	slices.Sort(ids)
-	ids = ids[:min(len(ids), 16)]
+// Mode is the mode of the decision now (§4.4).
+func (g *Guard) Mode() authz.Mode {
+	if g.clock.isolated() > isolatedMax {
+		return authz.Offline
+	}
+	if g.clock.missed(missedBeats * Pull) {
+		return authz.Minimal
+	}
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	for _, since := range g.pending {
+		if time.Since(since) > versionWait {
+			return authz.Minimal
+		}
+	}
+	return authz.Normal
+}
+
+// switchMode logs a switch, and keeps the time of the last heartbeat at
+// once; else the floor, hourly.
+func (g *Guard) switchMode() {
+	m := g.Mode()
+	g.mu.Lock()
+	switched := m != g.mode
+	g.mode = m
+	g.mu.Unlock()
+	g.clock.save(switched)
+	if switched {
+		zlog.Warn().Str("mode", m.String()).Dur("isolated", g.clock.isolated()).Msg("[guard] Mode switched")
+	}
+}
+
+// heartbeat asks auth the signed time for a fresh nonce (§4.3); it
+// returns the versions announced, nil when refused.
+func (g *Guard) heartbeat(ctx context.Context, ids []string) *auth.Versions {
 	var b [16]byte
 	rand.Read(b[:])
 	nonce := base64.RawURLEncoding.EncodeToString(b[:])
@@ -324,7 +407,7 @@ func (g *Guard) heartbeat(ctx context.Context, ids []string) {
 	resp, err := g.client.Do(req)
 	if err != nil {
 		zlog.Warn().Err(err).Msg("[guard] auth unreachable")
-		return
+		return nil
 	}
 	defer resp.Body.Close()
 	var body bytes.Buffer
@@ -338,7 +421,9 @@ func (g *Guard) heartbeat(ctx context.Context, ids []string) {
 	}
 	if err != nil {
 		zlog.Warn().Err(err).Int("status", resp.StatusCode).Msg("[guard] Heartbeat refused")
+		return nil
 	}
+	return d.Versions
 }
 
 // time is the time to decide with: the signed one once a heartbeat came.
@@ -394,9 +479,12 @@ func (g *Guard) pull(ctx context.Context, path, doc, thing string, held int64) (
 	var b bytes.Buffer
 	b.ReadFrom(http.MaxBytesReader(nil, resp.Body, auth.MaxDocSize+1))
 	d, err := auth.ParseDoc(b.String(), g.keys, g.cfg.Deployment, doc, thing)
-	if err != nil || d.Version <= held {
+	if err != nil || d.Version < held {
 		zlog.Warn().Err(err).Str("doc", doc).Str("thing", thing).Msg("[guard] Document refused, the held one kept")
-		return nil, errors.New("document refused")
+		return nil, errRefused
+	}
+	if d.Version == held {
+		return nil, nil // the held one again, without a 304
 	}
 	return &d, nil
 }

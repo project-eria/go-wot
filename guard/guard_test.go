@@ -9,12 +9,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -59,6 +59,7 @@ func TestGuard(t *testing.T) {
 	var mu sync.Mutex
 	gotTD := map[string]bool{}
 	beat := now.UnixMilli() // the time of the heartbeats
+	announced := int64(1)   // the revocation version they announce
 	doc := func(d auth.Doc) string {
 		d.Iss, d.Aud, d.Issued = "auth", "eria-maison", now.Unix()
 		tok, err := auth.SignDoc(authPriv, pub.KID(), d)
@@ -85,7 +86,8 @@ func TestGuard(t *testing.T) {
 				Table: auth.Table{"property/open/read": {Levels: [3]int{9, 1, 1}}, "action/open/invoke": {Levels: [3]int{1, 1, 1}, Confirm: auth.OutsideRoom}}})))
 		case r.URL.Path == "/v1/heartbeat":
 			mu.Lock()
-			w.Write([]byte(doc(auth.Doc{Doc: auth.DocHeartbeat, Thing: "*", Version: beat, Nonce: r.URL.Query().Get("nonce")})))
+			w.Write([]byte(doc(auth.Doc{Doc: auth.DocHeartbeat, Thing: "*", Version: beat, Nonce: r.URL.Query().Get("nonce"),
+				Versions: &auth.Versions{Revocation: announced}})))
 			mu.Unlock()
 		case r.URL.Path == "/v1/revocation":
 			w.Write([]byte(doc(auth.Doc{Doc: auth.DocRevocation, Thing: "*", Version: 1})))
@@ -134,6 +136,8 @@ func TestGuard(t *testing.T) {
 		return resp.StatusCode
 	}
 
+	assert.Equal(t, authz.Minimal, g.Mode(), "minimal until a heartbeat")
+
 	// Before the table: the TD only.
 	assert.Equal(t, 401, status("GET", "/", ""), "no token")
 	assert.Equal(t, 200, status("GET", "/", entrance))
@@ -145,6 +149,7 @@ func TestGuard(t *testing.T) {
 	mu.Lock()
 	assert.True(t, gotTD[id], "the TD was sent to auth, signed by the app")
 	mu.Unlock()
+	assert.Equal(t, authz.Normal, g.Mode())
 
 	assert.Equal(t, 200, status("GET", "/open", garage), "local 9")
 	assert.Equal(t, 200, status("GET", "/OPEN/", garage), "routed like Fiber")
@@ -175,7 +180,7 @@ func TestGuard(t *testing.T) {
 	// Signed time (§4.3): the floor was written; the guard decides with the
 	// heartbeat's time, not the system's.
 	written, _ := os.ReadFile(floor)
-	assert.Equal(t, strconv.FormatInt(now.Unix(), 10), string(written))
+	assert.Equal(t, fmt.Sprintf("%d %d", now.Unix(), now.Unix()), string(written), "floor, last heartbeat")
 	mu.Lock()
 	beat = now.Add(50 * time.Minute).UnixMilli()
 	mu.Unlock()
@@ -197,6 +202,40 @@ func TestGuard(t *testing.T) {
 	c := newClock(floor)
 	assert.Error(t, c.accept(now.Add(-time.Minute).UnixMilli()))
 	assert.NoError(t, c.accept(now.Add(time.Minute).UnixMilli()))
+
+	// Minimal mode (§4.4): a version announced and not received, then the
+	// heartbeats missed. Terminal tokens only.
+	g.clock = newClock("")
+	mu.Lock()
+	beat, announced = now.UnixMilli(), 5
+	mu.Unlock()
+	g.pullAll(context.Background())
+	assert.Equal(t, authz.Normal, g.Mode(), "not yet a minute")
+	g.mu.Lock()
+	assert.False(t, g.pending["revocation"].IsZero())
+	g.pending["revocation"] = time.Now().Add(-2 * versionWait)
+	g.mu.Unlock()
+	assert.Equal(t, authz.Minimal, g.Mode(), "announced, not received for a minute")
+	g.now = func() time.Time { return now }
+	assert.Equal(t, 200, status("GET", "/open", garage), "local 9 stays")
+	assert.Equal(t, 401, status("POST", "/open", parent), "a person's token is refused")
+	mu.Lock()
+	beat, announced = now.Add(time.Second).UnixMilli(), 1
+	mu.Unlock()
+	g.pullAll(context.Background())
+	assert.Equal(t, authz.Normal, g.Mode(), "the versions held again")
+	saved := Pull
+	Pull = time.Millisecond
+	time.Sleep(5 * time.Millisecond)
+	assert.Equal(t, authz.Minimal, g.Mode(), "heartbeats missed")
+	Pull = saved
+
+	// Isolated for more than 72 h, after a restart: offline.
+	isolated := filepath.Join(dir, "isolated")
+	require.NoError(t, os.WriteFile(isolated, fmt.Appendf(nil, "%d %d", now.Unix(), now.Add(-73*time.Hour).Unix()), 0o600))
+	g.clock = newClock(isolated)
+	assert.Equal(t, authz.Offline, g.Mode())
+	assert.Equal(t, 401, status("GET", "/open", garage), "every token refused")
 }
 
 // confirmToken is a confirm token (no lvl), 60 s.

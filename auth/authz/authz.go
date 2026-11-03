@@ -23,6 +23,8 @@ const (
 	Offline
 )
 
+func (m Mode) String() string { return [...]string{"normal", "minimal", "offline"}[m] }
+
 // Verifier is who checks the token: it decides which rows of the token table
 // are accepted (the "accepted by" column of §2.7).
 type Verifier int
