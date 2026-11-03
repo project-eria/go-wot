@@ -99,9 +99,7 @@ func (e *exposedAction) Run(t ExposedThing, key string, data interface{}, parame
 		// Execute the action requests
 		output, err := e.handler(input, options)
 		if err != nil {
-			return nil, &UnknownError{
-				Message: err.Error(),
-			}
+			return nil, fromHandler(err)
 		}
 
 		// Check the output data

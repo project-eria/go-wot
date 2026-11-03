@@ -136,6 +136,9 @@ func (c *wsConn) connect() <-chan bool {
 				}
 			}
 			wsConn, _, err := ws.Dial(c.wsURL, header)
+			if err == nil {
+				wsConn.SetReadLimit(MaxClientMessage) // SECURITY_AUDIT #15
+			}
 
 			c.mu.Lock()
 			c.Conn = wsConn

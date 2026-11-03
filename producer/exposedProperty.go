@@ -142,9 +142,7 @@ func (p *exposedProperty) Read(t ExposedThing, key string, parameters map[string
 		// Call the function that handle the property read
 		content, err := p.propertyReadHandler(t, key, options)
 		if err != nil {
-			return nil, &UnknownError{
-				Message: err.Error(),
-			}
+			return nil, fromHandler(err)
 		}
 		// TODO: check output??
 		return content, nil
@@ -197,9 +195,7 @@ func (p *exposedProperty) Write(t ExposedThing, key string, data interface{}, pa
 		// Call the function that handle the property write
 		err = p.propertyWriteHandler(t, key, input, options)
 		if err != nil {
-			return &UnknownError{
-				Message: err.Error(),
-			}
+			return fromHandler(err)
 		}
 
 		// Notify all listeners that the property changed

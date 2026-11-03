@@ -46,7 +46,7 @@ func propertyReadHandler(t producer.ExposedThing, tdProperty *interaction.Proper
 					})
 				} else {
 					return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
-						"error": err.Error(),
+						"error": "internal error", // SECURITY_AUDIT #11: the detail goes to the log only
 						"type":  UnknownError.ErrorType,
 					})
 				}

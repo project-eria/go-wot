@@ -36,7 +36,7 @@ func eventHandler(t producer.ExposedThing, tdEvent *interaction.Event) func(*fib
 					})
 				}
 
-				return websocket.New(eventWSHandler(t, tdEvent, parameters))(c)
+				return upgrade(c, eventWSHandler(t, tdEvent, parameters))
 			}
 			return c.Next()
 		}

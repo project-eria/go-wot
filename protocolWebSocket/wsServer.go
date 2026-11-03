@@ -3,6 +3,7 @@ package protocolWebSocket
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -18,6 +19,32 @@ var (
 	eventSubscriptions  = map[string]map[string]map[string]*wsConnection{} // [thing][property][wsKey]
 	mu                  sync.RWMutex
 )
+
+// Limits (SECURITY_AUDIT #15, #16): the server only reads control messages,
+// a client reads values; the WebSockets open at once are bounded.
+var (
+	MaxServerMessage int64 = 64 << 10
+	MaxClientMessage int64 = 1 << 20
+	MaxConnections   int64 = 256
+	openConns        atomic.Int64
+)
+
+// upgrade opens a WebSocket within the limits: 503 beyond MaxConnections.
+//
+// ponytail: the count is checked before the upgrade and taken in the
+// handler: a burst may pass it by a few.
+func upgrade(c *fiber.Ctx, handler func(*websocket.Conn)) error {
+	if openConns.Load() >= MaxConnections {
+		zlog.Warn().Int64("open", openConns.Load()).Msg("[protocolWebSocket:upgrade] Too many WebSockets, refused")
+		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "too many connections", "type": protocolHttp.UnknownError.ErrorType})
+	}
+	return websocket.New(func(conn *websocket.Conn) {
+		openConns.Add(1)
+		defer openConns.Add(-1)
+		conn.SetReadLimit(MaxServerMessage)
+		handler(conn)
+	})(c)
+}
 
 type WsServer struct {
 	*protocolHttp.HttpServer

@@ -36,7 +36,7 @@ func propertyObserverHandler(t producer.ExposedThing, tdProperty *interaction.Pr
 					})
 				}
 
-				return websocket.New(propertyObserverWSHandler(t, tdProperty, parameters))(c)
+				return upgrade(c, propertyObserverWSHandler(t, tdProperty, parameters))
 			}
 			return c.Next()
 		}
