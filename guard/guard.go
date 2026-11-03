@@ -59,6 +59,36 @@ type Config struct {
 	// Floor is the file keeping the time floor across restarts (§4.3); ""
 	// keeps none.
 	Floor string
+	// Settings, when set, replace Keyset and Roots: written by the agent
+	// on the master's order (settings.go).
+	Settings *Settings
+	// DeployPath: every route of these Things is the deploy path, checked
+	// by the master's signature in the handlers (the agent): no token.
+	DeployPath bool
+}
+
+// OpenKeyset opens the configured keyset: from Settings, else the Keyset file
+// checked against the Roots; os.ErrNotExist without any (generation 0).
+func (cfg Config) OpenKeyset() (auth.Keyset, auth.KeyLookup, error) {
+	if cfg.Settings != nil {
+		return cfg.Settings.OpenKeyset()
+	}
+	if cfg.Keyset == "" {
+		return auth.Keyset{}, nil, os.ErrNotExist
+	}
+	data, err := os.ReadFile(cfg.Keyset)
+	if err != nil {
+		return auth.Keyset{}, nil, err
+	}
+	rootsPEM, err := os.ReadFile(cfg.Roots)
+	if err != nil {
+		return auth.Keyset{}, nil, err
+	}
+	deploy, err := auth.DeploymentKeys(rootsPEM)
+	if err != nil {
+		return auth.Keyset{}, nil, err
+	}
+	return auth.OpenKeyset(data, deploy)
 }
 
 // ControllerRef is the ref of the app controller, whose reads are the
@@ -102,28 +132,25 @@ type Guard struct {
 
 // New loads the keyset. No keyset file: generation 0, nosec.
 func New(cfg Config) (*Guard, error) {
+	if cfg.Settings != nil {
+		cfg.Channel, cfg.Deployment = cfg.Settings.Channel, cfg.Settings.Deployment
+	}
 	g := &Guard{cfg: cfg, client: &http.Client{Timeout: 10 * time.Second}, now: time.Now, clock: newClock(cfg.Floor),
 		things: map[string]producer.ExposedThing{}, tables: map[string]auth.Doc{}, seen: map[string]int64{},
 		pending: map[string]time.Time{}, refused: map[string]bool{}, mode: authz.Normal}
-	data, err := os.ReadFile(cfg.Keyset)
-	if errors.Is(err, os.ErrNotExist) || cfg.Keyset == "" {
+	if cfg.DeployPath {
+		zlog.Info().Msg("[guard] Deploy path: every request is checked by the master's signature")
+		return g, nil
+	}
+	_, keys, err := cfg.OpenKeyset()
+	if errors.Is(err, os.ErrNotExist) {
 		zlog.Warn().Msg("[guard] No auth keyset: generation 0, every request accepted without token")
 		return g, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	rootsPEM, err := os.ReadFile(cfg.Roots)
-	if err != nil {
-		return nil, err
-	}
-	deploy, err := auth.DeploymentKeys(rootsPEM)
-	if err != nil {
-		return nil, err
-	}
-	if _, g.keys, err = auth.OpenKeyset(data, deploy); err != nil {
-		return nil, err
-	}
+	g.keys = keys
 	if cfg.Channel == "" || cfg.Deployment == "" {
 		return nil, errors.New("guard: channel and deployment are required with a keyset")
 	}
