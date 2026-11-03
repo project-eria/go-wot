@@ -304,7 +304,7 @@ func (g *Guard) pullAll(ctx context.Context) {
 		ids = append(ids, t.GetThingDescription().ID)
 	}
 	g.mu.RUnlock()
-	v := g.heartbeat(ctx, g.rotate(ids))
+	v, beat := g.heartbeat(ctx, g.rotate(ids))
 	for _, t := range things {
 		td := t.GetThingDescription()
 		g.mu.RLock()
@@ -338,8 +338,44 @@ func (g *Guard) pullAll(ctx context.Context) {
 			g.announced("table:"+id, version, g.tables[id].Version)
 		}
 	}
+	ack := auth.Ack{Beat: beat, Tables: map[string]int64{}, Revocation: g.revoked.Version}
+	for id, t := range g.tables {
+		ack.Tables[id] = t.Version
+	}
+	for key, refused := range g.refused {
+		if refused {
+			ack.Refused = append(ack.Refused, key)
+		}
+	}
 	g.mu.Unlock()
 	g.switchMode()
+	if v != nil {
+		ack.Mode = g.Mode().String()
+		g.acknowledge(ctx, ack)
+	}
+}
+
+// acknowledge tells auth the heartbeat came (§4.4), signed by the app key:
+// auth alerts when a Thing goes silent. Without a key, nothing is sent.
+func (g *Guard) acknowledge(ctx context.Context, ack auth.Ack) {
+	if g.cfg.AppKey == nil {
+		return
+	}
+	signed, err := auth.SignBy(g.cfg.AppKey, auth.AckPrefix, ack)
+	if err != nil {
+		return
+	}
+	body, _ := json.Marshal(signed)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, g.cfg.Channel+"/v1/heartbeat/ack", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := g.client.Do(req)
+	if err != nil {
+		return // the next heartbeat tells
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		zlog.Warn().Int("status", resp.StatusCode).Msg("[guard] Acknowledgement refused by auth")
+	}
 }
 
 // rotate picks the Things of this heartbeat: beatThings at most, in turn.
@@ -398,8 +434,9 @@ func (g *Guard) switchMode() {
 }
 
 // heartbeat asks auth the signed time for a fresh nonce (§4.3); it
-// returns the versions announced, nil when refused.
-func (g *Guard) heartbeat(ctx context.Context, ids []string) *auth.Versions {
+// returns the versions announced and the heartbeat's version, nil when
+// refused.
+func (g *Guard) heartbeat(ctx context.Context, ids []string) (*auth.Versions, int64) {
 	var b [16]byte
 	rand.Read(b[:])
 	nonce := base64.RawURLEncoding.EncodeToString(b[:])
@@ -407,7 +444,7 @@ func (g *Guard) heartbeat(ctx context.Context, ids []string) *auth.Versions {
 	resp, err := g.client.Do(req)
 	if err != nil {
 		zlog.Warn().Err(err).Msg("[guard] auth unreachable")
-		return nil
+		return nil, 0
 	}
 	defer resp.Body.Close()
 	var body bytes.Buffer
@@ -421,9 +458,12 @@ func (g *Guard) heartbeat(ctx context.Context, ids []string) *auth.Versions {
 	}
 	if err != nil {
 		zlog.Warn().Err(err).Int("status", resp.StatusCode).Msg("[guard] Heartbeat refused")
-		return nil
+		return nil, 0
 	}
-	return d.Versions
+	if d.Versions == nil {
+		d.Versions = &auth.Versions{}
+	}
+	return d.Versions, d.Version
 }
 
 // time is the time to decide with: the signed one once a heartbeat came.

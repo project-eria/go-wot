@@ -102,3 +102,17 @@ type States struct {
 	States  []string `json:"states"`
 	Version int64    `json:"version"`
 }
+
+// AckPrefix is the domain of a heartbeat acknowledgement (§4.4): a Thing
+// tells auth it is alive, in which mode, and which versions it holds.
+const AckPrefix = "eria-ack-v1"
+
+// Ack acknowledges the heartbeat Beat (its version, ms): auth takes it only
+// while that heartbeat is recent, so an old ack replayed proves nothing.
+type Ack struct {
+	Beat       int64            `json:"beat"`
+	Mode       string           `json:"mode"`
+	Tables     map[string]int64 `json:"tables"`            // held, by Thing
+	Revocation int64            `json:"revocation"`        // held
+	Refused    []string         `json:"refused,omitempty"` // documents refused: "table:<id>", "revocation"
+}
