@@ -42,9 +42,13 @@ type Claims struct {
 	RoomOnly bool     `json:"room_only,omitempty"`
 	Grants   []string `json:"grants,omitempty"`
 	Act      string   `json:"act,omitempty"`
-	Iat      int64    `json:"iat"`
-	Exp      int64    `json:"exp"`
-	Jti      string   `json:"jti"`
+	// Thing a service token is for (step 4e): another Thing refuses it, so
+	// a compromised Thing can't replay an app's token elsewhere. Empty:
+	// for the master, or the relay's read-only token.
+	Thing string `json:"thing,omitempty"`
+	Iat   int64  `json:"iat"`
+	Exp   int64  `json:"exp"`
+	Jti   string `json:"jti"`
 }
 
 // header is the only header accepted: exactly these three fields.

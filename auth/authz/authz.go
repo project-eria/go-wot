@@ -111,6 +111,9 @@ func Decide(k Check) Decision {
 		return d
 	}
 	c := d.Claims
+	if c.Thing != "" && c.Thing != k.Thing {
+		return deny(3, "token for another Thing")
+	}
 	// 4. Revocation.
 	if k.Revoked != nil && k.Revoked.Revokes(c) {
 		return deny(4, "revoked")

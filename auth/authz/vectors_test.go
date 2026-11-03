@@ -150,6 +150,8 @@ func generate(t *testing.T) {
 	leaWith := func(grant string) string {
 		return sign(auth.Claims{Kind: auth.KindUser, Sub: "profil:lea", Term: "tel-lea", Lvl: lvl(2), Grants: []string{grant}, Jti: "j-" + grant})
 	}
+	serviceHere := sign(auth.Claims{Kind: auth.KindService, Sub: "app:a1", Lvl: lvl(9), Grants: []string{"thing:" + thing + ":invoke"}, Thing: thing, Iat: now.Unix() - 10, Exp: now.Unix() + 290, Jti: "j-here"})
+	serviceElsewhere := sign(auth.Claims{Kind: auth.KindService, Sub: "app:a1", Lvl: lvl(9), Grants: []string{"thing:" + thing + ":invoke"}, Thing: "urn:eria:salon:1", Iat: now.Unix() - 10, Exp: now.Unix() + 290, Jti: "j-elsewhere"})
 	serviceRead := sign(auth.Claims{Kind: auth.KindService, Sub: "app:a2", Lvl: lvl(9), Grants: []string{"thing:" + thing + ":read"}})
 
 	open := vectorFunction{Kind: "action", Name: "open", Op: Invoke}
@@ -203,6 +205,9 @@ func generate(t *testing.T) {
 		{Name: "open, service 15 min token", Function: open, Token: service, Step: 8},
 		{Name: "open, service room grant", Function: open, Token: serviceRoom, Step: 7},
 		{Name: "open, service exact grant 5 min", Function: open, Token: serviceShort, Allow: true},
+		{Name: "open, service token for this Thing", Function: open, Token: serviceHere, Allow: true},
+		{Name: "open, service token for another Thing", Function: open, Token: serviceElsewhere, Step: 3},
+		{Name: "td, person token naming a Thing", Function: vectorFunction{Kind: "td", Op: Read}, Token: sign(auth.Claims{Kind: auth.KindUser, Sub: "profil:lea", Term: "tel-lea", Lvl: lvl(2), Thing: thing, Jti: "j-lea-thing"}), Step: 3},
 		// The confirm_when = outside vectors of §2.7.
 		{Name: "unsetContext, service 15 min, remote", Function: unset, Token: service, Step: 8},
 		{Name: "unsetContext, PIN level 1 at the entrance", Function: unset, Token: parentEntrance, Allow: true},

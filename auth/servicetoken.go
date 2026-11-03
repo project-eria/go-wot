@@ -15,9 +15,10 @@ import (
 	zlog "github.com/rs/zerolog/log"
 )
 
-// ServiceTokens gets the app's service token from auth's Things channel,
-// proving its app key, and renews it at 2/3 of its life (AUTH-DESIGN §1.3,
-// step 3c).
+// ServiceTokens gets the app's service tokens from auth's Things channel,
+// proving its app key (AUTH-DESIGN §1.3, step 3c): one for the master,
+// renewed at 2/3 of its life by Run, and one per Thing (step 4e), fetched by
+// For on first use and again past 2/3 of its life.
 type ServiceTokens struct {
 	channel string
 	authKid string // the proof binds auth's key
@@ -27,6 +28,17 @@ type ServiceTokens struct {
 	mu    sync.RWMutex
 	token string
 	exp   time.Time
+
+	// ponytail: one lock across the Things' fetches (a few ms on the LAN, a
+	// failure remembered RetryAfterFailure); per Thing if it ever waits.
+	thingsMu sync.Mutex
+	things   map[string]heldToken
+}
+
+type heldToken struct {
+	token    string
+	iat, exp time.Time
+	failed   time.Time // last failed request
 }
 
 // RetryAfterFailure is the pause after a token request that failed.
@@ -38,13 +50,39 @@ func NewServiceTokens(channel string, key ed25519.PrivateKey, ks Keyset) (*Servi
 	for _, k := range ks.Keys {
 		if k.Usage == UsageSign {
 			return &ServiceTokens{channel: strings.TrimSuffix(channel, "/"), authKid: k.Kid, key: key,
-				client: &http.Client{Timeout: 10 * time.Second}}, nil
+				client: &http.Client{Timeout: 10 * time.Second}, things: map[string]heldToken{}}, nil
 		}
 	}
 	return nil, errors.New("no auth signing key in the keyset")
 }
 
-// Token is the current token, "" before the first one or once expired.
+// For is the token for a Thing (its TD id, or its DNS-SD instance), ""
+// while auth gives none: auth knows no such Thing, or can't be reached.
+func (s *ServiceTokens) For(thing string) string {
+	s.thingsMu.Lock()
+	defer s.thingsMu.Unlock()
+	h, now := s.things[thing], time.Now()
+	fresh := now.Before(h.iat.Add(h.exp.Sub(h.iat) * 2 / 3))
+	if !fresh && !now.Before(h.failed.Add(RetryAfterFailure)) {
+		ctx, cancel := context.WithTimeout(context.Background(), s.client.Timeout)
+		token, iat, exp, err := s.fetch(ctx, thing)
+		cancel()
+		if err != nil {
+			zlog.Warn().Err(err).Str("thing", thing).Msg("[auth:ServiceTokens] No service token for this Thing")
+			h.failed = now
+		} else {
+			h = heldToken{token: token, iat: iat, exp: exp}
+		}
+		s.things[thing] = h
+	}
+	if !now.Before(h.exp) {
+		return ""
+	}
+	return h.token
+}
+
+// Token is the current token for the master, "" before the first one or
+// once expired.
 func (s *ServiceTokens) Token() string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -59,7 +97,7 @@ func (s *ServiceTokens) Token() string {
 func (s *ServiceTokens) Run(ctx context.Context, ready chan<- struct{}) {
 	for first := true; ; first = false {
 		wait := RetryAfterFailure
-		token, iat, exp, err := s.fetch(ctx)
+		token, iat, exp, err := s.fetch(ctx, "")
 		if err != nil {
 			zlog.Warn().Err(err).Msg("[auth:ServiceTokens] No service token, retrying")
 		} else {
@@ -79,16 +117,20 @@ func (s *ServiceTokens) Run(ctx context.Context, ready chan<- struct{}) {
 	}
 }
 
-// fetch asks a challenge for the app key and signs it (ServiceProof).
-func (s *ServiceTokens) fetch(ctx context.Context) (token string, iat, exp time.Time, err error) {
+// fetch asks a challenge for the app key and signs it (ServiceProof); the
+// token is for thing, or for the master when thing is "".
+func (s *ServiceTokens) fetch(ctx context.Context, thing string) (token string, iat, exp time.Time, err error) {
 	kid := AppKID(s.key)
 	var ch struct{ Challenge string }
 	if err = s.post(ctx, "/v1/service/challenge", map[string]string{"kid": kid}, &ch); err != nil {
 		return
 	}
 	var out struct{ Token string }
-	if err = s.post(ctx, "/v1/service/token", map[string]any{"kid": kid, "challenge": ch.Challenge,
-		"sig": ed25519.Sign(s.key, ServiceProof(ch.Challenge, s.authKid))}, &out); err != nil {
+	in := map[string]any{"kid": kid, "challenge": ch.Challenge, "sig": ed25519.Sign(s.key, ServiceProof(ch.Challenge, s.authKid))}
+	if thing != "" {
+		in["thing"] = thing
+	}
+	if err = s.post(ctx, "/v1/service/token", in, &out); err != nil {
 		return
 	}
 	// The claims are read, not verified: a forged token only fails at the Things.

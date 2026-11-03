@@ -62,3 +62,48 @@ func TestServiceTokens(t *testing.T) {
 	require.Eventually(t, func() bool { return s.Token() != "" }, 2*time.Second, 20*time.Millisecond, "retried after a failure")
 	require.Eventually(t, func() bool { return issued.Load() >= 2 }, 4*time.Second, 50*time.Millisecond, "renewed at 2/3 of its life")
 }
+
+// Step 4e: a token per Thing, fetched on first use, kept while fresh; a
+// Thing auth refuses gets none, asked again after RetryAfterFailure.
+func TestServiceTokensFor(t *testing.T) {
+	authPub, authPriv, _ := ed25519.GenerateKey(rand.Reader)
+	authKey, _ := ParsePublicKey(Ed25519, authPub)
+	_, appPriv, _ := ed25519.GenerateKey(rand.Reader)
+	var issued atomic.Int32
+	channel := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var in struct{ Thing string }
+		json.NewDecoder(r.Body).Decode(&in)
+		switch {
+		case r.URL.Path == "/v1/service/challenge":
+			json.NewEncoder(w).Encode(map[string]string{"challenge": "ch"})
+		case in.Thing == "unknown":
+			w.WriteHeader(http.StatusNotFound)
+		default:
+			now := time.Now().Unix()
+			tok, _ := Sign(authPriv, authKey.KID(), Claims{Iss: "auth", Aud: "a", Kind: KindService, Sub: "app:x",
+				Thing: in.Thing, Iat: now, Exp: now + 60, Jti: "j"})
+			issued.Add(1)
+			json.NewEncoder(w).Encode(map[string]string{"token": tok})
+		}
+	}))
+	t.Cleanup(channel.Close)
+	saved := RetryAfterFailure
+	RetryAfterFailure = 100 * time.Millisecond
+	t.Cleanup(func() { RetryAfterFailure = saved })
+	s, err := NewServiceTokens(channel.URL, appPriv, Keyset{Keys: []KeysetKey{{Kid: authKey.KID(), Usage: UsageSign}}})
+	require.NoError(t, err)
+	lookup := func(string) (PublicKey, bool, bool) { return authKey, false, true }
+
+	garage := s.For("eria:garage")
+	c, _, err := Parse(garage, lookup)
+	require.NoError(t, err)
+	assert.Equal(t, "eria:garage", c.Thing)
+	assert.Equal(t, garage, s.For("eria:garage"), "kept while fresh")
+	c, _, _ = Parse(s.For("eria:salon"), lookup)
+	assert.Equal(t, "eria:salon", c.Thing, "another Thing, another token")
+	assert.Equal(t, int32(2), issued.Load())
+
+	assert.Empty(t, s.For("unknown"))
+	assert.Empty(t, s.For("unknown"), "not asked again at once")
+	assert.Equal(t, int32(2), issued.Load())
+}

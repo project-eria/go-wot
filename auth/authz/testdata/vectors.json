@@ -559,6 +559,41 @@
       "step": 0
     },
     {
+      "name": "open, service token for this Thing",
+      "mode": "normal",
+      "function": {
+        "kind": "action",
+        "name": "open",
+        "op": "invoke"
+      },
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoic2VydmljZSIsInN1YiI6ImFwcDphMSIsImx2bCI6OSwiZ3JhbnRzIjpbInRoaW5nOnVybjplcmlhOmdhcmFnZToxOmludm9rZSJdLCJ0aGluZyI6InVybjplcmlhOmdhcmFnZToxIiwiaWF0IjoxNzk5OTk5OTkwLCJleHAiOjE4MDAwMDAyOTAsImp0aSI6ImotaGVyZSJ9.-8OjGg-MCb3Xjya-cJHQ-ljVj8-CeoVRKdKhdN-dnN0Im4KQmXaLMp5V_RWDvdAZ6y3rUl26aMO4iJKFWowlCQ",
+      "allow": true,
+      "step": 0
+    },
+    {
+      "name": "open, service token for another Thing",
+      "mode": "normal",
+      "function": {
+        "kind": "action",
+        "name": "open",
+        "op": "invoke"
+      },
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoic2VydmljZSIsInN1YiI6ImFwcDphMSIsImx2bCI6OSwiZ3JhbnRzIjpbInRoaW5nOnVybjplcmlhOmdhcmFnZToxOmludm9rZSJdLCJ0aGluZyI6InVybjplcmlhOnNhbG9uOjEiLCJpYXQiOjE3OTk5OTk5OTAsImV4cCI6MTgwMDAwMDI5MCwianRpIjoiai1lbHNld2hlcmUifQ.Gj4lLE_CzMNHuLpHnp9NhKEAIasNi_g_YcaLbKC6qKt3cTfVAfiilnM-cDQIAmfnlDPJg0gRDAdQ-eGZ8zIXDw",
+      "allow": false,
+      "step": 3
+    },
+    {
+      "name": "td, person token naming a Thing",
+      "mode": "normal",
+      "function": {
+        "kind": "td",
+        "op": "read"
+      },
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoidXNlciIsInN1YiI6InByb2ZpbDpsZWEiLCJ0ZXJtIjoidGVsLWxlYSIsImx2bCI6MiwidGhpbmciOiJ1cm46ZXJpYTpnYXJhZ2U6MSIsImlhdCI6MTc5OTk5OTk5MCwiZXhwIjoxODAwMDAwMjMwLCJqdGkiOiJqLWxlYS10aGluZyJ9.WGl4D5OJqhdblXQ7pxD1xpgmM4ka7Ph07g26HQOx_ruotFB-5JSjrMNnb5QQte4nH9RDCDh9S7_9jpm6Z_ndBw",
+      "allow": false,
+      "step": 3
+    },
+    {
       "name": "unsetContext, service 15 min, remote",
       "mode": "normal",
       "function": {

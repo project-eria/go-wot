@@ -39,6 +39,9 @@ const (
 // Profile returns the table row the claims match, or an error for any other
 // combination.
 func (c Claims) Profile() (Profile, error) {
+	if c.Thing != "" && c.Kind != KindService {
+		return "", errors.New("claim combination not allowed")
+	}
 	hasLvl := c.Lvl != nil
 	lvl := -1
 	if hasLvl {
@@ -77,7 +80,7 @@ func (c Claims) Check(now time.Time, aud string) (Profile, error) {
 	if len(c.Grants) > MaxGrants {
 		return "", errors.New("too many grants")
 	}
-	for _, s := range append([]string{c.Sub, c.Term, c.Zone, c.Act, c.Jti}, c.Grants...) {
+	for _, s := range append([]string{c.Sub, c.Term, c.Zone, c.Act, c.Jti, c.Thing}, c.Grants...) {
 		if len(s) > MaxClaimSize {
 			return "", errors.New("claim too long")
 		}
