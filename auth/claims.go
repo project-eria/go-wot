@@ -95,3 +95,26 @@ func (c Claims) Check(now time.Time, aud string) (Profile, error) {
 	}
 	return p, nil
 }
+
+// ValidGrants checks a set of grants against the closed grammar of §2.6:
+// <scope>:<selector>:<op>, scope thing or room, op read, write, invoke or *,
+// the selector a Thing id (it may hold ":") or a room. At most MaxGrants,
+// each at most MaxClaimSize.
+func ValidGrants(grants []string) error {
+	if len(grants) > MaxGrants {
+		return errors.New("too many grants")
+	}
+	for _, g := range grants {
+		scope, rest, _ := strings.Cut(g, ":")
+		i := strings.LastIndexByte(rest, ':')
+		if len(g) > MaxClaimSize || i < 1 || (scope != "thing" && scope != "room") {
+			return errors.New("bad grant " + g)
+		}
+		switch rest[i+1:] {
+		case "read", "write", "invoke", "*":
+		default:
+			return errors.New("bad grant " + g)
+		}
+	}
+	return nil
+}

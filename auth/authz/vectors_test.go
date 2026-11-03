@@ -147,6 +147,10 @@ func generate(t *testing.T) {
 	service := sign(auth.Claims{Kind: auth.KindService, Sub: "app:a1", Lvl: lvl(9), Grants: []string{"thing:" + thing + ":invoke"}, Iat: now.Unix() - 10, Exp: now.Unix() + 15*60 - 10})
 	serviceShort := sign(auth.Claims{Kind: auth.KindService, Sub: "app:a1", Lvl: lvl(9), Grants: []string{"thing:" + thing + ":invoke"}, Iat: now.Unix() - 10, Exp: now.Unix() + 290})
 	serviceRoom := sign(auth.Claims{Kind: auth.KindService, Sub: "app:a1", Lvl: lvl(9), Grants: []string{"room:garage:*"}})
+	leaWith := func(grant string) string {
+		return sign(auth.Claims{Kind: auth.KindUser, Sub: "profil:lea", Term: "tel-lea", Lvl: lvl(2), Grants: []string{grant}, Jti: "j-" + grant})
+	}
+	serviceRead := sign(auth.Claims{Kind: auth.KindService, Sub: "app:a2", Lvl: lvl(9), Grants: []string{"thing:" + thing + ":read"}})
 
 	open := vectorFunction{Kind: "action", Name: "open", Op: Invoke}
 	disarm := vectorFunction{Kind: "action", Name: "disarm", Op: Invoke}
@@ -175,6 +179,13 @@ func generate(t *testing.T) {
 		{Name: "state, room grant elevates", Function: vectorFunction{Kind: "property", Name: "state", Op: Read}, Token: leaGrant, Allow: true},
 		{Name: "event, room grant elevates", Function: vectorFunction{Kind: "event", Name: "moved", Op: Read}, Token: leaGrant, Allow: true},
 		{Name: "unknown function is None", Function: vectorFunction{Kind: "property", Name: "unknown", Op: Read}, Token: parentPhone, Step: 7},
+		{Name: "state, grant on another Thing", Function: vectorFunction{Kind: "property", Name: "state", Op: Read}, Token: leaWith("thing:urn:eria:garage:2:*"), Step: 7},
+		{Name: "state, grant on another room", Function: vectorFunction{Kind: "property", Name: "state", Op: Read}, Token: leaWith("room:salon:*"), Step: 7},
+		{Name: "state, grant for another op", Function: vectorFunction{Kind: "property", Name: "state", Op: Read}, Token: leaWith("thing:" + thing + ":write"), Step: 7},
+		{Name: "state, thing grant on all ops", Function: vectorFunction{Kind: "property", Name: "state", Op: Read}, Token: leaWith("thing:" + thing + ":*"), Allow: true},
+		{Name: "state, malformed grant ignored", Function: vectorFunction{Kind: "property", Name: "state", Op: Read}, Token: leaWith("garage:read"), Step: 7},
+		{Name: "state, service read grant", Function: vectorFunction{Kind: "property", Name: "state", Op: Read}, Token: serviceRead, Allow: true},
+		{Name: "state, service without grant", Function: vectorFunction{Kind: "property", Name: "state", Op: Read}, Token: sign(auth.Claims{Kind: auth.KindService, Sub: "app:a3", Lvl: lvl(9)}), Step: 7},
 		{Name: "None even with a grant", Function: vectorFunction{Kind: "action", Name: "sealed", Op: Invoke}, Token: leaExact, Step: 7},
 		{Name: "open, parent local, no confirmation", Function: open, Token: parentGarage, Allow: true},
 		{Name: "open, parent remote, no confirm", Function: open, Token: parentPhone, Step: 8},
@@ -185,6 +196,7 @@ func generate(t *testing.T) {
 		{Name: "open, confirm replayed", Function: open, Token: parentPhone, Confirm: confirm("profil:paul", "tel-paul", open, ""), Seen: true, Step: 8},
 		{Name: "open, confirm as main token", Function: open, Token: confirm("profil:paul", "tel-paul", open, ""), Step: 3},
 		{Name: "open, room grant does not cover a confirmable", Function: open, Token: leaGrant, Step: 7},
+		{Name: "open, thing grant on all ops does not cover a confirmable", Function: open, Token: leaWith("thing:" + thing + ":*"), Confirm: confirm("profil:lea", "tel-lea", open, ""), Step: 7},
 		{Name: "open, exact grant, remote, confirm", Function: open, Token: leaExact, Confirm: confirm("profil:lea", "tel-lea", open, ""), Allow: true},
 		{Name: "disarm, parent local still needs confirm", Function: disarm, Token: parentGarage, Step: 8},
 		{Name: "disarm, service never", Function: disarm, Token: serviceShort, Step: 8},

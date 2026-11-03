@@ -19,14 +19,16 @@ const AppSubject = "app:"
 // deployment key (the master).
 const AppKeyPrefix = "eria-app-key-v1"
 
-// AppKey binds an app to its key. Pubkey "" retires the app's key. Version
-// is the time in ms of the master's message: auth keeps only a higher one,
-// so an old message replayed never brings back a retired key.
+// AppKey binds an app to its key and its grants. Pubkey "" retires the
+// app's key. Version is the time in ms of the master's message: auth keeps
+// only a higher one, so an old message replayed never brings back a retired
+// key, nor grants the admin removed.
 type AppKey struct {
-	App     string `json:"app"`    // label: the app's name in the deployment
-	Node    string `json:"node"`   // where it runs
-	Pubkey  string `json:"pubkey"` // base64url, Ed25519
-	Version int64  `json:"version"`
+	App     string   `json:"app"`    // label: the app's name in the deployment
+	Node    string   `json:"node"`   // where it runs
+	Pubkey  string   `json:"pubkey"` // base64url, Ed25519
+	Version int64    `json:"version"`
+	Grants  []string `json:"grants,omitempty"` // accepted by the admin (§1.3), grammar of §2.6
 }
 
 // ServiceProofDomain is the domain of a service proof: the app's key signs

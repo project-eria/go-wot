@@ -183,3 +183,12 @@ func TestClaimsCheck(t *testing.T) {
 	c.Sub = strings.Repeat("x", MaxClaimSize+1)
 	refused(c, "claim too long")
 }
+
+func TestValidGrants(t *testing.T) {
+	assert.NoError(t, ValidGrants([]string{"room:piscine:*", "thing:urn:eria:garage:1:invoke", "thing:x:read", "room:salon:write"}))
+	assert.NoError(t, ValidGrants(nil))
+	for _, g := range []string{"", "room:piscine", "room::read", "house:x:read", "thing:x:delete", "thing:x:", ":x:read", "room:" + strings.Repeat("a", MaxClaimSize) + ":read"} {
+		assert.Error(t, ValidGrants([]string{g}), g)
+	}
+	assert.Error(t, ValidGrants(make([]string, MaxGrants+1)))
+}

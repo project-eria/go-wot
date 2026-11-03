@@ -252,6 +252,90 @@
       "step": 7
     },
     {
+      "name": "state, grant on another Thing",
+      "mode": "normal",
+      "function": {
+        "kind": "property",
+        "name": "state",
+        "op": "read"
+      },
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoidXNlciIsInN1YiI6InByb2ZpbDpsZWEiLCJ0ZXJtIjoidGVsLWxlYSIsImx2bCI6MiwiZ3JhbnRzIjpbInRoaW5nOnVybjplcmlhOmdhcmFnZToyOioiXSwiaWF0IjoxNzk5OTk5OTkwLCJleHAiOjE4MDAwMDAyMzAsImp0aSI6ImotdGhpbmc6dXJuOmVyaWE6Z2FyYWdlOjI6KiJ9.xExtR11YtiJfhOargpI1nqwYaz-eW6L-1s61bIa_yJsrIYYWs509xJqWsbyOUnXPestZU2vj_6awwFFCD0h8AA",
+      "allow": false,
+      "step": 7
+    },
+    {
+      "name": "state, grant on another room",
+      "mode": "normal",
+      "function": {
+        "kind": "property",
+        "name": "state",
+        "op": "read"
+      },
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoidXNlciIsInN1YiI6InByb2ZpbDpsZWEiLCJ0ZXJtIjoidGVsLWxlYSIsImx2bCI6MiwiZ3JhbnRzIjpbInJvb206c2Fsb246KiJdLCJpYXQiOjE3OTk5OTk5OTAsImV4cCI6MTgwMDAwMDIzMCwianRpIjoiai1yb29tOnNhbG9uOioifQ.zbRSIaz4JnGAK67jCnMXMlNsoAdCQ82uNNTR5eWHqEjJ27WHADryY01iAKTUCOPJsDmQdYfZlvAnKBBSHri0Dg",
+      "allow": false,
+      "step": 7
+    },
+    {
+      "name": "state, grant for another op",
+      "mode": "normal",
+      "function": {
+        "kind": "property",
+        "name": "state",
+        "op": "read"
+      },
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoidXNlciIsInN1YiI6InByb2ZpbDpsZWEiLCJ0ZXJtIjoidGVsLWxlYSIsImx2bCI6MiwiZ3JhbnRzIjpbInRoaW5nOnVybjplcmlhOmdhcmFnZToxOndyaXRlIl0sImlhdCI6MTc5OTk5OTk5MCwiZXhwIjoxODAwMDAwMjMwLCJqdGkiOiJqLXRoaW5nOnVybjplcmlhOmdhcmFnZToxOndyaXRlIn0.5iRNXJzqHEbyrQrI51vR3b9DbnHXX5awyYk8uJTX4iI5QbXZ9oRvSUKi6WwfcaJ7U6pesNImK4Zk0QzEtmHMDA",
+      "allow": false,
+      "step": 7
+    },
+    {
+      "name": "state, thing grant on all ops",
+      "mode": "normal",
+      "function": {
+        "kind": "property",
+        "name": "state",
+        "op": "read"
+      },
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoidXNlciIsInN1YiI6InByb2ZpbDpsZWEiLCJ0ZXJtIjoidGVsLWxlYSIsImx2bCI6MiwiZ3JhbnRzIjpbInRoaW5nOnVybjplcmlhOmdhcmFnZToxOioiXSwiaWF0IjoxNzk5OTk5OTkwLCJleHAiOjE4MDAwMDAyMzAsImp0aSI6ImotdGhpbmc6dXJuOmVyaWE6Z2FyYWdlOjE6KiJ9.u6IPtrqAlQoIgPEj5vS5NxNUXKYwinS4nwM6fzxUP5wZiJTZQWKkLtfvBUPBkOTgewmAC1CYdar59PgR-MCzDQ",
+      "allow": true,
+      "step": 0
+    },
+    {
+      "name": "state, malformed grant ignored",
+      "mode": "normal",
+      "function": {
+        "kind": "property",
+        "name": "state",
+        "op": "read"
+      },
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoidXNlciIsInN1YiI6InByb2ZpbDpsZWEiLCJ0ZXJtIjoidGVsLWxlYSIsImx2bCI6MiwiZ3JhbnRzIjpbImdhcmFnZTpyZWFkIl0sImlhdCI6MTc5OTk5OTk5MCwiZXhwIjoxODAwMDAwMjMwLCJqdGkiOiJqLWdhcmFnZTpyZWFkIn0.tDAC3nMg9oGb9P1qIjLpFxuUG81IJrBtCx2CGFHD31l8Td7rC457o6RfWwKur2Mad11HlU-RfTh-j35FP0MkDg",
+      "allow": false,
+      "step": 7
+    },
+    {
+      "name": "state, service read grant",
+      "mode": "normal",
+      "function": {
+        "kind": "property",
+        "name": "state",
+        "op": "read"
+      },
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoic2VydmljZSIsInN1YiI6ImFwcDphMiIsImx2bCI6OSwiZ3JhbnRzIjpbInRoaW5nOnVybjplcmlhOmdhcmFnZToxOnJlYWQiXSwiaWF0IjoxNzk5OTk5OTkwLCJleHAiOjE4MDAwMDAyMzAsImp0aSI6ImotYXBwOmEyIn0.NbHEy_pW5iLMMBfzH90yiHcz7c-CTY80b1hJx6sSNZ3RzL3YC3Hy0p6pvNAILN6Zg6ken4OqgjQ42ESmZfD9Bg",
+      "allow": true,
+      "step": 0
+    },
+    {
+      "name": "state, service without grant",
+      "mode": "normal",
+      "function": {
+        "kind": "property",
+        "name": "state",
+        "op": "read"
+      },
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoic2VydmljZSIsInN1YiI6ImFwcDphMyIsImx2bCI6OSwiaWF0IjoxNzk5OTk5OTkwLCJleHAiOjE4MDAwMDAyMzAsImp0aSI6ImotYXBwOmEzIn0.ItPHEHvao110WCGCYMccOiiDOODGFBQWWK5OEw1VJhxtA6ODmTJaxYFLyqS1TyfAUg2fuICcMWiE7sm4ZDl7DA",
+      "allow": false,
+      "step": 7
+    },
+    {
       "name": "None even with a grant",
       "mode": "normal",
       "function": {
@@ -385,6 +469,19 @@
         "op": "invoke"
       },
       "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoidXNlciIsInN1YiI6InByb2ZpbDpsZWEiLCJ0ZXJtIjoidGVsLWxlYSIsImx2bCI6MiwiZ3JhbnRzIjpbInJvb206Z2FyYWdlOioiXSwiaWF0IjoxNzk5OTk5OTkwLCJleHAiOjE4MDAwMDAyMzAsImp0aSI6ImotdGVsLWxlYXByb2ZpbDpsZWEifQ.0C55_TJjD_mZ0WxWuVYUG-nC1Ilj0eJaMc4G1O9JCP9FUPn1P04iJtBGl6JpNovN-dE7jGExojWbbPeUKpmzDQ",
+      "allow": false,
+      "step": 7
+    },
+    {
+      "name": "open, thing grant on all ops does not cover a confirmable",
+      "mode": "normal",
+      "function": {
+        "kind": "action",
+        "name": "open",
+        "op": "invoke"
+      },
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoidXNlciIsInN1YiI6InByb2ZpbDpsZWEiLCJ0ZXJtIjoidGVsLWxlYSIsImx2bCI6MiwiZ3JhbnRzIjpbInRoaW5nOnVybjplcmlhOmdhcmFnZToxOioiXSwiaWF0IjoxNzk5OTk5OTkwLCJleHAiOjE4MDAwMDAyMzAsImp0aSI6ImotdGhpbmc6dXJuOmVyaWE6Z2FyYWdlOjE6KiJ9.u6IPtrqAlQoIgPEj5vS5NxNUXKYwinS4nwM6fzxUP5wZiJTZQWKkLtfvBUPBkOTgewmAC1CYdar59PgR-MCzDQ",
+      "confirm": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoiY29uZmlybSIsInN1YiI6InByb2ZpbDpsZWEiLCJ0ZXJtIjoidGVsLWxlYSIsImFjdCI6IjNoMkhvY3lzZU1XNDI5dlA2NEc2cDRldVhoek1ORHNHUUhvc056STR3UjgiLCJpYXQiOjE3OTk5OTk5OTAsImV4cCI6MTgwMDAwMDA1MCwianRpIjoiYy10ZWwtbGVhb3BlbiJ9.wbzJPIvJXjz4yGqVuNUOqQVlrtK6jVbp9IPNqnygQiRGi4Z-pxl4pmVy0EsVDhTXjiCDVSh3MgFPPJ2LVuiRAg",
       "allow": false,
       "step": 7
     },
