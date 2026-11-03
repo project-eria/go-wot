@@ -1,7 +1,9 @@
 package protocolHttp
 
 import (
+	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -13,8 +15,13 @@ import (
 type HttpServer struct {
 	addr        string
 	ExposedAddr string
+	tls         *tls.Config // nil: plain HTTP
 	*fiber.App
 }
+
+// SetTLS serves HTTPS (and WSS) with cfg; before Start. The forms then say
+// https: fiber sees the connection as secure.
+func (s *HttpServer) SetTLS(cfg *tls.Config) { s.tls = cfg }
 
 // NewServer makes the HTTP server; guards run first, before the content
 // type check (the auth guard, AUTH-DESIGN §2.7).
@@ -63,7 +70,15 @@ func (s *HttpServer) Start() {
 
 	go func() {
 		zlog.Info().Msg("[protocolHttp:Start] Server listening")
-		err := s.Listen(s.addr)
+		var err error
+		if s.tls == nil {
+			err = s.Listen(s.addr)
+		} else {
+			var ln net.Listener
+			if ln, err = tls.Listen("tcp", s.addr, s.tls); err == nil {
+				err = s.Listener(ln)
+			}
+		}
 		// always returns error. ErrServerClosed on graceful close
 		if err == http.ErrServerClosed {
 			zlog.Info().Msg("[protocolHttp:Start] Server closed")

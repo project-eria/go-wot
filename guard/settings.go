@@ -25,6 +25,7 @@ type Settings struct {
 	Deployment string `json:"deployment"` // aud of the tokens
 	DeployKey  string `json:"deployKey"`  // the deployment key (hex): verifies the keyset
 	Master     string `json:"master"`     // the master's TD URL: its inventory (F037)
+	Roots      string `json:"roots"`      // deployment roots, PEM: the master's certificate (TLS)
 }
 
 // ReadSettings reads the settings beside the app key file; os.ErrNotExist
