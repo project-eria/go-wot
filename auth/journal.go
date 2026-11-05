@@ -224,3 +224,16 @@ func SignDocumentP256(priv *ecdsa.PrivateKey, prefix string, v any) (Signed, err
 	s.FillBytes(sig[32:])
 	return Signed{Payload: b64.EncodeToString(payload), Sig: b64.EncodeToString(sig)}, nil
 }
+
+// JournalErasePrefix is the domain of a JournalErase, signed by a deployment
+// key (the master), once the admin validated the order (§4.5 « effacement »).
+const JournalErasePrefix = "eria-journal-erase-v1"
+
+// JournalErase erases whole UTC days up to Until (YYYY-MM-DD, included):
+// the comfort lines (30 days), or all of them. At (unix seconds) only goes
+// up: a message replayed erases nothing more.
+type JournalErase struct {
+	Until string `json:"until"`
+	All   bool   `json:"all"`
+	At    int64  `json:"at"`
+}
