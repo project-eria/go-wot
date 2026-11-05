@@ -249,6 +249,13 @@ func (g *Guard) journalDecision(d authz.Decision, thing string, f authz.Function
 		}
 	case d.Confirmable:
 		l.Type = "guard.confirmable"
+		// The daily summary counts the ones from outside and the first use of a grant.
+		if d.Locality == authz.Outside {
+			l.Detail += " outside"
+		}
+		if d.Grant != "" {
+			l.Detail += " grant:" + d.Grant
+		}
 	}
 	g.log(l)
 }

@@ -67,6 +67,10 @@ type Decision struct {
 	// Confirmable: an allowed command whose rule asks a confirmation
 	// (journaled a year, §4.5).
 	Confirmable bool
+	// Of an allowed request: where from, and the grant that lifted the
+	// level, "" without (the daily summary, §4.5).
+	Locality Locality
+	Grant    string
 }
 
 // ReasonReused is the reason of a confirm token used twice (§4.5 alert).
@@ -148,10 +152,10 @@ func Decide(k Check) Decision {
 	confirmable := command && confirmable(r)
 	// 7. Level, after grant.
 	lvl := *c.Lvl
-	granted := false
+	granted, grant := false, ""
 	for _, g := range c.Grants {
 		if covers(g, k.Thing, k.Zones, k.Function, confirmable) {
-			granted = true
+			granted, grant = true, g
 			lvl = 1
 			break
 		}
@@ -175,7 +179,7 @@ func Decide(k Check) Decision {
 		}
 	}
 	// 9. Allow.
-	d.Confirmable = confirmable
+	d.Confirmable, d.Locality, d.Grant = confirmable, loc, grant
 	return d
 }
 
