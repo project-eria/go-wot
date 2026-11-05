@@ -58,6 +58,7 @@ func TestGuard(t *testing.T) {
 	const id = "urn:eria:garage:1"
 	var mu sync.Mutex
 	gotTD := map[string]bool{}
+	var journal []auth.Line // lines taken, their batches signed by the app
 	beat := now.UnixMilli() // the time of the heartbeats
 	announced := int64(1)   // the revocation version they announce
 	doc := func(d auth.Doc) string {
@@ -88,6 +89,14 @@ func TestGuard(t *testing.T) {
 			mu.Lock()
 			w.Write([]byte(doc(auth.Doc{Doc: auth.DocHeartbeat, Thing: "*", Version: beat, Nonce: r.URL.Query().Get("nonce"),
 				Versions: &auth.Versions{Revocation: announced}})))
+			mu.Unlock()
+		case r.URL.Path == "/v1/things/journal":
+			var in auth.SignedBy
+			json.NewDecoder(r.Body).Decode(&in)
+			var b auth.JournalBatch
+			require.NoError(t, in.Open(auth.JournalPrefix, []auth.PublicKey{appPub}, &b))
+			mu.Lock()
+			journal = append(journal, b.Lines...)
 			mu.Unlock()
 		case r.URL.Path == "/v1/revocation":
 			w.Write([]byte(doc(auth.Doc{Doc: auth.DocRevocation, Thing: "*", Version: 1})))
@@ -236,6 +245,34 @@ func TestGuard(t *testing.T) {
 	g.clock = newClock(isolated)
 	assert.Equal(t, authz.Offline, g.Mode())
 	assert.Equal(t, 401, status("GET", "/open", garage), "every token refused")
+
+	// The journal (§4.5): refusals, commands, documents, switches, heartbeats.
+	g.switchMode()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go g.journal.Run(ctx)
+	seen := func(typ, object, reason string) bool {
+		mu.Lock()
+		defer mu.Unlock()
+		for _, l := range journal {
+			if l.Type == typ && (object == "" || l.Object == object) && (reason == "" || l.Reason == reason) {
+				return true
+			}
+		}
+		return false
+	}
+	require.Eventually(t, func() bool { return seen("guard.heartbeat", "", "refused") }, 5*time.Second, 10*time.Millisecond)
+	assert.True(t, seen("guard.confirmable", id, ""), "the commands of a confirmable function")
+	assert.False(t, seen("guard.command", "", ""), "no other command")
+	assert.True(t, seen("guard.denied", id, "reused"), "the confirmation used again")
+	assert.True(t, seen("guard.denied", id, "step 7"))
+	assert.True(t, seen("guard.denied", "", "route"))
+	assert.True(t, seen("guard.document", "table:"+id, ""))
+	assert.True(t, seen("guard.document", "revocation", ""))
+	assert.True(t, seen("guard.mode", "offline", ""))
+	assert.False(t, seen("guard.command", "", "step 0"), "reads are not journaled")
+	_, err = os.Stat(floor + ".journal")
+	assert.NoError(t, err, "the queue kept beside the floor")
 }
 
 // confirmToken is a confirm token (no lvl), 60 s.

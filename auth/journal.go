@@ -6,6 +6,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
+	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -54,9 +56,11 @@ func cut(s string, n int) string {
 }
 
 // Journal queues lines, never blocking the caller, and hands them in order
-// to send, a batch at a time, again every minute until it's taken.
-// ponytail: in memory, the lines of a restart before auth took them are
-// lost; and a clock stepped back makes the next batches look sent again.
+// to send, a batch at a time, again every minute until it's taken. A refusal
+// repeated within a minute (same type, subject, object, reason) is counted,
+// not queued: one line "repeated N" follows once the minute is over.
+// ponytail: in memory unless Persist names a file; and a clock stepped back
+// makes the next batches look sent again.
 type Journal struct {
 	send    func(JournalBatch) error
 	mu      sync.Mutex
@@ -64,10 +68,22 @@ type Journal struct {
 	pending *JournalBatch // sent, not yet taken: sent again as is
 	seq     int64
 	wake    chan struct{}
+	repeats map[string]*repeat // refusals of the last minute
+	file    string             // "": nothing kept
+	dirty   bool               // changed since written
 }
 
+type repeat struct {
+	line  Line
+	since time.Time
+	n     int // times again since
+}
+
+// repeatWindow is how long a refusal coalesces its repeats.
+const repeatWindow = time.Minute
+
 func NewJournal(send func(JournalBatch) error) *Journal {
-	return &Journal{send: send, wake: make(chan struct{}, 1)}
+	return &Journal{send: send, wake: make(chan struct{}, 1), repeats: map[string]*repeat{}}
 }
 
 // Add queues a line, stamped now when At is zero.
@@ -79,14 +95,74 @@ func (j *Journal) Add(l Line) {
 	l.Result, l.Reason, l.Jti = cut(l.Result, journalField), cut(l.Reason, journalField), cut(l.Jti, journalField)
 	l.Detail = cut(l.Detail, journalDetail)
 	j.mu.Lock()
-	j.lines = append(j.lines, l)
-	if len(j.lines) > journalQueued {
-		j.lines = j.lines[len(j.lines)-journalQueued:]
+	if l.Result == "denied" {
+		key := l.Type + "\x00" + l.Subject + "\x00" + l.Object + "\x00" + l.Reason
+		if r := j.repeats[key]; r != nil && time.Since(r.since) < repeatWindow {
+			r.n++
+			j.mu.Unlock()
+			return
+		}
+		j.endRepeats(true)
+		j.repeats[key] = &repeat{line: l, since: time.Now()}
 	}
+	j.queue(l)
 	j.mu.Unlock()
 	select {
 	case j.wake <- struct{}{}:
 	default:
+	}
+}
+
+// queue appends l, the oldest lines going past journalQueued; j.mu held.
+func (j *Journal) queue(l Line) {
+	j.lines = append(j.lines, l)
+	if len(j.lines) > journalQueued {
+		j.lines = j.lines[len(j.lines)-journalQueued:]
+	}
+	j.dirty = true
+}
+
+// endRepeats queues "repeated N" for the refusals whose minute is over (all
+// of them unless onlyOver); j.mu held.
+func (j *Journal) endRepeats(onlyOver bool) {
+	for key, r := range j.repeats {
+		if onlyOver && time.Since(r.since) < repeatWindow {
+			continue
+		}
+		if r.n > 0 {
+			l := r.line
+			l.At, l.Jti, l.Detail = time.Now().Unix(), "", cut(fmt.Sprintf("%s repeated %d", l.Detail, r.n), journalDetail)
+			j.queue(l)
+		}
+		delete(j.repeats, key)
+	}
+}
+
+// Persist keeps the queue in file: read now, written after each round of
+// sends. Call before Run.
+func (j *Journal) Persist(file string) {
+	var saved struct {
+		Seq     int64
+		Pending *JournalBatch
+		Lines   []Line
+	}
+	if data, err := os.ReadFile(file); err == nil && json.Unmarshal(data, &saved) == nil {
+		j.seq, j.pending, j.lines = saved.Seq, saved.Pending, append(saved.Lines, j.lines...)
+	}
+	j.file = file
+}
+
+// save writes the queue when it changed.
+func (j *Journal) save() {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	if j.file == "" || !j.dirty {
+		return
+	}
+	data, _ := json.Marshal(map[string]any{"Seq": j.seq, "Pending": j.pending, "Lines": j.lines})
+	tmp := j.file + ".tmp"
+	if os.WriteFile(tmp, data, 0o600) == nil && os.Rename(tmp, j.file) == nil {
+		j.dirty = false
 	}
 }
 
@@ -95,8 +171,12 @@ func (j *Journal) Run(ctx context.Context) {
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()
 	for {
+		j.mu.Lock()
+		j.endRepeats(true)
+		j.mu.Unlock()
 		for j.flush() {
 		}
+		j.save()
 		select {
 		case <-ctx.Done():
 			return
@@ -122,7 +202,7 @@ func (j *Journal) flush() bool {
 		return false
 	}
 	j.mu.Lock()
-	j.pending = nil
+	j.pending, j.dirty = nil, true
 	j.mu.Unlock()
 	return true
 }

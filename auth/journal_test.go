@@ -46,3 +46,35 @@ func TestJournal(t *testing.T) {
 	require.NoError(t, doc.Open(JournalPrefix, []PublicKey{pub}, &back))
 	assert.Equal(t, sent[2], back)
 }
+
+// Refusals repeated within a minute: one line, then "repeated N"; the queue
+// kept in a file across a restart.
+func TestJournalRepeatsAndFile(t *testing.T) {
+	var sent []JournalBatch
+	j := NewJournal(func(b JournalBatch) error { sent = append(sent, b); return nil })
+	file := t.TempDir() + "/journal.json"
+	j.Persist(file)
+	refused := Line{Type: "guard.denied", Result: "denied", Reason: "step 2", Detail: "action open"}
+	for range 5 {
+		j.Add(refused)
+	}
+	j.Add(Line{Type: "guard.denied", Result: "denied", Reason: "step 7"})
+	assert.Len(t, j.lines, 2, "the repeats counted, not queued")
+	for _, r := range j.repeats {
+		r.since = r.since.Add(-repeatWindow)
+	}
+	j.endRepeats(true)
+	require.Len(t, j.lines, 3)
+	assert.Equal(t, "action open repeated 4", j.lines[2].Detail)
+
+	j.save()
+	again := NewJournal(nil)
+	again.Persist(file)
+	assert.Equal(t, j.lines, again.lines, "kept across a restart")
+	assert.True(t, j.flush())
+	j.save()
+	again = NewJournal(nil)
+	again.Persist(file)
+	assert.Empty(t, again.lines, "sent: not kept")
+	assert.Equal(t, sent[0].Seq, again.seq)
+}

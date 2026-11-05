@@ -64,7 +64,13 @@ type Decision struct {
 	// Confirm: refused at step 8 for want of a confirmation that this user
 	// could give (§2.8); the interfaces offer it instead of greying out.
 	Confirm bool
+	// Confirmable: an allowed command whose rule asks a confirmation
+	// (journaled a year, §4.5).
+	Confirmable bool
 }
+
+// ReasonReused is the reason of a confirm token used twice (§4.5 alert).
+const ReasonReused = "confirm token already used"
 
 func deny(step int, reason string) Decision { return Decision{Step: step, Reason: reason} }
 
@@ -113,6 +119,10 @@ func Decide(k Check) Decision {
 		return d
 	}
 	c := d.Claims
+	// Refusals from here on keep the token's claims, for the journal.
+	deny := func(step int, reason string) Decision {
+		return Decision{Step: step, Reason: reason, Claims: c, Profile: d.Profile}
+	}
 	if c.Thing != "" && c.Thing != k.Thing {
 		return deny(3, "token for another Thing")
 	}
@@ -165,6 +175,7 @@ func Decide(k Check) Decision {
 		}
 	}
 	// 9. Allow.
+	d.Confirmable = confirmable
 	return d
 }
 
@@ -186,7 +197,7 @@ func (k Check) confirmed(user auth.Claims) string {
 		return "confirm token for another command or person"
 	}
 	if k.Seen == nil || k.Seen(c.Jti, c.Exp) {
-		return "confirm token already used"
+		return ReasonReused
 	}
 	return ""
 }

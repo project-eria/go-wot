@@ -15,6 +15,11 @@
 // is not received after versionWait; offline (every token refused) once
 // isolated for more than isolatedMax.
 //
+// It journals (§4.5, step 5e-4) its refusals, the commands it allowed (not
+// the reads), the documents taken or refused, its switches of mode, its
+// starts and the heartbeats refused; batches signed by the app key, sent to
+// auth's Things channel, the queue kept beside the floor.
+//
 // ponytail: the system time when there is neither floor nor heartbeat; the
 // keyset is a file put by the deployment until the master delivers it;
 // observations are checked at the handshake only, not closed at exp nor at
@@ -29,6 +34,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -128,6 +134,9 @@ type Guard struct {
 	refused  map[string]bool
 	mode     authz.Mode // the last one logged
 	beatFrom int        // rotation over the Things, beatThings per heartbeat
+	// journal: nil without an app key to sign its batches.
+	journal     *auth.Journal
+	beatRefused bool // the last heartbeat was refused: journaled once
 }
 
 // New loads the keyset. No keyset file: generation 0, nosec.
@@ -153,6 +162,12 @@ func New(cfg Config) (*Guard, error) {
 	g.keys = keys
 	if cfg.Channel == "" || cfg.Deployment == "" {
 		return nil, errors.New("guard: channel and deployment are required with a keyset")
+	}
+	if cfg.AppKey != nil {
+		g.journal = auth.NewJournal(g.sendJournal)
+		if cfg.Floor != "" {
+			g.journal.Persist(cfg.Floor + ".journal")
+		}
 	}
 	zlog.Info().Msg("[guard] Activated: tokens required")
 	return g, nil
@@ -186,6 +201,7 @@ func (g *Guard) Handler(c *fiber.Ctx) error {
 		return c.Next() // deploy path: /eria reads
 	}
 	if !ok {
+		g.log(auth.Line{Type: "guard.denied", Result: "denied", Reason: "route"})
 		return deny(c, 7, "unknown route", "")
 	}
 	id := t.GetThingDescription().ID
@@ -208,10 +224,60 @@ func (g *Guard) Handler(c *fiber.Ctx) error {
 		Confirm:  c.Get("X-Eria-Confirm"),
 		Seen:     g.seenJti,
 	})
+	g.journalDecision(d, id, f)
 	if !d.Allow {
 		return deny(c, d.Step, d.Reason, id)
 	}
 	return c.Next()
+}
+
+// journalDecision journals a refusal or an allowed command; reads allowed
+// are not journaled (§4.5).
+func (g *Guard) journalDecision(d authz.Decision, thing string, f authz.Function) {
+	if d.Allow && f.Op == authz.Read {
+		return
+	}
+	l := auth.Line{Type: "guard.command", Subject: d.Claims.Sub, Object: thing, Jti: d.Claims.Jti, Detail: f.Kind + " " + f.Name}
+	if l.Subject == "" && d.Claims.Term != "" {
+		l.Subject = "term:" + d.Claims.Term
+	}
+	switch {
+	case !d.Allow:
+		l.Type, l.Result, l.Reason = "guard.denied", "denied", fmt.Sprintf("step %d", d.Step)
+		if d.Reason == authz.ReasonReused {
+			l.Reason = "reused" // alerted by auth
+		}
+	case d.Confirmable:
+		l.Type = "guard.confirmable"
+	}
+	g.log(l)
+}
+
+// log queues a journal line at the signed time.
+func (g *Guard) log(l auth.Line) {
+	if g.journal == nil {
+		return
+	}
+	l.At = g.time().Unix()
+	g.journal.Add(l)
+}
+
+// sendJournal hands a batch to auth, signed by the app key.
+func (g *Guard) sendJournal(b auth.JournalBatch) error {
+	signed, err := auth.SignBy(g.cfg.AppKey, auth.JournalPrefix, b)
+	if err != nil {
+		return err
+	}
+	body, _ := json.Marshal(signed)
+	resp, err := g.client.Post(g.cfg.Channel+"/v1/things/journal", "application/json", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("auth answered %s", resp.Status)
+	}
+	return nil
 }
 
 // deny answers 401 for a bad token (steps 0-3), 403 otherwise, without
@@ -312,6 +378,10 @@ func (g *Guard) Run(ctx context.Context) {
 	if !g.Active() {
 		return
 	}
+	if g.journal != nil {
+		go g.journal.Run(ctx)
+	}
+	g.log(auth.Line{Type: "guard.start"})
 	for {
 		g.pullAll(ctx)
 		select {
@@ -342,7 +412,7 @@ func (g *Guard) pullAll(ctx context.Context) {
 		}
 		d, err := g.pull(ctx, "/v1/things/"+url.PathEscape(td.ID)+"/table", auth.DocTable, td.ID, held.Version)
 		g.mu.Lock()
-		g.refused["table:"+td.ID] = errors.Is(err, errRefused)
+		g.document("table:"+td.ID, d, err)
 		if err == nil && d != nil {
 			g.tables[td.ID] = *d
 			g.seen = map[string]int64{} // F027: a new table, a fresh start
@@ -355,7 +425,7 @@ func (g *Guard) pullAll(ctx context.Context) {
 	g.mu.RUnlock()
 	d, err := g.pull(ctx, "/v1/revocation", auth.DocRevocation, "*", held)
 	g.mu.Lock()
-	g.refused["revocation"] = errors.Is(err, errRefused)
+	g.document("revocation", d, err)
 	if err == nil && d != nil {
 		g.revoked = *d
 	}
@@ -417,6 +487,19 @@ func (g *Guard) rotate(ids []string) []string {
 	return chunk
 }
 
+// document records a pull of key: refused (journaled when it starts) or a
+// new version taken; g.mu held.
+func (g *Guard) document(key string, d *auth.Doc, err error) {
+	refused := errors.Is(err, errRefused)
+	switch {
+	case refused && !g.refused[key]:
+		g.log(auth.Line{Type: "guard.document", Object: key, Result: "denied", Reason: "refused"})
+	case err == nil && d != nil:
+		g.log(auth.Line{Type: "guard.document", Object: key, Detail: fmt.Sprintf("version %d", d.Version)})
+	}
+	g.refused[key] = refused
+}
+
 // announced records a version a heartbeat announced against the held one;
 // g.mu held.
 func (g *Guard) announced(key string, version, held int64) {
@@ -457,6 +540,8 @@ func (g *Guard) switchMode() {
 	g.clock.save(switched)
 	if switched {
 		zlog.Warn().Str("mode", m.String()).Dur("isolated", g.clock.isolated()).Msg("[guard] Mode switched")
+		g.log(auth.Line{Type: "guard.mode", Object: m.String(),
+			Detail: "isolated " + g.clock.isolated().Truncate(time.Second).String()})
 	}
 }
 
@@ -485,8 +570,13 @@ func (g *Guard) heartbeat(ctx context.Context, ids []string) (*auth.Versions, in
 	}
 	if err != nil {
 		zlog.Warn().Err(err).Int("status", resp.StatusCode).Msg("[guard] Heartbeat refused")
+		if !g.beatRefused {
+			g.log(auth.Line{Type: "guard.heartbeat", Result: "denied", Reason: "refused", Detail: err.Error()})
+		}
+		g.beatRefused = true
 		return nil, 0
 	}
+	g.beatRefused = false
 	if d.Versions == nil {
 		d.Versions = &auth.Versions{}
 	}
