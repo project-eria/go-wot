@@ -116,3 +116,18 @@ type Ack struct {
 	Revocation int64            `json:"revocation"`        // held
 	Refused    []string         `json:"refused,omitempty"` // documents refused: "table:<id>", "revocation"
 }
+
+// AppReleasePrefix is the domain of an app release's descriptor (AUTH-DESIGN
+// §3.4): signed by a deployment key once the admin validated the
+// publication; the app installs a package only when its descriptor allows
+// it, and never a version at or below its own.
+const AppReleasePrefix = "eria-app-release-v1"
+
+// AppRelease is what a descriptor signs: a version of the app, for one
+// updater target (darwin-aarch64, windows-x86_64…), and its package's sha256
+// (hex), checked before the package reaches the updater.
+type AppRelease struct {
+	Version string `json:"version"`
+	Target  string `json:"target"`
+	Sha256  string `json:"sha256"`
+}
