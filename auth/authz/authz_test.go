@@ -15,8 +15,7 @@ func TestAuthenticate(t *testing.T) {
 	pubRaw, priv, _ := ed25519.GenerateKey(rand.Reader)
 	pub, err := auth.ParsePublicKey(auth.Ed25519, pubRaw)
 	require.NoError(t, err)
-	legacy := false
-	keys := func(kid string) (auth.PublicKey, bool, bool) { return pub, legacy, kid == pub.KID() }
+	keys := func(kid string) (auth.PublicKey, bool) { return pub, kid == pub.KID() }
 	now := time.Unix(1_800_000_000, 0)
 	lvl := func(n int) *int { return &n }
 
@@ -66,8 +65,4 @@ func TestAuthenticate(t *testing.T) {
 
 	d := run(Thing, Minimal, terminal)
 	assert.True(t, d.Allow, "a terminal token in minimal mode")
-
-	legacy = true
-	refuse(Thing, Normal, person, 3)
-	assert.True(t, run(Thing, Normal, terminal).Allow, "a terminal token with a legacy key")
 }

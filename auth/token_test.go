@@ -23,9 +23,9 @@ func newSigner(t *testing.T) signer {
 	return signer{priv, pub}
 }
 
-func (s signer) lookup(legacy bool) KeyLookup {
-	return func(kid string) (PublicKey, bool, bool) {
-		return s.pub, legacy, kid == s.pub.KID()
+func (s signer) lookup() KeyLookup {
+	return func(kid string) (PublicKey, bool) {
+		return s.pub, kid == s.pub.KID()
 	}
 }
 
@@ -55,9 +55,8 @@ func TestParseRoundTrip(t *testing.T) {
 	s := newSigner(t)
 	tok, err := Sign(s.priv, s.pub.KID(), person())
 	require.NoError(t, err)
-	c, legacy, err := Parse(tok, s.lookup(false))
+	c, err := Parse(tok, s.lookup())
 	require.NoError(t, err)
-	assert.False(t, legacy)
 	assert.Equal(t, person(), c)
 }
 
@@ -67,7 +66,7 @@ func TestParseStructure(t *testing.T) {
 	hdr := `{"alg":"EdDSA","typ":"JWT","kid":"` + kid + `"}`
 	claims := `{"iss":"auth","aud":"a","kind":"user","term":"t","lvl":9,"iat":1,"exp":2,"jti":"j"}`
 
-	_, _, err := Parse(s.raw(hdr, claims), s.lookup(false))
+	_, err := Parse(s.raw(hdr, claims), s.lookup())
 	require.NoError(t, err)
 
 	cases := map[string]string{
@@ -83,7 +82,7 @@ func TestParseStructure(t *testing.T) {
 		"padding":            s.raw(hdr, claims) + "=",
 	}
 	for name, tok := range cases {
-		_, _, err := Parse(tok, s.lookup(false))
+		_, err := Parse(tok, s.lookup())
 		assert.Equal(t, 1, step(t, err), name)
 	}
 
@@ -91,7 +90,7 @@ func TestParseStructure(t *testing.T) {
 	tok := s.raw(hdr, claims)
 	last := tok[len(tok)-1]
 	alt := strings.IndexByte(b64Alphabet, last) ^ 1
-	_, _, err = Parse(tok[:len(tok)-1]+string(b64Alphabet[alt]), s.lookup(false))
+	_, err = Parse(tok[:len(tok)-1]+string(b64Alphabet[alt]), s.lookup())
 	assert.Error(t, err)
 }
 
@@ -101,20 +100,16 @@ func TestParseSignature(t *testing.T) {
 	s, other := newSigner(t), newSigner(t)
 	tok, _ := Sign(s.priv, s.pub.KID(), person())
 
-	_, _, err := Parse(tok, other.lookup(false))
+	_, err := Parse(tok, other.lookup())
 	assert.Equal(t, 2, step(t, err), "unknown kid")
 
 	forged, _ := Sign(other.priv, s.pub.KID(), person())
-	_, _, err = Parse(forged, s.lookup(false))
+	_, err = Parse(forged, s.lookup())
 	assert.Equal(t, 2, step(t, err), "bad signature")
 
 	_, p256 := newP256(t)
-	_, _, err = Parse(tok, func(string) (PublicKey, bool, bool) { return p256, false, true })
+	_, err = Parse(tok, func(string) (PublicKey, bool) { return p256, true })
 	assert.Equal(t, 2, step(t, err), "tokens are never verified with P-256")
-
-	_, legacy, err := Parse(tok, s.lookup(true))
-	require.NoError(t, err)
-	assert.True(t, legacy)
 }
 
 func TestClaimsCheck(t *testing.T) {
@@ -191,4 +186,18 @@ func TestValidGrants(t *testing.T) {
 		assert.Error(t, ValidGrants([]string{g}), g)
 	}
 	assert.Error(t, ValidGrants(make([]string, MaxGrants+1)))
+}
+
+// A keyset kept from before 2026-11-11 opens, without its legacy key.
+func TestKeysetIgnoresLegacy(t *testing.T) {
+	cur, old := newSigner(t), newSigner(t)
+	entry := func(s signer, usage string) KeysetKey {
+		return KeysetKey{Kid: s.pub.KID(), Pubkey: b64.EncodeToString(s.priv.Public().(ed25519.PublicKey)), Usage: usage}
+	}
+	lookup, err := Keyset{Keys: []KeysetKey{entry(cur, UsageSign), entry(old, "auth-sign-legacy")}}.Lookup()
+	require.NoError(t, err)
+	_, ok := lookup(cur.pub.KID())
+	assert.True(t, ok)
+	_, ok = lookup(old.pub.KID())
+	assert.False(t, ok, "the legacy key signs nothing")
 }

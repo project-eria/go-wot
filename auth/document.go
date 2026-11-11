@@ -55,11 +55,10 @@ func (d Signed) Verify(prefix string, keys []PublicKey) ([]byte, error) {
 // KeysetPrefix is the domain of the auth keyset, signed by a deployment key.
 const KeysetPrefix = "eria-keyset-v1"
 
-// Key usages in a keyset: a legacy key is accepted for terminal tokens only.
-const (
-	UsageSign       = "auth-sign"
-	UsageSignLegacy = "auth-sign-legacy"
-)
+// UsageSign is the usage of auth's key in a keyset. A key of another usage
+// (auth-sign-legacy, removed on 2026-11-11) is ignored: a keyset kept from
+// before still opens, without that key.
+const UsageSign = "auth-sign"
 
 // Keyset lists the auth public keys (AUTH-DESIGN §1.1). Generation is the
 // time in ms; a verifier keeps only a higher generation.
@@ -77,11 +76,7 @@ type KeysetKey struct {
 
 // Lookup turns a verified keyset into the KeyLookup of Parse.
 func (ks Keyset) Lookup() (KeyLookup, error) {
-	type entry struct {
-		key    PublicKey
-		legacy bool
-	}
-	keys := map[string]entry{}
+	keys := map[string]PublicKey{}
 	for _, k := range ks.Keys {
 		raw, err := b64.DecodeString(k.Pubkey)
 		if err != nil {
@@ -91,14 +86,16 @@ func (ks Keyset) Lookup() (KeyLookup, error) {
 		if err != nil {
 			return nil, err
 		}
-		if pub.KID() != k.Kid || (k.Usage != UsageSign && k.Usage != UsageSignLegacy) {
+		if pub.KID() != k.Kid {
 			return nil, errors.New("bad keyset entry")
 		}
-		keys[k.Kid] = entry{pub, k.Usage == UsageSignLegacy}
+		if k.Usage == UsageSign {
+			keys[k.Kid] = pub
+		}
 	}
-	return func(kid string) (PublicKey, bool, bool) {
-		e, ok := keys[kid]
-		return e.key, e.legacy, ok
+	return func(kid string) (PublicKey, bool) {
+		pub, ok := keys[kid]
+		return pub, ok
 	}, nil
 }
 

@@ -93,51 +93,50 @@ func signJWS(priv ed25519.PrivateKey, kid string, v any) (string, error) {
 }
 
 // KeyLookup returns the accepted auth key for kid (compared by strict
-// equality, never used as a path) and whether it is a legacy key.
-type KeyLookup func(kid string) (key PublicKey, legacy bool, ok bool)
+// equality, never used as a path).
+type KeyLookup func(kid string) (key PublicKey, ok bool)
 
 // Parse checks the structure (step 1) and the signature (step 2) of a token,
 // then returns its claims, still to be checked (step 3, see Claims.Check).
-func Parse(token string, keys KeyLookup) (c Claims, legacy bool, err error) {
-	legacy, err = parseJWS(token, keys, MaxTokenSize, 2, &c)
-	return c, legacy, err
+func Parse(token string, keys KeyLookup) (c Claims, err error) {
+	return c, parseJWS(token, keys, MaxTokenSize, 2, &c)
 }
 
 // parseJWS checks a compact JWS signed by auth and decodes its payload
 // strictly into v, nested at most maxDepth.
-func parseJWS(token string, keys KeyLookup, maxSize, maxDepth int, v any) (legacy bool, err error) {
+func parseJWS(token string, keys KeyLookup, maxSize, maxDepth int, v any) error {
 	if token == "" || len(token) > maxSize {
-		return false, structureErr("missing or oversized token")
+		return structureErr("missing or oversized token")
 	}
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
-		return false, structureErr("not three parts")
+		return structureErr("not three parts")
 	}
 	rawHeader, err1 := b64.DecodeString(parts[0])
 	rawClaims, err2 := b64.DecodeString(parts[1])
 	sig, err3 := b64.DecodeString(parts[2])
 	if err1 != nil || err2 != nil || err3 != nil {
-		return false, structureErr("bad base64url")
+		return structureErr("bad base64url")
 	}
 	var h header
 	if err := strictDecode(rawHeader, 1, &h); err != nil {
-		return false, structureErr("header: " + err.Error())
+		return structureErr("header: " + err.Error())
 	}
 	if h.Alg != "EdDSA" || h.Typ != "JWT" || h.Kid == "" {
-		return false, structureErr("header not pinned")
+		return structureErr("header not pinned")
 	}
 	if err := strictDecode(rawClaims, maxDepth, v); err != nil {
-		return false, structureErr("claims: " + err.Error())
+		return structureErr("claims: " + err.Error())
 	}
 
-	key, legacy, ok := keys(h.Kid)
+	key, ok := keys(h.Kid)
 	if !ok || key.Alg() != Ed25519 {
-		return false, signatureErr("unknown kid")
+		return signatureErr("unknown kid")
 	}
 	if !key.Verify([]byte(parts[0]+"."+parts[1]), sig) {
-		return false, signatureErr("bad signature")
+		return signatureErr("bad signature")
 	}
-	return legacy, nil
+	return nil
 }
 
 // strictDecode decodes a JSON object into v, refusing unknown fields,

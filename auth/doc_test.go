@@ -15,7 +15,7 @@ func TestRevocationDoc(t *testing.T) {
 	tok, err := SignDoc(s.priv, s.pub.KID(), d)
 	require.NoError(t, err)
 
-	got, err := ParseDoc(tok, s.lookup(false), "eria-maison", DocRevocation, "urn:eria:garage")
+	got, err := ParseDoc(tok, s.lookup(), "eria-maison", DocRevocation, "urn:eria:garage")
 	require.NoError(t, err, "* is for every recipient")
 	assert.True(t, got.Revokes(Claims{Term: "salon", Iat: 99}))
 	assert.False(t, got.Revokes(Claims{Term: "salon", Iat: 100}))
@@ -25,14 +25,12 @@ func TestRevocationDoc(t *testing.T) {
 	assert.False(t, all.Revokes(Claims{Term: "cuisine", Iat: 100}), "issued after")
 	assert.False(t, all.Revokes(Claims{Sub: "app:a1", Iat: 99}), "a service has no terminal")
 
-	_, err = ParseDoc(tok, s.lookup(true), "eria-maison", DocRevocation, "x")
-	assert.Error(t, err, "never signed by a legacy key")
-	_, err = ParseDoc(tok, s.lookup(false), "eria-maison", DocHeartbeat, "x")
+	_, err = ParseDoc(tok, s.lookup(), "eria-maison", DocHeartbeat, "x")
 	assert.Error(t, err, "another kind of document")
 
 	d.Thing = "urn:eria:garage"
 	tok, _ = SignDoc(s.priv, s.pub.KID(), d)
-	_, err = ParseDoc(tok, s.lookup(false), "eria-maison", DocRevocation, "urn:eria:portail")
+	_, err = ParseDoc(tok, s.lookup(), "eria-maison", DocRevocation, "urn:eria:portail")
 	assert.Error(t, err, "document for another recipient")
 
 	// A document may exceed a token's size, up to MaxDocSize: many
@@ -45,15 +43,15 @@ func TestRevocationDoc(t *testing.T) {
 	tok, _ = SignDoc(s.priv, s.pub.KID(), d)
 	require.Greater(t, len(tok), MaxTokenSize)
 	require.LessOrEqual(t, len(tok), MaxDocSize)
-	got, err = ParseDoc(tok, s.lookup(false), "eria-maison", DocRevocation, "x")
+	got, err = ParseDoc(tok, s.lookup(), "eria-maison", DocRevocation, "x")
 	require.NoError(t, err)
 	assert.Len(t, got.Revoked, 30)
-	_, _, err = Parse(tok, s.lookup(false))
+	_, err = Parse(tok, s.lookup())
 	assert.Error(t, err, "a token stays within MaxTokenSize")
 
 	// A token is not a document.
 	tok, _ = Sign(s.priv, s.pub.KID(), person())
-	_, err = ParseDoc(tok, s.lookup(false), "eria-maison", DocRevocation, "x")
+	_, err = ParseDoc(tok, s.lookup(), "eria-maison", DocRevocation, "x")
 	assert.Error(t, err)
 }
 
@@ -63,7 +61,7 @@ func TestTableDoc(t *testing.T) {
 		Table: Table{"action/open/invoke": {Levels: [3]int{1, 1, None}, Confirm: OutsideRoom}}}
 	tok, err := SignDoc(s.priv, s.pub.KID(), d)
 	require.NoError(t, err)
-	got, err := ParseDoc(tok, s.lookup(false), "eria-maison", DocTable, "urn:eria:garage")
+	got, err := ParseDoc(tok, s.lookup(), "eria-maison", DocTable, "urn:eria:garage")
 	require.NoError(t, err)
 	assert.Equal(t, d.Table, got.Table)
 	assert.Equal(t, []string{"garage"}, got.Zones)

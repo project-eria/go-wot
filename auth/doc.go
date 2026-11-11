@@ -80,14 +80,13 @@ func SignDoc(priv ed25519.PrivateKey, kid string, d Doc) (string, error) {
 
 // ParseDoc checks a document of the kind doc for the expected recipient
 // thing (a Thing passes its own id, a relay the id of the Thing it observes).
-// A document for another recipient, or signed by a legacy key, is refused.
+// A document for another recipient is refused.
 func ParseDoc(token string, keys KeyLookup, aud, doc, thing string) (Doc, error) {
 	var d Doc
-	legacy, err := parseJWS(token, keys, MaxDocSize, 4, &d)
-	if err != nil {
+	if err := parseJWS(token, keys, MaxDocSize, 4, &d); err != nil {
 		return d, err
 	}
-	if legacy || d.Iss != "auth" || d.Aud != aud || d.Doc != doc || d.Version <= 0 {
+	if d.Iss != "auth" || d.Aud != aud || d.Doc != doc || d.Version <= 0 {
 		return d, errors.New("not the expected document")
 	}
 	if d.Thing != thing && d.Thing != "*" {

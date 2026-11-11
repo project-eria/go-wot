@@ -83,7 +83,7 @@ func Authenticate(r Request) Decision {
 	if r.Mode == Offline {
 		return deny(0, "offline")
 	}
-	c, legacy, err := auth.Parse(r.Token, r.Keys)
+	c, err := auth.Parse(r.Token, r.Keys)
 	if err != nil {
 		e := err.(*auth.TokenError)
 		return deny(e.Step, e.Reason)
@@ -95,8 +95,8 @@ func Authenticate(r Request) Decision {
 	if !accepted[r.Verifier][p] {
 		return deny(3, "token not accepted by this verifier")
 	}
-	if (r.Mode == Minimal || legacy) && p != auth.ProfileTerminal {
-		return deny(3, "only a terminal token in minimal mode or with a legacy key")
+	if r.Mode == Minimal && p != auth.ProfileTerminal {
+		return deny(3, "only a terminal token in minimal mode")
 	}
 	return Decision{Allow: true, Claims: c, Profile: p}
 }
@@ -188,8 +188,8 @@ func (k Check) confirmed(user auth.Claims) string {
 	if k.Confirm == "" {
 		return "confirmation required"
 	}
-	c, legacy, err := auth.Parse(k.Confirm, k.Keys)
-	if err != nil || legacy {
+	c, err := auth.Parse(k.Confirm, k.Keys)
+	if err != nil {
 		return "confirm token unreadable"
 	}
 	if p, err := c.Check(k.Now, k.Aud); err != nil || p != auth.ProfileConfirm {

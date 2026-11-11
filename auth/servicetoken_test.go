@@ -92,14 +92,14 @@ func TestServiceTokensFor(t *testing.T) {
 	t.Cleanup(func() { RetryAfterFailure = saved })
 	s, err := NewServiceTokens(channel.URL, appPriv, Keyset{Keys: []KeysetKey{{Kid: authKey.KID(), Usage: UsageSign}}})
 	require.NoError(t, err)
-	lookup := func(string) (PublicKey, bool, bool) { return authKey, false, true }
+	lookup := func(string) (PublicKey, bool) { return authKey, true }
 
 	garage := s.For("eria:garage")
-	c, _, err := Parse(garage, lookup)
+	c, err := Parse(garage, lookup)
 	require.NoError(t, err)
 	assert.Equal(t, "eria:garage", c.Thing)
 	assert.Equal(t, garage, s.For("eria:garage"), "kept while fresh")
-	c, _, _ = Parse(s.For("eria:salon"), lookup)
+	c, _ = Parse(s.For("eria:salon"), lookup)
 	assert.Equal(t, "eria:salon", c.Thing, "another Thing, another token")
 	assert.Equal(t, int32(2), issued.Load())
 
