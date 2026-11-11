@@ -55,6 +55,11 @@ func (d Signed) Verify(prefix string, keys []PublicKey) ([]byte, error) {
 // KeysetPrefix is the domain of the auth keyset, signed by a deployment key.
 const KeysetPrefix = "eria-keyset-v1"
 
+// CSRPrefix is the domain of auth's signature over its TLS certificate
+// request: in a guided restore the master signs only a CSR the verified
+// auth key made (AUTH-DESIGN §4.2).
+const CSRPrefix = "eria-auth-csr-v1"
+
 // UsageSign is the usage of auth's key in a keyset. A key of another usage
 // (auth-sign-legacy, removed on 2026-11-11) is ignored: a keyset kept from
 // before still opens, without that key.
