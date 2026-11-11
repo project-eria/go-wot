@@ -97,10 +97,12 @@ func ParseDoc(token string, keys KeyLookup, aud, doc, thing string) (Doc, error)
 }
 
 // Revokes tells whether a token issued at iat for term, sub or service kid
-// falls under the list.
+// falls under the list. "term:*" is every terminal (« revoke every
+// terminal », §1.2).
 func (d Doc) Revokes(c Claims) bool {
 	for _, r := range d.Revoked {
-		if c.Iat < r.Before && (r.Subject == "term:"+c.Term && c.Term != "" || r.Subject == "sub:"+c.Sub && c.Sub != "") {
+		term := c.Term != "" && (r.Subject == "term:"+c.Term || r.Subject == "term:*")
+		if c.Iat < r.Before && (term || r.Subject == "sub:"+c.Sub && c.Sub != "") {
 			return true
 		}
 	}

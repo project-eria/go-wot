@@ -20,6 +20,10 @@ func TestRevocationDoc(t *testing.T) {
 	assert.True(t, got.Revokes(Claims{Term: "salon", Iat: 99}))
 	assert.False(t, got.Revokes(Claims{Term: "salon", Iat: 100}))
 	assert.False(t, got.Revokes(Claims{Term: "cuisine", Iat: 99}))
+	all := Doc{Revoked: []Revocation{{Subject: "term:*", Before: 100}}}
+	assert.True(t, all.Revokes(Claims{Term: "cuisine", Sub: "profil:lea", Iat: 99}), "every terminal")
+	assert.False(t, all.Revokes(Claims{Term: "cuisine", Iat: 100}), "issued after")
+	assert.False(t, all.Revokes(Claims{Sub: "app:a1", Iat: 99}), "a service has no terminal")
 
 	_, err = ParseDoc(tok, s.lookup(true), "eria-maison", DocRevocation, "x")
 	assert.Error(t, err, "never signed by a legacy key")
@@ -31,8 +35,8 @@ func TestRevocationDoc(t *testing.T) {
 	_, err = ParseDoc(tok, s.lookup(false), "eria-maison", DocRevocation, "urn:eria:portail")
 	assert.Error(t, err, "document for another recipient")
 
-	// A document may exceed a token's size, up to MaxDocSize: a revocation
-	// per terminal after « revoke every terminal ».
+	// A document may exceed a token's size, up to MaxDocSize: many
+	// terminals revoked one by one.
 	d.Thing = "*"
 	d.Revoked = nil
 	for i := 0; i < 30; i++ {
