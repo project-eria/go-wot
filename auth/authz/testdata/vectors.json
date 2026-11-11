@@ -532,7 +532,7 @@
       },
       "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoic2VydmljZSIsInN1YiI6ImFwcDphMSIsImx2bCI6OSwiZ3JhbnRzIjpbInRoaW5nOnVybjplcmlhOmdhcmFnZToxOmludm9rZSJdLCJpYXQiOjE3OTk5OTk5OTAsImV4cCI6MTgwMDAwMDg5MCwianRpIjoiai1hcHA6YTEifQ.ltm_5fFgeDhY57rrrDi9jgY-HfyyQQZuqXHTqz7sWVAjdsKt8e2wEoSJDd5VOOA_AcJkRWnsRqzXk5d6r-eCCw",
       "allow": false,
-      "step": 8
+      "step": 3
     },
     {
       "name": "open, service room grant",
@@ -594,16 +594,16 @@
       "step": 3
     },
     {
-      "name": "unsetContext, service 15 min, remote",
+      "name": "unsetContext, service 5 min, remote",
       "mode": "normal",
       "function": {
         "kind": "action",
         "name": "unsetContext",
         "op": "invoke"
       },
-      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoic2VydmljZSIsInN1YiI6ImFwcDphMSIsImx2bCI6OSwiZ3JhbnRzIjpbInRoaW5nOnVybjplcmlhOmdhcmFnZToxOmludm9rZSJdLCJpYXQiOjE3OTk5OTk5OTAsImV4cCI6MTgwMDAwMDg5MCwianRpIjoiai1hcHA6YTEifQ.ltm_5fFgeDhY57rrrDi9jgY-HfyyQQZuqXHTqz7sWVAjdsKt8e2wEoSJDd5VOOA_AcJkRWnsRqzXk5d6r-eCCw",
-      "allow": false,
-      "step": 8
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoic2VydmljZSIsInN1YiI6ImFwcDphMSIsImx2bCI6OSwiZ3JhbnRzIjpbInRoaW5nOnVybjplcmlhOmdhcmFnZToxOmludm9rZSJdLCJpYXQiOjE3OTk5OTk5OTAsImV4cCI6MTgwMDAwMDI5MCwianRpIjoiai1hcHA6YTEifQ.nc2jBOL-T9BPPVFLIQ8GC1L8yOXGuEYnFEt39LsKDhvUPEQbJl_Shmx5NC4NNKTtUOwPHZ_UWpHXZiQvZmnGBw",
+      "allow": true,
+      "step": 0
     },
     {
       "name": "unsetContext, PIN level 1 at the entrance",

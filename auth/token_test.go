@@ -139,7 +139,7 @@ func TestClaimsCheck(t *testing.T) {
 	assert.Equal(t, ProfileAdmin, ok(c))
 
 	c = Claims{Iss: "auth", Aud: "eria-maison", Kind: KindService, Sub: "app:a1", Lvl: lvl(9),
-		Iat: now.Unix(), Exp: now.Add(15 * time.Minute).Unix(), Jti: "j"}
+		Iat: now.Unix(), Exp: now.Add(5 * time.Minute).Unix(), Jti: "j"}
 	assert.Equal(t, ProfileService, ok(c))
 	for _, sub := range []string{"", "app:", "a1"} {
 		c.Sub = sub

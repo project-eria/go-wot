@@ -23,7 +23,7 @@ var MaxDuration = map[Profile]time.Duration{
 	ProfileTerminal: 72 * time.Hour,
 	ProfilePerson:   5 * time.Minute,
 	ProfileAdmin:    5 * time.Minute,
-	ProfileService:  15 * time.Minute,
+	ProfileService:  5 * time.Minute,
 	ProfileConfirm:  60 * time.Second,
 }
 
