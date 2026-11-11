@@ -31,6 +31,30 @@ type AppKey struct {
 	Grants  []string `json:"grants,omitempty"` // accepted by the admin (§1.3), grammar of §2.6
 }
 
+// AdminKeysPrefix is the domain of the master's registry of admin keys,
+// signed by a deployment key (revue de simplification, piste 7).
+const AdminKeysPrefix = "eria-admin-keys-v1"
+
+// AdminKeys is the master's registry of the keys that validate the admin's
+// orders (admin-keys.json): the YubiKey (P-256) and the admin's phone (the
+// kid of its biometric key). auth makes them its validators, never the
+// other way round. Version is the registry's time in ms: an older one is
+// refused.
+type AdminKeys struct {
+	Version int64           `json:"version"`
+	Keys    []AdminKeyEntry `json:"keys"`
+}
+
+type AdminKeyEntry struct {
+	Name string `json:"name"`
+	// Kind is "yubikey" (a validator key of its own) or "phone" (the bio
+	// key of an enrolled phone); both are P-256, the kind tells them apart.
+	Kind string `json:"kind,omitempty"`
+	Alg  string `json:"alg"`
+	Key  string `json:"key"` // base64url
+	Kid  string `json:"kid"`
+}
+
 // ServiceProofDomain is the domain of a service proof: the app's key signs
 // challenge ‖ domain ‖ kid of auth (ServiceProof).
 const ServiceProofDomain = "eria-service-proof-v1"
