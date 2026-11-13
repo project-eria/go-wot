@@ -10,7 +10,7 @@ import (
 	"github.com/project-eria/go-wot/auth"
 )
 
-// The activation of a Go app (AUTH-DESIGN §4.7 step 5c): the master sends
+// The activation of a Go app (AUTH-DESIGN §4.7 step 5c): the coordinator sends
 // its node's agent the keyset (signed command setKeyset); the agent writes
 // SettingsFile beside each app's key, and restarts the app, whose guard
 // then requires tokens. Like setKeyset on an ESP32.
@@ -20,12 +20,12 @@ const SettingsFile = "auth-guard.json"
 
 // Settings is what activates a Go app's guard.
 type Settings struct {
-	Keyset     string `json:"keyset"`     // auth-keyset.json, signed by the deployment key
-	Channel    string `json:"channel"`    // auth's Things channel
-	Deployment string `json:"deployment"` // aud of the tokens
-	DeployKey  string `json:"deployKey"`  // the deployment key (hex): verifies the keyset
-	Master     string `json:"master"`     // the master's TD URL: its inventory (F037)
-	Roots      string `json:"roots"`      // deployment roots, PEM: the master's certificate (TLS)
+	Keyset      string `json:"keyset"`      // auth-keyset.json, signed by the deployment key
+	Channel     string `json:"channel"`     // auth's Things channel
+	Deployment  string `json:"deployment"`  // aud of the tokens
+	DeployKey   string `json:"deployKey"`   // the deployment key (hex): verifies the keyset
+	Coordinator string `json:"coordinator"` // the coordinator's TD URL: its inventory (F037)
+	Roots       string `json:"roots"`       // deployment roots, PEM: the coordinator's certificate (TLS)
 }
 
 // ReadSettings reads the settings beside the app key file; os.ErrNotExist

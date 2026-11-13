@@ -14,7 +14,7 @@ import (
 )
 
 // Journal lines of the other sources (AUTH-DESIGN §4.5, step 5e-3): the
-// master and eria-ui-server hand theirs to auth in signed batches. auth sets
+// coordinator and eria-ui-server hand theirs to auth in signed batches. auth sets
 // the source from the key that signed, and the retention from the type.
 // Never a PIN, a code, a whole token, a key, a challenge nor a client's IP.
 
@@ -226,7 +226,7 @@ func SignDocumentP256(priv *ecdsa.PrivateKey, prefix string, v any) (Signed, err
 }
 
 // JournalErasePrefix is the domain of a JournalErase, signed by a deployment
-// key (the master), once the admin validated the order (§4.5 « effacement »).
+// key (the coordinator), once the admin validated the order (§4.5 « effacement »).
 const JournalErasePrefix = "eria-journal-erase-v1"
 
 // JournalErase erases whole UTC days up to Until (YYYY-MM-DD, included):

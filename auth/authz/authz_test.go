@@ -53,12 +53,12 @@ func TestAuthenticate(t *testing.T) {
 	allow(Thing, service, auth.ProfileService)
 	allow(Relay, person, auth.ProfilePerson)
 	allow(AuthService, admin, auth.ProfileAdmin)
-	allow(Master, admin, auth.ProfileAdmin)
+	allow(Coordinator, admin, auth.ProfileAdmin)
 
-	refuse(Thing, Normal, admin, 3)   // an admin token never reaches a Thing
-	refuse(Relay, Normal, admin, 3)   // nor a relay
-	refuse(Master, Normal, person, 3) // the master takes the admin token only
-	refuse(Thing, Normal, confirm, 3) // confirm is never a primary token
+	refuse(Thing, Normal, admin, 3)        // an admin token never reaches a Thing
+	refuse(Relay, Normal, admin, 3)        // nor a relay
+	refuse(Coordinator, Normal, person, 3) // the coordinator takes the admin token only
+	refuse(Thing, Normal, confirm, 3)      // confirm is never a primary token
 	refuse(Thing, Offline, terminal, 0)
 	refuse(Thing, Normal, "x", 1)
 	refuse(Thing, Minimal, person, 3)

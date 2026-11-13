@@ -1,5 +1,5 @@
-// Package inventory is the master's list of the Things of its network
-// (AUTH-DESIGN §2.4, F037): the master alone browses DNS-SD; the services and
+// Package inventory is the coordinator's list of the Things of its network
+// (AUTH-DESIGN §2.4, F037): the coordinator alone browses DNS-SD; the services and
 // eria-ui-server read the list and send their token only to its URLs.
 package inventory
 
@@ -20,10 +20,10 @@ type Entry struct {
 	Node string `json:"node,omitempty"` // machine announcing it
 }
 
-// Read fetches the `inventory` property of the master whose TD is at
-// masterURL, with the caller's service token.
-func Read(ctx context.Context, client *http.Client, masterURL, token string) ([]Entry, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimSuffix(masterURL, "/")+"/inventory", nil)
+// Read fetches the `inventory` property of the coordinator whose TD is at
+// coordinatorURL, with the caller's service token.
+func Read(ctx context.Context, client *http.Client, coordinatorURL, token string) ([]Entry, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimSuffix(coordinatorURL, "/")+"/inventory", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func Read(ctx context.Context, client *http.Client, masterURL, token string) ([]
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("master answered %d", resp.StatusCode)
+		return nil, fmt.Errorf("coordinator answered %d", resp.StatusCode)
 	}
 	var list []Entry
 	return list, json.NewDecoder(resp.Body).Decode(&list)

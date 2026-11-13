@@ -21,7 +21,7 @@
 // auth's Things channel, the queue kept beside the floor.
 //
 // ponytail: the system time when there is neither floor nor heartbeat; the
-// keyset is a file put by the deployment until the master delivers it;
+// keyset is a file put by the deployment until the coordinator delivers it;
 // observations are checked at the handshake only, not closed at exp nor at
 // a switch to the minimal mode.
 package guard
@@ -57,8 +57,8 @@ import (
 type Config struct {
 	Channel    string // auth's Things channel, http://auth:8444
 	Deployment string // aud of the tokens
-	Keyset     string // auth keyset signed by the deployment key (eria-manager auth-keyset)
-	Roots      string // deployment roots, PEM (eria-manager tls-root)
+	Keyset     string // auth keyset signed by the deployment key (eria-coordinator auth-keyset)
+	Roots      string // deployment roots, PEM (eria-coordinator tls-root)
 	// AppKey signs the TDs sent to auth (auth.LoadAppKey); nil sends them
 	// unsigned, until the agent gives the app a key.
 	AppKey ed25519.PrivateKey
@@ -66,10 +66,10 @@ type Config struct {
 	// keeps none.
 	Floor string
 	// Settings, when set, replace Keyset and Roots: written by the agent
-	// on the master's order (settings.go).
+	// on the coordinator's order (settings.go).
 	Settings *Settings
 	// DeployPath: every route of these Things is the deploy path, checked
-	// by the master's signature in the handlers (the agent): no token.
+	// by the coordinator's signature in the handlers (the agent): no token.
 	DeployPath bool
 }
 
@@ -148,7 +148,7 @@ func New(cfg Config) (*Guard, error) {
 		things: map[string]producer.ExposedThing{}, tables: map[string]auth.Doc{}, seen: map[string]int64{},
 		pending: map[string]time.Time{}, refused: map[string]bool{}, mode: authz.Normal}
 	if cfg.DeployPath {
-		zlog.Info().Msg("[guard] Deploy path: every request is checked by the master's signature")
+		zlog.Info().Msg("[guard] Deploy path: every request is checked by the coordinator's signature")
 		return g, nil
 	}
 	_, keys, err := cfg.OpenKeyset()

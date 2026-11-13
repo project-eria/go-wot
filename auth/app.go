@@ -9,18 +9,18 @@ import (
 )
 
 // App keys and service proofs (AUTH-DESIGN §1.3, step 3a): shared by auth,
-// the master that registers the keys and the apps that prove theirs.
+// the coordinator that registers the keys and the apps that prove theirs.
 
 // AppSubject prefixes the sub of a service token: app:<id>, the identity
 // auth gave the app; the revocation subject is then sub:app:<id>.
 const AppSubject = "app:"
 
 // AppKeyPrefix is the domain of an app key registration, signed by a
-// deployment key (the master).
+// deployment key (the coordinator).
 const AppKeyPrefix = "eria-app-key-v1"
 
 // AppKey binds an app to its key and its grants. Pubkey "" retires the
-// app's key. Version is the time in ms of the master's message: auth keeps
+// app's key. Version is the time in ms of the coordinator's message: auth keeps
 // only a higher one, so an old message replayed never brings back a retired
 // key, nor grants the admin removed.
 type AppKey struct {
@@ -31,11 +31,11 @@ type AppKey struct {
 	Grants  []string `json:"grants,omitempty"` // accepted by the admin (§1.3), grammar of §2.6
 }
 
-// AdminKeysPrefix is the domain of the master's registry of admin keys,
+// AdminKeysPrefix is the domain of the coordinator's registry of admin keys,
 // signed by a deployment key (revue de simplification, piste 7).
 const AdminKeysPrefix = "eria-admin-keys-v1"
 
-// AdminKeys is the master's registry of the keys that validate the admin's
+// AdminKeys is the coordinator's registry of the keys that validate the admin's
 // orders (admin-keys.json): the YubiKey (P-256) and the admin's phone (the
 // kid of its biometric key). auth makes them its validators, never the
 // other way round. Version is the registry's time in ms: an older one is

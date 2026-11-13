@@ -16,7 +16,7 @@ import (
 )
 
 // ServiceTokens gets the app's service tokens from auth's Things channel,
-// proving its app key (AUTH-DESIGN §1.3, step 3c): one for the master,
+// proving its app key (AUTH-DESIGN §1.3, step 3c): one for the coordinator,
 // renewed at 2/3 of its life by Run, and one per Thing (step 4e), fetched by
 // For on first use and again past 2/3 of its life.
 type ServiceTokens struct {
@@ -81,7 +81,7 @@ func (s *ServiceTokens) For(thing string) string {
 	return h.token
 }
 
-// Token is the current token for the master, "" before the first one or
+// Token is the current token for the coordinator, "" before the first one or
 // once expired.
 func (s *ServiceTokens) Token() string {
 	s.mu.RLock()
@@ -118,7 +118,7 @@ func (s *ServiceTokens) Run(ctx context.Context, ready chan<- struct{}) {
 }
 
 // fetch asks a challenge for the app key and signs it (ServiceProof); the
-// token is for thing, or for the master when thing is "".
+// token is for thing, or for the coordinator when thing is "".
 func (s *ServiceTokens) fetch(ctx context.Context, thing string) (token string, iat, exp time.Time, err error) {
 	kid := AppKID(s.key)
 	var ch struct{ Challenge string }

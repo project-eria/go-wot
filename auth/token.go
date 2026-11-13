@@ -44,7 +44,7 @@ type Claims struct {
 	Act      string   `json:"act,omitempty"`
 	// Thing a service token is for (step 4e): another Thing refuses it, so
 	// a compromised Thing can't replay an app's token elsewhere. Empty:
-	// for the master, or the relay's read-only token.
+	// for the coordinator, or the relay's read-only token.
 	Thing string `json:"thing,omitempty"`
 	Iat   int64  `json:"iat"`
 	Exp   int64  `json:"exp"`

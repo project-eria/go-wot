@@ -1,5 +1,5 @@
 // Package auth holds the cryptographic base shared by the ERIA auth service,
-// the master, the relays and the Things (AUTH-DESIGN §1.1, §2.7): typed public
+// the coordinator, the relays and the Things (AUTH-DESIGN §1.1, §2.7): typed public
 // keys (Ed25519 and ECDSA P-256), auth-signed JWTs and single-use challenges.
 package auth
 

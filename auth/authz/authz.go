@@ -3,7 +3,7 @@
 // refusal; Allow is only ever the last line.
 //
 // Authenticate runs the token steps (0 to 3), enough for the relays, the
-// master and auth; Decide runs them all (0 to 9) for a Thing.
+// coordinator and auth; Decide runs them all (0 to 9) for a Thing.
 package authz
 
 import (
@@ -33,14 +33,14 @@ const (
 	Thing Verifier = iota
 	Relay
 	AuthService
-	Master
+	Coordinator
 )
 
 var accepted = map[Verifier]map[auth.Profile]bool{
 	Thing:       {auth.ProfileTerminal: true, auth.ProfilePerson: true, auth.ProfileService: true},
 	Relay:       {auth.ProfileTerminal: true, auth.ProfilePerson: true, auth.ProfileService: true},
 	AuthService: {auth.ProfileAdmin: true, auth.ProfileService: true},
-	Master:      {auth.ProfileAdmin: true, auth.ProfileService: true}, // service: the inventory only (F037)
+	Coordinator: {auth.ProfileAdmin: true, auth.ProfileService: true}, // service: the inventory only (F037)
 }
 
 // Request holds what the token steps need.

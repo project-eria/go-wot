@@ -17,8 +17,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// The master's certificate: of the deployment roots, for RoleMaster only.
-func TestMasterClient(t *testing.T) {
+// The coordinator's certificate: of the deployment roots, for RoleCoordinator only.
+func TestCoordinatorClient(t *testing.T) {
 	rootPub, rootPriv, _ := ed25519.GenerateKey(rand.Reader)
 	root := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "root"}, IsCA: true, BasicConstraintsValid: true,
 		KeyUsage: x509.KeyUsageCertSign, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour)}
@@ -38,14 +38,14 @@ func TestMasterClient(t *testing.T) {
 		return srv
 	}
 	roots := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: rootDER})
-	c, err := MasterClient(roots, 5*time.Second)
+	c, err := CoordinatorClient(roots, 5*time.Second)
 	require.NoError(t, err)
 
-	resp, err := c.Get(serve(RoleMaster).URL)
-	require.NoError(t, err, "the master's certificate, reached at an IP")
+	resp, err := c.Get(serve(RoleCoordinator).URL)
+	require.NoError(t, err, "the coordinator's certificate, reached at an IP")
 	resp.Body.Close()
 	_, err = c.Get(serve("relais-interieur").URL)
 	assert.Error(t, err, "another role of the house")
-	_, err = MasterClient([]byte("nothing"), time.Second)
+	_, err = CoordinatorClient([]byte("nothing"), time.Second)
 	assert.Error(t, err)
 }

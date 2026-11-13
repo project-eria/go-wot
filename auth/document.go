@@ -56,7 +56,7 @@ func (d Signed) Verify(prefix string, keys []PublicKey) ([]byte, error) {
 const KeysetPrefix = "eria-keyset-v1"
 
 // CSRPrefix is the domain of auth's signature over its TLS certificate
-// request: in a guided restore the master signs only a CSR the verified
+// request: in a guided restore the coordinator signs only a CSR the verified
 // auth key made (AUTH-DESIGN §4.2).
 const CSRPrefix = "eria-auth-csr-v1"
 
@@ -105,7 +105,7 @@ func (ks Keyset) Lookup() (KeyLookup, error) {
 }
 
 // DeploymentKeys returns the Ed25519 keys of the deployment root
-// certificates (eria-manager tls-root): they sign the auth keyset.
+// certificates (eria-coordinator tls-root): they sign the auth keyset.
 func DeploymentKeys(rootsPEM []byte) ([]PublicKey, error) {
 	var keys []PublicKey
 	for rest := rootsPEM; ; {
