@@ -171,6 +171,14 @@ func TestGuard(t *testing.T) {
 	assert.Equal(t, 403, status("DELETE", "/open", garage))
 	assert.Equal(t, 200, status("OPTIONS", "/open", ""), "CORS preflight")
 
+	// A compressed body is refused before it is read: 403 at step 7, not
+	// the 401 of a missing token.
+	gz := httptest.NewRequest("POST", "/open", strings.NewReader("not even gzip"))
+	gz.Header.Set("Content-Encoding", "gzip")
+	gzResp, err := app.Test(gz)
+	require.NoError(t, err)
+	assert.Equal(t, 403, gzResp.StatusCode, "compressed body, before the token")
+
 	// A parent at the garage screen; from the entrance, a confirmation.
 	lvl1 := 1
 	parent := token(auth.Claims{Kind: auth.KindUser, Sub: "profil:paul", Term: "ecran-garage", Zone: "garage", Lvl: &lvl1})

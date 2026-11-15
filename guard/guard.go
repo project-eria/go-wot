@@ -210,6 +210,13 @@ func (g *Guard) Handler(c *fiber.Ctx) error {
 	g.mu.RUnlock()
 	var input []byte
 	if f.Op != authz.Read {
+		// Fiber's Body() decompresses by Content-Encoding with no bound on the
+		// decoded size, before any token is checked: a few MB of gzip from
+		// anyone on the network would allocate GBs. No ERIA client compresses.
+		if c.Get(fiber.HeaderContentEncoding) != "" {
+			g.log(auth.Line{Type: "guard.denied", Result: "denied", Reason: "encoding"})
+			return deny(c, 7, "unsupported encoding", "")
+		}
 		input = c.Body()
 	}
 	d := authz.Decide(authz.Check{
