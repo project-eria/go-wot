@@ -38,6 +38,10 @@ type Thing struct {
 	SecurityDefinitions map[string]securityScheme.SecurityScheme `json:"securityDefinitions"` // (mandatory) Set of named security configurations (definitions only). Not actually applied unless names are used in a security name-value pair.
 	// profile	Indicates the WoT Profile mechanisms followed by this Thing Description and the corresponding Thing implementation.
 
+	// Groups of functions the admin rules at once (ERIA extension, AUTH-DESIGN
+	// §2.4): each lists function keys (kind/name/op) of one operation.
+	Groups []Group `json:"eria:groups,omitempty"`
+
 	MU sync.RWMutex `json:"-"`
 }
 
@@ -73,6 +77,22 @@ func (t *Thing) AddContext(key string, context string) {
 		return
 	}
 	t.AtContext[key] = context
+}
+
+// Group is a group of functions of the Thing, by key ("property/today/sunrise/read").
+type Group struct {
+	ID        string   `json:"id"`
+	Title     string   `json:"title"`
+	Functions []string `json:"functions"`
+}
+
+// AddGroup declares a group of functions, all of one operation (auth drops
+// a group mixing them).
+// ponytail: "eria:" has no @context entry; nothing in ERIA reads the TD as JSON-LD.
+func (t *Thing) AddGroup(id string, title string, functions ...string) {
+	t.MU.Lock()
+	defer t.MU.Unlock()
+	t.Groups = append(t.Groups, Group{ID: id, Title: title, Functions: functions})
 }
 
 func (t *Thing) AddVersion(key string, version string) {

@@ -1,6 +1,7 @@
 package thing
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/project-eria/go-wot/dataSchema"
@@ -172,4 +173,15 @@ func TestAddAction(t *testing.T) {
 	}
 	assert.NoError(t, err, "should not return error")
 	assert.Equal(t, want, mything, "they should be equal")
+}
+
+func TestAddGroup(t *testing.T) {
+	td, _ := New("urn:x", "1.0", "X", "", nil)
+	td.AddGroup("today", "Heures du jour", "property/today/sunrise/read")
+	b, err := json.Marshal(td)
+	assert.NoError(t, err)
+	assert.Contains(t, string(b), `"eria:groups":[{"id":"today","title":"Heures du jour","functions":["property/today/sunrise/read"]}]`)
+	var back Thing
+	assert.NoError(t, json.Unmarshal(b, &back))
+	assert.Equal(t, td.Groups, back.Groups)
 }
