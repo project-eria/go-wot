@@ -84,7 +84,7 @@ func TestGuard(t *testing.T) {
 				return
 			}
 			w.Write([]byte(doc(auth.Doc{Doc: auth.DocTable, Thing: id, Version: 2, Zones: []string{"garage"},
-				Table: auth.Table{"property/open/read": {Levels: [3]int{9, 1, 1}}, "action/open/invoke": {Levels: [3]int{1, 1, 1}, Confirm: auth.OutsideRoom}}})))
+				Table: auth.Table{"property/open/read": {Levels: [3]int{9, 1, 1}}, "property/today/sunrise/read": {Levels: [3]int{9, 9, 9}}, "action/open/invoke": {Levels: [3]int{1, 1, 1}, Confirm: auth.OutsideRoom}}})))
 		case r.URL.Path == "/v1/heartbeat":
 			mu.Lock()
 			w.Write([]byte(doc(auth.Doc{Doc: auth.DocHeartbeat, Thing: "*", Version: beat, Nonce: r.URL.Query().Get("nonce"),
@@ -112,6 +112,8 @@ func TestGuard(t *testing.T) {
 	td, _ := thing.New(strings.TrimPrefix(id, "urn:"), "1", "Garage", "", nil)
 	open, _ := dataSchema.NewBoolean()
 	td.AddProperty(interaction.NewProperty("open", "", "", open))
+	sunrise, _ := dataSchema.NewString()
+	td.AddProperty(interaction.NewProperty("today/sunrise", "", "", sunrise)) // a name with a "/", as service-astral's
 	td.AddAction(interaction.NewAction("open", "", ""))
 	g.Expose("", producer.NewExposedThing(td, "", &sync.WaitGroup{}))
 	ctrl, _ := thing.New("eria:app:controler:1", "1", "Controller", "", nil)
@@ -162,6 +164,8 @@ func TestGuard(t *testing.T) {
 
 	assert.Equal(t, 200, status("GET", "/open", garage), "local 9")
 	assert.Equal(t, 200, status("GET", "/OPEN/", garage), "routed like Fiber")
+	assert.Equal(t, 200, status("GET", "/today/sunrise", entrance), "a property name holding a /")
+	assert.Equal(t, 403, status("GET", "/today", entrance), "its first segment is no property")
 	assert.Equal(t, 403, status("GET", "/open", entrance), "remote 1")
 	assert.Equal(t, 403, status("POST", "/open", garage), "level 9 under 1")
 	assert.Equal(t, 403, status("DELETE", "/open", garage))

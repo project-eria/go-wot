@@ -322,9 +322,12 @@ func (g *Guard) resolve(c *fiber.Ctx) (producer.ExposedThing, authz.Function, bo
 		return t, authz.TD, method == fiber.MethodGet
 	}
 	td := t.GetThingDescription()
+	// The whole rest of the path: an affordance name may hold a "/"
+	// (service-astral's today/goldenHourRisingStart).
+	rest := strings.Join(segs, "/")
 	find := func(names []string) string {
 		for _, n := range names {
-			if strings.ToLower(n) == segs[0] {
+			if strings.ToLower(n) == rest {
 				return n
 			}
 		}
