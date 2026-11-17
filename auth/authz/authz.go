@@ -163,9 +163,15 @@ func Decide(k Check) Decision {
 	if e == None || lvl > e {
 		return deny(7, fmt.Sprintf("level %d, %s requires %d", lvl, loc, e))
 	}
+	// An app reaches only what its grants cover (decided 2026-11-17): a
+	// service has no guest rights, « 9 » means every person. Its TD stays
+	// readable, as for anyone.
+	if d.Profile == auth.ProfileService && grant == "" && k.Function.Kind != "td" {
+		return deny(7, "a service reaches only what its grants cover")
+	}
 	// 8. Proof. A service reaching here on a confirmable command holds an
-	// exact grant (step 7: level 9 against a ceiling of 1) and a 5 min token
-	// (step 3: its longest life).
+	// exact grant (step 7: a service needs a grant, and only an exact one
+	// covers a confirmable) and a 5 min token (step 3: its longest life).
 	if command && needsConfirm(r, loc) {
 		if d.Profile == auth.ProfileService {
 			if r.Confirm == Always {

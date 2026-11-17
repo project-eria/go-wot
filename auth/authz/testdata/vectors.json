@@ -713,6 +713,30 @@
       "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoidXNlciIsInN1YiI6InByb2ZpbDpwYXVsIiwidGVybSI6ImVjcmFuLWdhcmFnZSIsImx2bCI6MSwiem9uZSI6ImdhcmFnZSIsImlhdCI6MTc5OTk5OTk5MCwiZXhwIjoxODAwMDAwMjMwLCJqdGkiOiJqLWVjcmFuLWdhcmFnZXByb2ZpbDpwYXVsIn0.mXpxLu5Q7RIWSeDcFQO80pmfzeSaCEhQ-dDwLdPLrJ8BejBY5MAGHcC649HZrFFbyiVVmtlQ6cNFvhu98WxTCQ",
       "allow": false,
       "step": 3
+    },
+    {
+      "name": "temperature, service without grant: no guest rights",
+      "mode": "normal",
+      "function": {
+        "kind": "property",
+        "name": "temperature",
+        "op": "read"
+      },
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoic2VydmljZSIsInN1YiI6ImFwcDphMyIsImx2bCI6OSwiaWF0IjoxNzk5OTk5OTkwLCJleHAiOjE4MDAwMDAyMzAsImp0aSI6ImotYXBwOmEzIn0.ItPHEHvao110WCGCYMccOiiDOODGFBQWWK5OEw1VJhxtA6ODmTJaxYFLyqS1TyfAUg2fuICcMWiE7sm4ZDl7DA",
+      "allow": false,
+      "step": 7
+    },
+    {
+      "name": "td, service without grant",
+      "mode": "normal",
+      "function": {
+        "kind": "td",
+        "name": "",
+        "op": "read"
+      },
+      "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImtpZCI6ImgwdW9sSkN5TGtmRC1Hc1EwQl9tSDBqLS1GUWItTEV5WnRaNkFWM2x0S1EifQ.eyJpc3MiOiJhdXRoIiwiYXVkIjoiZXJpYS1tYWlzb24iLCJraW5kIjoic2VydmljZSIsInN1YiI6ImFwcDphMyIsImx2bCI6OSwiaWF0IjoxNzk5OTk5OTkwLCJleHAiOjE4MDAwMDAyMzAsImp0aSI6ImotYXBwOmEzIn0.ItPHEHvao110WCGCYMccOiiDOODGFBQWWK5OEw1VJhxtA6ODmTJaxYFLyqS1TyfAUg2fuICcMWiE7sm4ZDl7DA",
+      "allow": true,
+      "step": 0
     }
   ]
 }
