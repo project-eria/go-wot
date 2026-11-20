@@ -56,6 +56,17 @@ func actionHandler(t producer.ExposedThing, tdAction *interaction.Action) func(*
 				})
 			}
 		}
+		if mediaType := rawMediaType(tdAction.Output); output != nil && mediaType != "" {
+			zlog.Trace().Str("action", tdAction.Key).Str("contentType", mediaType).Msg("[protocolHttp:actionHandler] Raw Response to Thing action POST request")
+			if err := sendRaw(c, mediaType, output); err != nil {
+				zlog.Error().Err(err).Str("action", tdAction.Key).Msg("[protocolHttp:actionHandler]")
+				return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
+					"error": "internal error",
+					"type":  UnknownError.ErrorType,
+				})
+			}
+			return nil
+		}
 		if output != nil {
 			zlog.Trace().Interface("response", output).Str("action", tdAction.Key).Msg("[protocolHttp:actionHandler] JSON Response to Thing action POST request")
 			return c.JSON(output)

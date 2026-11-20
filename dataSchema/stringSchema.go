@@ -8,12 +8,12 @@ import (
 )
 
 type String struct {
-	MinLength *uint16 `json:"minLength,omitempty"` // (optional) Specifies the minimum length of a string.
-	MaxLength *uint16 `json:"maxLength,omitempty"` // (optional) Specifies the maximum length of a string.package dataSchema
-	Pattern   string  `json:"pattern,omitempty"`   // (optional) Provides a regular expressions to express constraints of the string value. The regular expression must follow the [ECMA-262] dialect.
-	// TODO ContentEncoding  string `json:"contentEncoding,omitempty"`  // (optional) Specifies the encoding used to store the contents, as specified in RFC 2054. The values that are accepted: "7bit", "8bit", "binary", "quoted-printable" and "base64".
-	// TODO ContentMediaType string `json:"contentMediaType,omitempty"` // (optional) Specifies the MIME type (e.g., image/png, audio/mpeg) of the contents of a string value, as described in RFC 2046.
-	regexpPattern *regexp.Regexp `json:"-"`
+	MinLength        *uint16        `json:"minLength,omitempty"`        // (optional) Specifies the minimum length of a string.
+	MaxLength        *uint16        `json:"maxLength,omitempty"`        // (optional) Specifies the maximum length of a string.package dataSchema
+	Pattern          string         `json:"pattern,omitempty"`          // (optional) Provides a regular expressions to express constraints of the string value. The regular expression must follow the [ECMA-262] dialect.
+	ContentEncoding  string         `json:"contentEncoding,omitempty"`  // (optional) Specifies the encoding used to store the contents, as specified in RFC 2054. The values that are accepted: "7bit", "8bit", "binary", "quoted-printable" and "base64".
+	ContentMediaType string         `json:"contentMediaType,omitempty"` // (optional) Specifies the MIME type (e.g., image/png, audio/mpeg) of the contents of a string value, as described in RFC 2046.
+	regexpPattern    *regexp.Regexp `json:"-"`
 }
 
 func NewString(options ...StringOption) (Data, error) {
@@ -49,10 +49,12 @@ func NewString(options ...StringOption) (Data, error) {
 		Enum:    opts.Enum,
 		OneOf:   opts.OneOf,
 		DataSchema: String{
-			MinLength:     opts.MinLength,
-			MaxLength:     opts.MaxLength,
-			Pattern:       opts.Pattern,
-			regexpPattern: regexpPattern,
+			MinLength:        opts.MinLength,
+			MaxLength:        opts.MaxLength,
+			Pattern:          opts.Pattern,
+			ContentEncoding:  opts.ContentEncoding,
+			ContentMediaType: opts.ContentMediaType,
+			regexpPattern:    regexpPattern,
 		},
 	}
 	if d.Default != nil {
@@ -73,6 +75,9 @@ type StringOptions struct {
 	MinLength *uint16
 	MaxLength *uint16
 	Pattern   string
+
+	ContentEncoding  string
+	ContentMediaType string
 }
 
 func StringDefault(value string) StringOption {
@@ -121,7 +126,28 @@ func StringOneOf(values ...ConstSchema) StringOption {
 	}
 }
 
+// StringContentMediaType declares the media type of the content (image/jpeg,
+// text/html…). A media type other than JSON makes the HTTP binding serve the
+// value as is, with that Content-Type, instead of a JSON string.
+func StringContentMediaType(mediaType string) StringOption {
+	return func(opts *StringOptions) {
+		opts.ContentMediaType = mediaType
+	}
+}
+
+// StringContentEncoding declares how binary content is stored in the string.
+// With "base64", handlers return a []byte: JSON encodes it as base64 and the
+// HTTP binding serves the raw bytes.
+func StringContentEncoding(encoding string) StringOption {
+	return func(opts *StringOptions) {
+		opts.ContentEncoding = encoding
+	}
+}
+
 func (s String) Validate(value interface{}) error {
+	if b, ok := value.([]byte); ok && s.ContentEncoding != "" {
+		value = string(b) // binary content: the length constraints apply to the bytes
+	}
 	if _, ok := value.(string); !ok {
 		return errors.New("incorrect string value type")
 	}

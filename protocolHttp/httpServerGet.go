@@ -52,6 +52,17 @@ func propertyReadHandler(t producer.ExposedThing, tdProperty *interaction.Proper
 				}
 			}
 
+			if mediaType := rawMediaType(&tdProperty.Data); mediaType != "" {
+				zlog.Trace().Str("property", tdProperty.Key).Str("contentType", mediaType).Msg("[protocolHttp:propertyReadHandler] Raw response to Thing property GET request")
+				if err := sendRaw(c, mediaType, output); err != nil {
+					zlog.Error().Err(err).Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler]")
+					return c.Status(UnknownError.HttpStatus).JSON(fiber.Map{
+						"error": "internal error",
+						"type":  UnknownError.ErrorType,
+					})
+				}
+				return nil
+			}
 			zlog.Trace().Interface("response", output).Str("property", tdProperty.Key).Msg("[protocolHttp:propertyReadHandler] Response to Thing property GET request")
 			return c.JSON(output)
 		}

@@ -110,3 +110,12 @@ func TestArrayItemsOneOf(t *testing.T) {
 	assert.NoError(t, json.Unmarshal(b, &back))
 	assert.Equal(t, "Absent", back.DataSchema.(Array).Items.OneOf[0].Title)
 }
+
+// Binary content ([]byte) is valid only for a schema declaring an encoding
+func (ts *StringSchemaTestSuite) Test_StringSchemaValidateBinary() {
+	binary, _ := NewString(StringContentEncoding("base64"), StringContentMediaType("image/jpeg"), StringMaxLength(4))
+	ts.NoError(binary.Validate([]byte{0xff, 0xd8}))
+	ts.Error(binary.Validate([]byte{1, 2, 3, 4, 5}), "length applies to the bytes")
+	plain, _ := NewString()
+	ts.Error(plain.Validate([]byte{0xff, 0xd8}))
+}

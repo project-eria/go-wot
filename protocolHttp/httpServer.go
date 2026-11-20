@@ -205,6 +205,22 @@ func addPropertyEndPoints(g fiber.Router, exposedAddr string, prefix string, t p
 	g.Get("/"+property.Key+handlerVars, propertyReadHandler(t, property))
 	g.Put("/"+property.Key+handlerVars, propertyWriteHandler(t, property))
 
+	// Raw content (image, HTML…) is read as is, but still written as JSON:
+	// a writable property gets a separate read form
+	if mediaType := rawMediaType(&property.Data); mediaType != "" && !property.WriteOnly {
+		if property.ReadOnly {
+			form.ContentType = mediaType
+		} else {
+			form.Op = []string{"writeproperty"}
+			form.Supplement["htv:methodName"] = "PUT"
+			readForm := *form
+			readForm.ContentType = mediaType
+			readForm.Op = []string{"readproperty"}
+			readForm.Supplement = map[string]interface{}{"htv:methodName": "GET"}
+			property.Forms = append(property.Forms, &readForm)
+		}
+	}
+
 	property.Forms = append(property.Forms, form)
 
 	// if property is observable add an additional form with a observable href
@@ -248,6 +264,11 @@ func addActionEndPoints(g fiber.Router, exposedAddr string, prefix string, t pro
 			}
 			return fmt.Sprintf("%s://%s%s/%s%s", protocol, host, prefix, action.Key, uriVars)
 		},
+	}
+
+	// JSON input, raw output (image, HTML…)
+	if mediaType := rawMediaType(action.Output); mediaType != "" {
+		form.Response = &interaction.ExpectedResponse{ContentType: mediaType}
 	}
 
 	g.Post("/"+action.Key+handlerVars, actionHandler(t, action))

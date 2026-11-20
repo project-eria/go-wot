@@ -66,6 +66,8 @@ Nil options are safely ignored.
 
 Handlers receive `map[string]interface{}` for URI variables and return typed values.
 
+**Raw content** — A string schema with a non-JSON `contentMediaType` (`dataSchema.StringContentMediaType("image/jpeg")`, `"text/html; charset=utf-8"`…) makes the HTTP binding serve property reads and action outputs as is, with that Content-Type: handlers return `[]byte` (binary, declare `StringContentEncoding("base64")`) or `string` (text). The TD forms announce it (`contentType` on read forms, `response.contentType` on actions); writes, errors and WebSocket stay JSON (`[]byte` marshals as base64). See `protocolHttp/httpRaw.go`.
+
 **DataSchema Interface** — All schema types implement three methods: `FromString()`, `Validate()`, `IsNullOrEmpty()`. The `SimpleType` constraint (`bool | int | float64 | string`) is used for generics in typed schemas.
 
 ### JSON Marshalling
